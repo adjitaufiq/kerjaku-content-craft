@@ -22,12 +22,13 @@ import { useIgSettings } from "@/lib/ig-settings";
 import { detectNumberFromFilename, fetchBank, fetchLogs, indexLogs, uploadImage } from "@/lib/content-data";
 import { publishToInstagram } from "@/lib/instagram.functions";
 
-type Search = { no?: number };
+type Search = { no?: number | undefined };
 
 export const Route = createFileRoute("/editor")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     no: search['no'] ? Number(search['no']) : undefined,
   }),
+
   head: () => ({
     meta: [
       { title: "Editor & Publisher — KERJAKU Instagram Publisher" },
