@@ -14,7 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      content_bank: {
+        Row: {
+          caption: string
+          content_number: number
+          created_at: string
+          id: string
+          prompt: string
+          title: string
+        }
+        Insert: {
+          caption?: string
+          content_number: number
+          created_at?: string
+          id?: string
+          prompt?: string
+          title?: string
+        }
+        Update: {
+          caption?: string
+          content_number?: number
+          created_at?: string
+          id?: string
+          prompt?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      content_logs: {
+        Row: {
+          caption: string
+          content_number: number
+          created_at: string
+          error_message: string | null
+          id: string
+          ig_creation_id: string | null
+          ig_post_id: string | null
+          image_url: string | null
+          scheduled_at: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          caption?: string
+          content_number: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ig_creation_id?: string | null
+          ig_post_id?: string | null
+          image_url?: string | null
+          scheduled_at?: string | null
+          status?: string
+          title?: string
+        }
+        Update: {
+          caption?: string
+          content_number?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ig_creation_id?: string | null
+          ig_post_id?: string | null
+          image_url?: string | null
+          scheduled_at?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
