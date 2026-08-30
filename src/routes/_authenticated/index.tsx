@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { fetchBank, fetchLogs, indexLogs, statusTone } from "@/lib/content-data";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Content Grid — KERJAKU Instagram Publisher" },
