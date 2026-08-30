@@ -83,6 +83,42 @@ export type Database = {
         }
         Relationships: []
       }
+      meta_token_meta: {
+        Row: {
+          expires_in_exact: boolean
+          id: string
+          last_checked_at: string
+          meta_expires_in_seconds: number | null
+          token_created_at: string
+          token_expires_at: string
+          token_fingerprint: string
+          token_last_updated_at: string
+          token_type: string
+        }
+        Insert: {
+          expires_in_exact?: boolean
+          id?: string
+          last_checked_at?: string
+          meta_expires_in_seconds?: number | null
+          token_created_at?: string
+          token_expires_at: string
+          token_fingerprint: string
+          token_last_updated_at?: string
+          token_type?: string
+        }
+        Update: {
+          expires_in_exact?: boolean
+          id?: string
+          last_checked_at?: string
+          meta_expires_in_seconds?: number | null
+          token_created_at?: string
+          token_expires_at?: string
+          token_fingerprint?: string
+          token_last_updated_at?: string
+          token_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
