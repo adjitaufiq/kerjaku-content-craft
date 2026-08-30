@@ -121,13 +121,29 @@ function EditorPage() {
 
     setBusy(true);
     try {
+      if (scheduledUnix) {
+        // Meta's native IG scheduling is whitelist-gated ("User must be on
+        // whitelist"), so the app queues the post and publishes it when due.
+        const { error } = await supabase.from("content_logs").insert({
+          content_number: selectedNo,
+          title: row?.title ?? "",
+          image_url: imageUrl,
+          caption,
+          status: "scheduled",
+          scheduled_at: new Date(scheduledUnix * 1000).toISOString(),
+        });
+        if (error) throw new Error(error.message);
+        toast.success("Konten dijadwalkan. Biarkan aplikasi terbuka saat waktunya tiba.");
+        await queryClient.invalidateQueries({ queryKey: ["logs"] });
+        return;
+      }
+
       const result = await publish({
         data: {
           igAccountId: settings.igAccountId,
           accessToken: settings.accessToken,
           imageUrl,
           caption,
-          ...(scheduledUnix ? { scheduledPublishTime: scheduledUnix } : {}),
         },
       });
 
@@ -139,13 +155,12 @@ function EditorPage() {
         status: result.mode,
         ig_creation_id: result.creationId,
         ig_post_id: result.postId,
-        scheduled_at: scheduledUnix ? new Date(scheduledUnix * 1000).toISOString() : null,
+        scheduled_at: null,
       });
 
-      toast.success(
-        result.mode === "published" ? "Konten berhasil tayang di Instagram." : "Konten dijadwalkan lewat Meta.",
-      );
+      toast.success("Konten berhasil tayang di Instagram.");
       await queryClient.invalidateQueries({ queryKey: ["logs"] });
+
     } catch (error) {
       const message = error instanceof Error ? error.message : "Gagal memproses ke Meta.";
       await supabase.from("content_logs").insert({
