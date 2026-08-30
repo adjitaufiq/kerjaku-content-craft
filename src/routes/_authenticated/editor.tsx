@@ -24,7 +24,7 @@ import { publishToInstagram } from "@/lib/instagram.functions";
 
 type Search = { no?: number | undefined };
 
-export const Route = createFileRoute("/editor")({
+export const Route = createFileRoute("/_authenticated/editor")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     no: search['no'] ? Number(search['no']) : undefined,
   }),

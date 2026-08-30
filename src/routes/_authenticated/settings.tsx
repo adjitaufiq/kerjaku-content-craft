@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useMetaTokenStatus } from "@/lib/use-schedule-runner";
 import { saveBank, type BankRow } from "@/lib/content-data";
 
-export const Route = createFileRoute("/settings")({
+export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
       { title: "Settings & Config — KERJAKU Instagram Publisher" },
