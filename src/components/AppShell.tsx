@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Instagram, LayoutGrid, Settings2, Wand2 } from "lucide-react";
 
+import { useScheduleRunner } from "@/lib/use-schedule-runner";
+
 const nav = [
   { to: "/", label: "Content Grid", icon: LayoutGrid },
   { to: "/editor", label: "Editor & Publisher", icon: Wand2 },
@@ -9,6 +11,7 @@ const nav = [
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
+  useScheduleRunner();
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur">
