@@ -318,7 +318,7 @@ function EditorPage() {
                 active={mode === "schedule"}
                 icon={CalendarClock}
                 title="Schedule Post"
-                description="Meta yang menayangkan otomatis."
+                description="Antrean aplikasi, tayang otomatis saat waktunya."
                 onClick={() => setMode("schedule")}
               />
             </div>
