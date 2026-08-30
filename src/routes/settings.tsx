@@ -86,50 +86,59 @@ function SettingsPage() {
     <AppShell>
       <h1 className="text-3xl font-bold">Settings & Config</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Kredensial Meta disimpan lokal di browser ini dan hanya dikirim saat publish.
+        Meta access token disimpan sebagai secret server (META_ACCESS_TOKEN) dan tidak pernah
+        dikirim ke browser.
       </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <section className="surface-panel p-6">
           <div className="flex items-center gap-2 text-primary">
             <KeyRound className="size-4" />
-            <h2 className="text-base font-semibold text-foreground">Meta Graph API</h2>
+            <h2 className="text-base font-semibold text-foreground">Meta Access Token</h2>
           </div>
 
-          <div className="mt-5 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="ig-id">Instagram Business Account ID</Label>
-              <Input
-                id="ig-id"
-                placeholder="17841400000000000"
-                value={idValue}
-                onChange={(e) => setIgAccountId(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ig-token">Meta Long-Lived Access Token</Label>
-              <Input
-                id="ig-token"
-                type="password"
-                placeholder="EAAG..."
-                value={tokenValue}
-                onChange={(e) => setAccessToken(e.target.value)}
-              />
-            </div>
+          <div className="mt-5 space-y-3 text-sm">
+            <Row label="Status" value={statusLabel(status?.state)} />
+            <Row label="Tipe token" value={status?.tokenType ?? "long_lived_user_token"} />
+            <Row label="Dibuat / disimpan" value={formatDate(status?.tokenCreatedAt ?? null)} />
+            <Row label="Terakhir diperbarui" value={formatDate(status?.tokenLastUpdatedAt ?? null)} />
+            <Row label="Kedaluwarsa" value={formatDate(status?.tokenExpiresAt ?? null)} />
+            <Row
+              label="Sumber masa berlaku"
+              value={
+                status?.expiresInExact
+                  ? "expires_in resmi dari Meta (debug_token)"
+                  : "Estimasi 60 hari"
+              }
+            />
+            <Row
+              label="Sisa hari"
+              value={status?.daysRemaining != null ? `${status.daysRemaining} hari` : "—"}
+            />
+            <Row
+              label="Instagram Account ID"
+              value={status?.igAccountConfigured ? "Terkonfigurasi (server)" : "Belum diisi"}
+            />
+            <p className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
+              <ShieldCheck className="size-3.5 text-accent" />
+              {status?.message ?? "Memuat status token…"}
+            </p>
             <Button
+              variant="secondary"
               onClick={() => {
-                save({ igAccountId: idValue.trim(), accessToken: tokenValue.trim() });
-                toast.success("Konfigurasi tersimpan.");
+                void queryClient.invalidateQueries({ queryKey: ["meta-token-status"] });
+                toast.success("Status token disegarkan.");
               }}
             >
-              Simpan Konfigurasi
+              Refresh Status
             </Button>
-            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              <ShieldCheck className="size-3.5 text-accent" />
-              {configured ? "Kredensial aktif." : "Belum dikonfigurasi."}
+            <p className="text-xs text-muted-foreground">
+              Perbarui token lewat Project Settings → Secrets (META_ACCESS_TOKEN). Status di atas
+              otomatis dihitung ulang saat token baru terdeteksi.
             </p>
           </div>
         </section>
+
 
         <section className="surface-panel p-6">
           <div className="flex items-center gap-2 text-accent">
