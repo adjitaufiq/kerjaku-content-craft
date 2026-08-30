@@ -35,6 +35,14 @@ export function useScheduleRunner() {
 
         for (const job of data) {
           if (!job.image_url) continue;
+          // Claim the job first so a second open tab cannot publish it again.
+          const { data: claimed } = await supabase
+            .from("content_logs")
+            .update({ status: "publishing" })
+            .eq("id", job.id)
+            .eq("status", "scheduled")
+            .select("id");
+          if (!claimed?.length) continue;
           try {
             const result = await publish({
               data: {
