@@ -6,9 +6,7 @@ import { FileSpreadsheet, KeyRound, ShieldCheck } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useIgSettings } from "@/lib/ig-settings";
+import { useMetaTokenStatus } from "@/lib/use-schedule-runner";
 import { saveBank, type BankRow } from "@/lib/content-data";
 
 export const Route = createFileRoute("/settings")({
@@ -18,28 +16,31 @@ export const Route = createFileRoute("/settings")({
       {
         name: "description",
         content:
-          "Simpan Instagram Business Account ID, Meta access token, dan unggah file Excel bank konten KERJAKU.",
+          "Pantau masa berlaku Meta access token server-side dan unggah file Excel bank konten KERJAKU.",
       },
       { property: "og:title", content: "Settings & Config — KERJAKU Instagram Publisher" },
       {
         property: "og:description",
-        content: "Konfigurasi kredensial Meta Graph API dan impor bank konten dari Excel.",
+        content: "Monitoring token Meta Graph API dan impor bank konten dari Excel.",
       },
     ],
   }),
   component: SettingsPage,
 });
 
+function formatDate(value: string | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("id-ID");
+}
+
 function SettingsPage() {
-  const { settings, save, configured } = useIgSettings();
-  const [igAccountId, setIgAccountId] = useState<string | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const tokenStatus = useMetaTokenStatus();
+  const status = tokenStatus.data;
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
-  const idValue = igAccountId ?? settings.igAccountId;
-  const tokenValue = accessToken ?? settings.accessToken;
+
 
   async function handleFile(file: File) {
     setImporting(true);
@@ -85,50 +86,59 @@ function SettingsPage() {
     <AppShell>
       <h1 className="text-3xl font-bold">Settings & Config</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Kredensial Meta disimpan lokal di browser ini dan hanya dikirim saat publish.
+        Meta access token disimpan sebagai secret server (META_ACCESS_TOKEN) dan tidak pernah
+        dikirim ke browser.
       </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <section className="surface-panel p-6">
           <div className="flex items-center gap-2 text-primary">
             <KeyRound className="size-4" />
-            <h2 className="text-base font-semibold text-foreground">Meta Graph API</h2>
+            <h2 className="text-base font-semibold text-foreground">Meta Access Token</h2>
           </div>
 
-          <div className="mt-5 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="ig-id">Instagram Business Account ID</Label>
-              <Input
-                id="ig-id"
-                placeholder="17841400000000000"
-                value={idValue}
-                onChange={(e) => setIgAccountId(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ig-token">Meta Long-Lived Access Token</Label>
-              <Input
-                id="ig-token"
-                type="password"
-                placeholder="EAAG..."
-                value={tokenValue}
-                onChange={(e) => setAccessToken(e.target.value)}
-              />
-            </div>
+          <div className="mt-5 space-y-3 text-sm">
+            <Row label="Status" value={statusLabel(status?.state)} />
+            <Row label="Tipe token" value={status?.tokenType ?? "long_lived_user_token"} />
+            <Row label="Dibuat / disimpan" value={formatDate(status?.tokenCreatedAt ?? null)} />
+            <Row label="Terakhir diperbarui" value={formatDate(status?.tokenLastUpdatedAt ?? null)} />
+            <Row label="Kedaluwarsa" value={formatDate(status?.tokenExpiresAt ?? null)} />
+            <Row
+              label="Sumber masa berlaku"
+              value={
+                status?.expiresInExact
+                  ? "expires_in resmi dari Meta (debug_token)"
+                  : "Estimasi 60 hari"
+              }
+            />
+            <Row
+              label="Sisa hari"
+              value={status?.daysRemaining != null ? `${status.daysRemaining} hari` : "—"}
+            />
+            <Row
+              label="Instagram Account ID"
+              value={status?.igAccountConfigured ? "Terkonfigurasi (server)" : "Belum diisi"}
+            />
+            <p className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
+              <ShieldCheck className="size-3.5 text-accent" />
+              {status?.message ?? "Memuat status token…"}
+            </p>
             <Button
+              variant="secondary"
               onClick={() => {
-                save({ igAccountId: idValue.trim(), accessToken: tokenValue.trim() });
-                toast.success("Konfigurasi tersimpan.");
+                void queryClient.invalidateQueries({ queryKey: ["meta-token-status"] });
+                toast.success("Status token disegarkan.");
               }}
             >
-              Simpan Konfigurasi
+              Refresh Status
             </Button>
-            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              <ShieldCheck className="size-3.5 text-accent" />
-              {configured ? "Kredensial aktif." : "Belum dikonfigurasi."}
+            <p className="text-xs text-muted-foreground">
+              Perbarui token lewat Project Settings → Secrets (META_ACCESS_TOKEN). Status di atas
+              otomatis dihitung ulang saat token baru terdeteksi.
             </p>
           </div>
         </section>
+
 
         <section className="surface-panel p-6">
           <div className="flex items-center gap-2 text-accent">
@@ -160,5 +170,21 @@ function SettingsPage() {
         </section>
       </div>
     </AppShell>
+  );
+}
+
+function statusLabel(state: string | undefined) {
+  if (state === "active") return "Active";
+  if (state === "expiring_soon") return "Expiring Soon";
+  if (state === "expired") return "Expired";
+  return "Belum dikonfigurasi";
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-border/60 pb-2 last:border-0">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-right text-xs font-medium text-foreground">{value}</span>
+    </div>
   );
 }

@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useIgSettings } from "@/lib/ig-settings";
+import { useMetaTokenStatus } from "@/lib/use-schedule-runner";
 import { detectNumberFromFilename, fetchBank, fetchLogs, indexLogs, uploadImage } from "@/lib/content-data";
 import { publishToInstagram } from "@/lib/instagram.functions";
 
@@ -51,7 +51,9 @@ function EditorPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/editor" });
   const queryClient = useQueryClient();
-  const { settings, configured } = useIgSettings();
+  const tokenStatus = useMetaTokenStatus();
+  const tokenState = tokenStatus.data?.state;
+  const configured = tokenState === "active" || tokenState === "expiring_soon";
   const publish = useServerFn(publishToInstagram);
 
   const bank = useQuery({ queryKey: ["bank"], queryFn: fetchBank });
@@ -97,7 +99,11 @@ function EditorPage() {
 
   async function handleAction() {
     if (!configured) {
-      toast.error("Isi Account ID & Access Token di halaman Settings dulu.");
+      toast.error(
+        tokenState === "expired"
+          ? "Instagram access token expired. Please update the Meta access token."
+          : "Meta access token belum dikonfigurasi di server — cek halaman Settings.",
+      );
       return;
     }
     if (!imageUrl) {
@@ -139,12 +145,7 @@ function EditorPage() {
       }
 
       const result = await publish({
-        data: {
-          igAccountId: settings.igAccountId,
-          accessToken: settings.accessToken,
-          imageUrl,
-          caption,
-        },
+        data: { imageUrl, caption },
       });
 
       await supabase.from("content_logs").insert({
@@ -192,7 +193,9 @@ function EditorPage() {
             to="/settings"
             className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
           >
-            Kredensial Meta belum diisi — buka Settings
+            {tokenState === "expired"
+              ? "Meta access token kedaluwarsa — buka Settings"
+              : "Meta access token belum dikonfigurasi — buka Settings"}
           </Link>
         ) : null}
       </div>
