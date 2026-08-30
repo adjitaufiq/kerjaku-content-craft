@@ -6,9 +6,7 @@ import { FileSpreadsheet, KeyRound, ShieldCheck } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useIgSettings } from "@/lib/ig-settings";
+import { useMetaTokenStatus } from "@/lib/use-schedule-runner";
 import { saveBank, type BankRow } from "@/lib/content-data";
 
 export const Route = createFileRoute("/settings")({
@@ -18,28 +16,31 @@ export const Route = createFileRoute("/settings")({
       {
         name: "description",
         content:
-          "Simpan Instagram Business Account ID, Meta access token, dan unggah file Excel bank konten KERJAKU.",
+          "Pantau masa berlaku Meta access token server-side dan unggah file Excel bank konten KERJAKU.",
       },
       { property: "og:title", content: "Settings & Config — KERJAKU Instagram Publisher" },
       {
         property: "og:description",
-        content: "Konfigurasi kredensial Meta Graph API dan impor bank konten dari Excel.",
+        content: "Monitoring token Meta Graph API dan impor bank konten dari Excel.",
       },
     ],
   }),
   component: SettingsPage,
 });
 
+function formatDate(value: string | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("id-ID");
+}
+
 function SettingsPage() {
-  const { settings, save, configured } = useIgSettings();
-  const [igAccountId, setIgAccountId] = useState<string | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const tokenStatus = useMetaTokenStatus();
+  const status = tokenStatus.data;
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
-  const idValue = igAccountId ?? settings.igAccountId;
-  const tokenValue = accessToken ?? settings.accessToken;
+
 
   async function handleFile(file: File) {
     setImporting(true);
