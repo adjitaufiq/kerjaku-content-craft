@@ -172,3 +172,19 @@ function SettingsPage() {
     </AppShell>
   );
 }
+
+function statusLabel(state: string | undefined) {
+  if (state === "active") return "Active";
+  if (state === "expiring_soon") return "Expiring Soon";
+  if (state === "expired") return "Expired";
+  return "Belum dikonfigurasi";
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-border/60 pb-2 last:border-0">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-right text-xs font-medium text-foreground">{value}</span>
+    </div>
+  );
+}
