@@ -123,9 +123,10 @@ function SettingsPage() {
     <AppShell>
       <h1 className="text-3xl font-bold">Settings & Config</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Meta access token disimpan sebagai secret server (META_ACCESS_TOKEN) dan tidak pernah
-        dikirim ke browser.
+        Token Meta disimpan terenkripsi di backend (service-role only) dan tidak pernah dikirim
+        utuh ke browser.
       </p>
+
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <section className="surface-panel p-6">
