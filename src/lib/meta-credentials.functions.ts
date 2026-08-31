@@ -61,6 +61,13 @@ export const updateMetaCredential = createServerFn({ method: "POST" })
     let inspection = await inspectToken(token, igAccountId);
     if (!inspection.valid) throw new Error(inspection.error ?? "Token ditolak oleh Meta.");
 
+    const configuredAppId = process.env["META_APP_ID"];
+    if (configuredAppId && inspection.appId !== configuredAppId) {
+      throw new Error(
+        "Token dibuat oleh Meta App yang berbeda. Buat token dari App yang sama dengan konfigurasi CMS, lalu coba lagi.",
+      );
+    }
+
     // Short-lived token (biasanya ~2 jam dari Graph API Explorer) ditukar dulu
     // ke long-lived (~60 hari) lewat endpoint resmi fb_exchange_token.
     if (inspection.shortLived) {
@@ -70,6 +77,16 @@ export const updateMetaCredential = createServerFn({ method: "POST" })
         if (!reinspected.valid) {
           throw new Error(
             `Token berhasil ditukar tapi ditolak saat validasi ulang: ${reinspected.error ?? "tidak diketahui"}`,
+          );
+        }
+        if (!reinspected.expiresAt || reinspected.shortLived) {
+          throw new Error(
+            "Meta mengembalikan token yang masih berlaku kurang dari 7 hari. Token baru tidak disimpan; pastikan token Graph API Explorer berasal dari Meta App yang sama.",
+          );
+        }
+        if (configuredAppId && reinspected.appId !== configuredAppId) {
+          throw new Error(
+            "Token hasil pertukaran berasal dari Meta App yang berbeda dan tidak disimpan.",
           );
         }
         token = exchange.token;

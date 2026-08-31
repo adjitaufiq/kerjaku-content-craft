@@ -152,10 +152,9 @@ export async function getCredentialStatus(): Promise<TokenStatus> {
 
   const inspected = await inspectToken(token, null);
   const now = new Date();
-  const expiresAt =
-    inspected.expiresAt ?? new Date(now.getTime() + DEFAULT_LIFETIME_DAYS * 86_400_000);
+  const expiresAt = inspected.expiresAt;
 
-  if (!inspected.valid) {
+  if (!inspected.valid || !expiresAt) {
     return {
       ...MISSING_STATUS,
       state: "expired",
@@ -165,7 +164,9 @@ export async function getCredentialStatus(): Promise<TokenStatus> {
       igAccountConfigured: Boolean(igAccountId),
       tokenMask: maskToken(token),
       tokenFingerprint: fingerprint(token),
-      message: TOKEN_EXPIRED_MESSAGE,
+      message: inspected.valid
+        ? "Masa berlaku token legacy tidak dapat diverifikasi. Perbarui token melalui CMS."
+        : TOKEN_EXPIRED_MESSAGE,
     };
   }
 
