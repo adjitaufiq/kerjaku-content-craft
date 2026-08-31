@@ -115,6 +115,7 @@ export async function exchangeForLongLivedToken(token: string): Promise<Exchange
 
 export type Inspection = {
   valid: boolean;
+  shortLived?: boolean;
   error?: string;
   appId?: string;
   type?: string;
