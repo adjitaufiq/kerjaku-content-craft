@@ -75,6 +75,7 @@ export type ExchangeResult = {
   token: string;
   exchanged: boolean;
   note: string;
+  expiresInSeconds: number | null;
 };
 
 /**
@@ -89,6 +90,7 @@ export async function exchangeForLongLivedToken(token: string): Promise<Exchange
       token,
       exchanged: false,
       note: "META_APP_ID/META_APP_SECRET belum dikonfigurasi, token disimpan apa adanya.",
+      expiresInSeconds: null,
     };
   }
 
@@ -105,11 +107,35 @@ export async function exchangeForLongLivedToken(token: string): Promise<Exchange
         token,
         exchanged: false,
         note: `Gagal menukar ke long-lived token: ${json?.error?.message ?? "respons Meta tidak valid"}`,
+        expiresInSeconds: null,
       };
     }
-    return { token: json.access_token as string, exchanged: true, note: "Ditukar ke long-lived token (~60 hari)." };
+    const expiresInSeconds = Number(json.expires_in);
+    const minimumLongLivedSeconds = 30 * 86_400;
+    if (!Number.isFinite(expiresInSeconds) || expiresInSeconds < minimumLongLivedSeconds) {
+      const duration = Number.isFinite(expiresInSeconds)
+        ? `${Math.max(0, Math.floor(expiresInSeconds / 3600))} jam`
+        : "tidak diketahui";
+      return {
+        token,
+        exchanged: false,
+        note: `Meta tidak menerbitkan long-lived token. Masa berlaku hasil pertukaran: ${duration}. Pastikan token dibuat oleh Meta App yang sama dengan konfigurasi CMS.`,
+        expiresInSeconds: Number.isFinite(expiresInSeconds) ? expiresInSeconds : null,
+      };
+    }
+    return {
+      token: json.access_token as string,
+      exchanged: true,
+      note: `Ditukar ke long-lived token (${Math.floor(expiresInSeconds / 86_400)} hari).`,
+      expiresInSeconds,
+    };
   } catch {
-    return { token, exchanged: false, note: "Tidak bisa menghubungi Meta untuk menukar token." };
+    return {
+      token,
+      exchanged: false,
+      note: "Tidak bisa menghubungi Meta untuk menukar token.",
+      expiresInSeconds: null,
+    };
   }
 }
 
@@ -132,8 +158,11 @@ export type Inspection = {
 export async function inspectToken(token: string, igAccountId: string | null): Promise<Inspection> {
   let json: any;
   try {
+    const appId = process.env["META_APP_ID"];
+    const appSecret = process.env["META_APP_SECRET"];
+    const inspectorToken = appId && appSecret ? `${appId}|${appSecret}` : token;
     const res = await fetch(
-      `${GRAPH}/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(token)}`,
+      `${GRAPH}/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(inspectorToken)}`,
     );
     json = await res.json().catch(() => ({}));
   } catch {
@@ -189,7 +218,8 @@ export async function inspectToken(token: string, igAccountId: string | null): P
     }
   }
 
-  const shortLived = Boolean(expiresAt && expiresAt.getTime() - Date.now() < SHORT_LIVED_THRESHOLD_MS);
+  // A user token without an exact expiry can never be trusted as long-lived.
+  const shortLived = !expiresAt || expiresAt.getTime() - Date.now() < SHORT_LIVED_THRESHOLD_MS;
 
   return {
     valid: true,
@@ -214,6 +244,18 @@ export async function writeCredential(params: {
   const t = await table();
   const existing = await readCredentialRow();
 
+  if (!params.inspection.expiresAt || !params.inspection.exact) {
+    throw new Error(
+      "Meta tidak mengembalikan masa berlaku token yang dapat diverifikasi. Token lama tetap digunakan.",
+    );
+  }
+
+  if (params.inspection.shortLived) {
+    throw new Error(
+      "Token hasil validasi masih short-lived. Token lama tetap digunakan dan token baru tidak disimpan.",
+    );
+  }
+
   if (existing && params.expectedVersion != null && existing.version !== params.expectedVersion) {
     throw new Error(
       "Kredensial sudah diperbarui dari sesi lain. Muat ulang halaman sebelum menyimpan.",
@@ -221,8 +263,7 @@ export async function writeCredential(params: {
   }
 
   const now = new Date();
-  const expiresAt =
-    params.inspection.expiresAt ?? new Date(now.getTime() + 60 * 86_400_000);
+  const expiresAt = params.inspection.expiresAt;
 
   const payload = {
     id: "default",
