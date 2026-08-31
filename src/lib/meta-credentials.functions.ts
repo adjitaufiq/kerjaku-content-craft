@@ -52,13 +52,36 @@ export const updateMetaCredential = createServerFn({ method: "POST" })
     });
     if (!isAdmin) throw new Error("Hanya administrator yang boleh mengubah kredensial.");
 
-    const { inspectToken, writeCredential } = await import("@/lib/meta-credentials.server");
+    const { inspectToken, writeCredential, exchangeForLongLivedToken } = await import(
+      "@/lib/meta-credentials.server"
+    );
     const igAccountId = data.igAccountId || null;
-    const inspection = await inspectToken(data.token, igAccountId);
+
+    let token = data.token;
+    let inspection = await inspectToken(token, igAccountId);
     if (!inspection.valid) throw new Error(inspection.error ?? "Token ditolak oleh Meta.");
 
+    // Short-lived token (biasanya ~2 jam dari Graph API Explorer) ditukar dulu
+    // ke long-lived (~60 hari) lewat endpoint resmi fb_exchange_token.
+    if (inspection.shortLived) {
+      const exchange = await exchangeForLongLivedToken(token);
+      if (exchange.exchanged) {
+        const reinspected = await inspectToken(exchange.token, igAccountId);
+        if (reinspected.valid) {
+          token = exchange.token;
+          inspection = reinspected;
+        }
+      } else if (!process.env["META_APP_ID"] || !process.env["META_APP_SECRET"]) {
+        throw new Error(
+          "Token ini short-lived (berlaku beberapa jam). Tambahkan META_APP_ID dan META_APP_SECRET agar bisa ditukar otomatis ke token 60 hari.",
+        );
+      } else {
+        throw new Error(`Token short-lived dan gagal ditukar: ${exchange.note}`);
+      }
+    }
+
     await writeCredential({
-      token: data.token,
+      token,
       igAccountId,
       inspection,
       userId: context.userId,
