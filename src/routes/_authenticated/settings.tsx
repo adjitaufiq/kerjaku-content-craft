@@ -1,13 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { FileSpreadsheet, KeyRound, ShieldCheck } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { useMetaTokenStatus } from "@/lib/use-schedule-runner";
+import { Input } from "@/components/ui/input";
+import { getIntegrationStatus, updateMetaCredential } from "@/lib/meta-credentials.functions";
 import { saveBank, type BankRow } from "@/lib/content-data";
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -34,11 +37,45 @@ function formatDate(value: string | null) {
 }
 
 function SettingsPage() {
-  const tokenStatus = useMetaTokenStatus();
-  const status = tokenStatus.data;
+  const fetchIntegration = useServerFn(getIntegrationStatus);
+  const saveCredential = useServerFn(updateMetaCredential);
+  const integration = useQuery({
+    queryKey: ["meta-integration"],
+    queryFn: () => fetchIntegration({}),
+    staleTime: 30_000,
+  });
+  const status = integration.data?.status;
+  const isAdmin = integration.data?.isAdmin ?? false;
   const [importing, setImporting] = useState(false);
+  const [token, setToken] = useState("");
+  const [igAccountId, setIgAccountId] = useState("");
+  const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+
+  async function handleSaveToken(event: React.FormEvent) {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      await saveCredential({
+        data: {
+          token,
+          igAccountId: igAccountId || (status?.igAccountId ?? ""),
+          expectedVersion: status?.version ?? null,
+        },
+      });
+      setToken("");
+      await queryClient.invalidateQueries({ queryKey: ["meta-integration"] });
+      await queryClient.invalidateQueries({ queryKey: ["meta-token-status"] });
+      toast.success("Token Meta tervalidasi dan tersimpan aman.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal menyimpan token.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+
 
 
 
@@ -86,9 +123,10 @@ function SettingsPage() {
     <AppShell>
       <h1 className="text-3xl font-bold">Settings & Config</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Meta access token disimpan sebagai secret server (META_ACCESS_TOKEN) dan tidak pernah
-        dikirim ke browser.
+        Token Meta disimpan terenkripsi di backend (service-role only) dan tidak pernah dikirim
+        utuh ke browser.
       </p>
+
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <section className="surface-panel p-6">
@@ -117,7 +155,18 @@ function SettingsPage() {
             />
             <Row
               label="Instagram Account ID"
-              value={status?.igAccountConfigured ? "Terkonfigurasi (server)" : "Belum diisi"}
+              value={status?.igAccountId ?? (status?.igAccountConfigured ? "Terkonfigurasi" : "Belum diisi")}
+            />
+            <Row label="Token (masked)" value={status?.tokenMask ?? "—"} />
+            <Row
+              label="Sumber kredensial"
+              value={
+                status?.source === "runtime"
+                  ? "Runtime store (terenkripsi)"
+                  : status?.source === "secret"
+                    ? "Legacy server secret"
+                    : "—"
+              }
             />
             <p className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
               <ShieldCheck className="size-3.5 text-accent" />
@@ -126,16 +175,43 @@ function SettingsPage() {
             <Button
               variant="secondary"
               onClick={() => {
-                void queryClient.invalidateQueries({ queryKey: ["meta-token-status"] });
+                void queryClient.invalidateQueries({ queryKey: ["meta-integration"] });
                 toast.success("Status token disegarkan.");
               }}
             >
               Refresh Status
             </Button>
-            <p className="text-xs text-muted-foreground">
-              Perbarui token lewat Project Settings → Secrets (META_ACCESS_TOKEN). Status di atas
-              otomatis dihitung ulang saat token baru terdeteksi.
-            </p>
+
+            {isAdmin ? (
+              <form onSubmit={handleSaveToken} className="space-y-3 border-t border-border/60 pt-4">
+                <h3 className="text-sm font-semibold text-foreground">Update Access Token</h3>
+                <Input
+                  type="password"
+                  autoComplete="off"
+                  placeholder="Tempel long-lived access token baru"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                />
+                <Input
+                  inputMode="numeric"
+                  placeholder={status?.igAccountId ?? "Instagram Business Account ID"}
+                  value={igAccountId}
+                  onChange={(e) => setIgAccountId(e.target.value)}
+                />
+                <Button type="submit" disabled={saving || token.trim().length < 40}>
+                  {saving ? "Memvalidasi ke Meta…" : "Validasi & Simpan"}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Token divalidasi lewat /debug_token (validitas, tipe, expires_at, app, dan izin
+                  publish Instagram) sebelum disimpan terenkripsi.
+                </p>
+              </form>
+            ) : (
+              <p className="border-t border-border/60 pt-4 text-xs text-muted-foreground">
+                Hanya administrator yang dapat memperbarui token Meta.
+              </p>
+            )}
+
           </div>
         </section>
 
