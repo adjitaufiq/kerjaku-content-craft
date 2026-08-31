@@ -69,8 +69,53 @@ export async function readCredentialRow(): Promise<CredentialRow | null> {
   return (data as CredentialRow | null) ?? null;
 }
 
+const SHORT_LIVED_THRESHOLD_MS = 7 * 86_400_000;
+
+export type ExchangeResult = {
+  token: string;
+  exchanged: boolean;
+  note: string;
+};
+
+/**
+ * Exchanges a short-lived user token for a long-lived (~60 day) one using the
+ * official endpoint. Requires META_APP_ID + META_APP_SECRET server secrets.
+ */
+export async function exchangeForLongLivedToken(token: string): Promise<ExchangeResult> {
+  const appId = process.env["META_APP_ID"];
+  const appSecret = process.env["META_APP_SECRET"];
+  if (!appId || !appSecret) {
+    return {
+      token,
+      exchanged: false,
+      note: "META_APP_ID/META_APP_SECRET belum dikonfigurasi, token disimpan apa adanya.",
+    };
+  }
+
+  try {
+    const url =
+      `${GRAPH}/oauth/access_token?grant_type=fb_exchange_token` +
+      `&client_id=${encodeURIComponent(appId)}` +
+      `&client_secret=${encodeURIComponent(appSecret)}` +
+      `&fb_exchange_token=${encodeURIComponent(token)}`;
+    const res = await fetch(url);
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok || json?.error || !json?.access_token) {
+      return {
+        token,
+        exchanged: false,
+        note: `Gagal menukar ke long-lived token: ${json?.error?.message ?? "respons Meta tidak valid"}`,
+      };
+    }
+    return { token: json.access_token as string, exchanged: true, note: "Ditukar ke long-lived token (~60 hari)." };
+  } catch {
+    return { token, exchanged: false, note: "Tidak bisa menghubungi Meta untuk menukar token." };
+  }
+}
+
 export type Inspection = {
   valid: boolean;
+  shortLived?: boolean;
   error?: string;
   appId?: string;
   type?: string;
@@ -144,10 +189,13 @@ export async function inspectToken(token: string, igAccountId: string | null): P
     }
   }
 
+  const shortLived = Boolean(expiresAt && expiresAt.getTime() - Date.now() < SHORT_LIVED_THRESHOLD_MS);
+
   return {
     valid: true,
+    shortLived,
     appId: String(data.app_id),
-    type: data.type ? `${data.type} (long-lived)` : "long_lived_user_token",
+    type: `${data.type ?? "USER"} (${shortLived ? "short-lived" : "long-lived"})`,
     scopes,
     expiresAt,
     exact: Boolean(expiresAt),
