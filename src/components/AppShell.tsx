@@ -61,7 +61,26 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {item.label}
               </Link>
             ))}
+            {access.data ? (
+              <div className="ml-2 flex items-center gap-2 border-l border-border/60 pl-3">
+                <span className="hidden text-right text-[11px] leading-tight text-muted-foreground sm:block">
+                  {access.data.email ?? "Signed in"}
+                  <span className="block text-[10px] text-primary">
+                    {access.data.isAdmin ? "Administrator" : "Member"}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void signOut()}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                >
+                  <LogOut className="size-4" />
+                  <span className="sr-only sm:not-sr-only">Sign out</span>
+                </button>
+              </div>
+            ) : null}
           </nav>
+
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>
