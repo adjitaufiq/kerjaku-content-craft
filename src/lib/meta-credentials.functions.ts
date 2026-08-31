@@ -67,10 +67,13 @@ export const updateMetaCredential = createServerFn({ method: "POST" })
       const exchange = await exchangeForLongLivedToken(token);
       if (exchange.exchanged) {
         const reinspected = await inspectToken(exchange.token, igAccountId);
-        if (reinspected.valid) {
-          token = exchange.token;
-          inspection = reinspected;
+        if (!reinspected.valid) {
+          throw new Error(
+            `Token berhasil ditukar tapi ditolak saat validasi ulang: ${reinspected.error ?? "tidak diketahui"}`,
+          );
         }
+        token = exchange.token;
+        inspection = reinspected;
       } else if (!process.env["META_APP_ID"] || !process.env["META_APP_SECRET"]) {
         throw new Error(
           "Token ini short-lived (berlaku beberapa jam). Tambahkan META_APP_ID dan META_APP_SECRET agar bisa ditukar otomatis ke token 60 hari.",
@@ -79,6 +82,7 @@ export const updateMetaCredential = createServerFn({ method: "POST" })
         throw new Error(`Token short-lived dan gagal ditukar: ${exchange.note}`);
       }
     }
+
 
     await writeCredential({
       token,
