@@ -1,7 +1,11 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { Instagram, LayoutGrid, Settings2, Wand2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { Instagram, LayoutGrid, LogOut, Settings2, Wand2 } from "lucide-react";
 
+import { supabase } from "@/integrations/supabase/client";
+import { getAccessContext } from "@/lib/roles.functions";
 import { useScheduleRunner } from "@/lib/use-schedule-runner";
 
 const nav = [
@@ -12,6 +16,22 @@ const nav = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   useScheduleRunner();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const fetchAccess = useServerFn(getAccessContext);
+  const access = useQuery({
+    queryKey: ["access-context"],
+    queryFn: () => fetchAccess({}),
+    staleTime: 5 * 60_000,
+  });
+
+  async function signOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    void navigate({ to: "/auth", replace: true });
+  }
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur">
