@@ -155,7 +155,18 @@ function SettingsPage() {
             />
             <Row
               label="Instagram Account ID"
-              value={status?.igAccountConfigured ? "Terkonfigurasi (server)" : "Belum diisi"}
+              value={status?.igAccountId ?? (status?.igAccountConfigured ? "Terkonfigurasi" : "Belum diisi")}
+            />
+            <Row label="Token (masked)" value={status?.tokenMask ?? "—"} />
+            <Row
+              label="Sumber kredensial"
+              value={
+                status?.source === "runtime"
+                  ? "Runtime store (terenkripsi)"
+                  : status?.source === "secret"
+                    ? "Legacy server secret"
+                    : "—"
+              }
             />
             <p className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
               <ShieldCheck className="size-3.5 text-accent" />
@@ -164,16 +175,43 @@ function SettingsPage() {
             <Button
               variant="secondary"
               onClick={() => {
-                void queryClient.invalidateQueries({ queryKey: ["meta-token-status"] });
+                void queryClient.invalidateQueries({ queryKey: ["meta-integration"] });
                 toast.success("Status token disegarkan.");
               }}
             >
               Refresh Status
             </Button>
-            <p className="text-xs text-muted-foreground">
-              Perbarui token lewat Project Settings → Secrets (META_ACCESS_TOKEN). Status di atas
-              otomatis dihitung ulang saat token baru terdeteksi.
-            </p>
+
+            {isAdmin ? (
+              <form onSubmit={handleSaveToken} className="space-y-3 border-t border-border/60 pt-4">
+                <h3 className="text-sm font-semibold text-foreground">Update Access Token</h3>
+                <Input
+                  type="password"
+                  autoComplete="off"
+                  placeholder="Tempel long-lived access token baru"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                />
+                <Input
+                  inputMode="numeric"
+                  placeholder={status?.igAccountId ?? "Instagram Business Account ID"}
+                  value={igAccountId}
+                  onChange={(e) => setIgAccountId(e.target.value)}
+                />
+                <Button type="submit" disabled={saving || token.trim().length < 40}>
+                  {saving ? "Memvalidasi ke Meta…" : "Validasi & Simpan"}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Token divalidasi lewat /debug_token (validitas, tipe, expires_at, app, dan izin
+                  publish Instagram) sebelum disimpan terenkripsi.
+                </p>
+              </form>
+            ) : (
+              <p className="border-t border-border/60 pt-4 text-xs text-muted-foreground">
+                Hanya administrator yang dapat memperbarui token Meta.
+              </p>
+            )}
+
           </div>
         </section>
 
