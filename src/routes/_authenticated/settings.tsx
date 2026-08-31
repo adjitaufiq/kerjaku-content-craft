@@ -1,13 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { FileSpreadsheet, KeyRound, ShieldCheck } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { useMetaTokenStatus } from "@/lib/use-schedule-runner";
+import { Input } from "@/components/ui/input";
+import { getIntegrationStatus, updateMetaCredential } from "@/lib/meta-credentials.functions";
 import { saveBank, type BankRow } from "@/lib/content-data";
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
