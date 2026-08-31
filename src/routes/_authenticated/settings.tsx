@@ -37,11 +37,45 @@ function formatDate(value: string | null) {
 }
 
 function SettingsPage() {
-  const tokenStatus = useMetaTokenStatus();
-  const status = tokenStatus.data;
+  const fetchIntegration = useServerFn(getIntegrationStatus);
+  const saveCredential = useServerFn(updateMetaCredential);
+  const integration = useQuery({
+    queryKey: ["meta-integration"],
+    queryFn: () => fetchIntegration({}),
+    staleTime: 30_000,
+  });
+  const status = integration.data?.status;
+  const isAdmin = integration.data?.isAdmin ?? false;
   const [importing, setImporting] = useState(false);
+  const [token, setToken] = useState("");
+  const [igAccountId, setIgAccountId] = useState("");
+  const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+
+  async function handleSaveToken(event: React.FormEvent) {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      await saveCredential({
+        data: {
+          token,
+          igAccountId: igAccountId || (status?.igAccountId ?? ""),
+          expectedVersion: status?.version ?? null,
+        },
+      });
+      setToken("");
+      await queryClient.invalidateQueries({ queryKey: ["meta-integration"] });
+      await queryClient.invalidateQueries({ queryKey: ["meta-token-status"] });
+      toast.success("Token Meta tervalidasi dan tersimpan aman.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal menyimpan token.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+
 
 
 
