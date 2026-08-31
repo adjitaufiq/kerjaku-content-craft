@@ -188,10 +188,13 @@ export async function inspectToken(token: string, igAccountId: string | null): P
     }
   }
 
+  const shortLived = Boolean(expiresAt && expiresAt.getTime() - Date.now() < SHORT_LIVED_THRESHOLD_MS);
+
   return {
     valid: true,
+    shortLived,
     appId: String(data.app_id),
-    type: data.type ? `${data.type} (long-lived)` : "long_lived_user_token",
+    type: `${data.type ?? "USER"} (${shortLived ? "short-lived" : "long-lived"})`,
     scopes,
     expiresAt,
     exact: Boolean(expiresAt),
