@@ -156,15 +156,27 @@ export type Inspection = {
  * publishing-capability probe against the configured IG Business account.
  */
 export async function inspectToken(token: string, igAccountId: string | null): Promise<Inspection> {
-  let json: any;
-  try {
-    const appId = process.env["META_APP_ID"];
-    const appSecret = process.env["META_APP_SECRET"];
-    const inspectorToken = appId && appSecret ? `${appId}|${appSecret}` : token;
+  const appId = process.env["META_APP_ID"];
+  const appSecret = process.env["META_APP_SECRET"];
+  const usedAppToken = Boolean(appId && appSecret);
+
+  async function debug(inspectorToken: string) {
     const res = await fetch(
       `${GRAPH}/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(inspectorToken)}`,
     );
-    json = await res.json().catch(() => ({}));
+    return (await res.json().catch(() => ({}))) as any;
+  }
+
+  let json: any;
+  let appSecretMismatch = false;
+  try {
+    json = usedAppToken ? await debug(`${appId}|${appSecret}`) : await debug(token);
+    // App Access Token salah (App Secret tidak cocok dengan App ID) → fallback
+    // inspeksi memakai token itu sendiri supaya pesan errornya jelas.
+    if (usedAppToken && json?.error?.code === 190) {
+      appSecretMismatch = true;
+      json = await debug(token);
+    }
   } catch {
     return { valid: false, error: "Tidak bisa menghubungi Meta Graph API untuk validasi token." };
   }
@@ -173,9 +185,19 @@ export async function inspectToken(token: string, igAccountId: string | null): P
   if (!data || json?.error) {
     return {
       valid: false,
-      error: json?.error?.message ?? "Token ditolak oleh Meta (debug_token gagal).",
+      error: appSecretMismatch
+        ? "META_APP_SECRET tidak cocok dengan META_APP_ID (Meta menolak App Access Token: Invalid OAuth access token signature). Perbarui App Secret dari Meta Developers → Settings → Basic."
+        : (json?.error?.message ?? "Token ditolak oleh Meta (debug_token gagal)."),
     };
   }
+  if (appSecretMismatch) {
+    return {
+      valid: false,
+      error:
+        "META_APP_SECRET tidak cocok dengan META_APP_ID, jadi token tidak bisa ditukar ke long-lived. Perbarui App Secret di server lalu simpan token lagi.",
+    };
+  }
+
   if (data.is_valid === false) {
     return { valid: false, error: data.error?.message ?? "Token tidak valid menurut Meta." };
   }
