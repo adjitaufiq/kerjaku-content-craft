@@ -141,8 +141,16 @@ export const Route = createFileRoute("/api/public/hooks/publish-due")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const denied = await authenticateCronRequest(request);
-        if (denied) return denied;
+        // pg_cron authenticates with PUBLISH_CRON_SECRET; the platform cron
+        // secret is also accepted.
+        const cronSecret = process.env["PUBLISH_CRON_SECRET"];
+        const header = request.headers.get("authorization") ?? "";
+        const provided = /^Bearer ([^\s,]+)$/.exec(header)?.[1];
+        const ownSecretOk = Boolean(cronSecret && provided && provided === cronSecret);
+        if (!ownSecretOk) {
+          const denied = await authenticateCronRequest(request);
+          if (denied) return denied;
+        }
         try {
           const result = await runDueJobs();
           return Response.json({ ok: true, ...result });
