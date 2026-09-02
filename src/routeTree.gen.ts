@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedEditorRouteImport } from './routes/_authenticated/editor'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as ApiPublicHooksPublishDueRouteImport } from './routes/api/public/hooks/publish-due'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -39,18 +40,26 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicHooksPublishDueRoute =
+  ApiPublicHooksPublishDueRouteImport.update({
+    id: '/api/public/hooks/publish-due',
+    path: '/api/public/hooks/publish-due',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/editor': typeof AuthenticatedEditorRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/api/public/hooks/publish-due': typeof ApiPublicHooksPublishDueRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/editor': typeof AuthenticatedEditorRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/hooks/publish-due': typeof ApiPublicHooksPublishDueRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -59,12 +68,14 @@ export interface FileRoutesById {
   '/_authenticated/editor': typeof AuthenticatedEditorRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/hooks/publish-due': typeof ApiPublicHooksPublishDueRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/editor' | '/settings'
+  fullPaths:
+    '/' | '/auth' | '/editor' | '/settings' | '/api/public/hooks/publish-due'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/editor' | '/settings' | '/'
+  to: '/auth' | '/editor' | '/settings' | '/' | '/api/public/hooks/publish-due'
   id:
     | '__root__'
     | '/_authenticated'
@@ -72,11 +83,13 @@ export interface FileRouteTypes {
     | '/_authenticated/editor'
     | '/_authenticated/settings'
     | '/_authenticated/'
+    | '/api/public/hooks/publish-due'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicHooksPublishDueRoute: typeof ApiPublicHooksPublishDueRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +129,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/publish-due': {
+      id: '/api/public/hooks/publish-due'
+      path: '/api/public/hooks/publish-due'
+      fullPath: '/api/public/hooks/publish-due'
+      preLoaderRoute: typeof ApiPublicHooksPublishDueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -137,6 +157,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicHooksPublishDueRoute: ApiPublicHooksPublishDueRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
