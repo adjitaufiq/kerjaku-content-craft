@@ -47,6 +47,13 @@ async function graphPost(url: string, body: Record<string, string>) {
 async function runDueJobs() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+  // Recover rows left in "publishing" by a crashed run/tab so they retry.
+  await supabaseAdmin
+    .from("content_logs")
+    .update({ status: "scheduled" })
+    .eq("status", "publishing")
+    .lte("scheduled_at", new Date(Date.now() - 15 * 60 * 1000).toISOString());
+
   const { data: due, error } = await supabaseAdmin
     .from("content_logs")
     .select("id, content_number, caption, image_url")
