@@ -363,13 +363,24 @@ function EditorPage() {
               </div>
             ) : null}
 
-            <Button className="mt-5 w-full" size="lg" disabled={busy || uploading} onClick={() => void handleAction()}>
-              {busy
-                ? "Memproses…"
-                : mode === "now"
-                  ? "Publish Now"
-                  : "Schedule Content"}
-            </Button>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <Button
+                variant="outline"
+                size="lg"
+                disabled={busy || uploading}
+                onClick={() => void handleSaveDraft()}
+              >
+                <Save className="size-4" />
+                Simpan Draft
+              </Button>
+              <Button size="lg" disabled={busy || uploading} onClick={() => void handleAction()}>
+                {busy
+                  ? "Memproses…"
+                  : mode === "now"
+                    ? "Publish Now"
+                    : "Schedule Content"}
+              </Button>
+            </div>
           </div>
 
           {existing ? (
