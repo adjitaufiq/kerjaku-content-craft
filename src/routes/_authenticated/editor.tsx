@@ -97,6 +97,31 @@ function EditorPage() {
     }
   }
 
+  async function handleSaveDraft() {
+    if (!imageUrl) {
+      toast.error("Unggah foto terlebih dahulu.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("content_logs").insert({
+        content_number: selectedNo,
+        title: row?.title ?? "",
+        image_url: imageUrl,
+        caption,
+        status: "draft",
+        scheduled_at: null,
+      });
+      if (error) throw new Error(error.message);
+      toast.success("Draft tersimpan. Cek preview di Content Grid.");
+      await queryClient.invalidateQueries({ queryKey: ["logs"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal menyimpan draft.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleAction() {
     if (!configured) {
       toast.error(
