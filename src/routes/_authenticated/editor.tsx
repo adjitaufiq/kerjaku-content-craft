@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { CalendarClock, Heart, ImageUp, MessageCircle, Send, Zap } from "lucide-react";
+import { CalendarClock, Heart, ImageUp, MessageCircle, Save, Send, Zap } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -94,6 +94,31 @@ function EditorPage() {
       toast.error(error instanceof Error ? error.message : "Gagal mengunggah foto.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleSaveDraft() {
+    if (!imageUrl) {
+      toast.error("Unggah foto terlebih dahulu.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("content_logs").insert({
+        content_number: selectedNo,
+        title: row?.title ?? "",
+        image_url: imageUrl,
+        caption,
+        status: "draft",
+        scheduled_at: null,
+      });
+      if (error) throw new Error(error.message);
+      toast.success("Draft tersimpan. Cek preview di Content Grid.");
+      await queryClient.invalidateQueries({ queryKey: ["logs"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal menyimpan draft.");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -338,13 +363,24 @@ function EditorPage() {
               </div>
             ) : null}
 
-            <Button className="mt-5 w-full" size="lg" disabled={busy || uploading} onClick={() => void handleAction()}>
-              {busy
-                ? "Memproses…"
-                : mode === "now"
-                  ? "Publish Now"
-                  : "Schedule Content"}
-            </Button>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <Button
+                variant="outline"
+                size="lg"
+                disabled={busy || uploading}
+                onClick={() => void handleSaveDraft()}
+              >
+                <Save className="size-4" />
+                Simpan Draft
+              </Button>
+              <Button size="lg" disabled={busy || uploading} onClick={() => void handleAction()}>
+                {busy
+                  ? "Memproses…"
+                  : mode === "now"
+                    ? "Publish Now"
+                    : "Schedule Content"}
+              </Button>
+            </div>
           </div>
 
           {existing ? (
