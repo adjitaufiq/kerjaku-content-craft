@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, CheckCircle2, FileEdit, ImageIcon } from "lucide-react";
+import { CalendarClock, CheckCircle2, FileEdit, ImageIcon, Layers } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
-import { fetchBank, fetchLogs, indexLogs, statusTone } from "@/lib/content-data";
+import { fetchBank, fetchLogs, imagesOf, indexLogs, statusTone } from "@/lib/content-data";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -61,6 +61,7 @@ function GridPage() {
           {rows.map((row) => {
             const log = logMap.get(row.no);
             const status = log?.status ?? "draft";
+            const photoCount = log ? imagesOf(log).length : 0;
             return (
               <Link
                 key={row.no}
@@ -85,6 +86,12 @@ function GridPage() {
                   <span className="absolute left-3 top-3 rounded-lg bg-background/85 px-2 py-1 font-display text-xs font-bold text-primary">
                     #{row.no}
                   </span>
+                  {photoCount > 1 ? (
+                    <span className="absolute bottom-3 right-3 flex items-center gap-1 rounded-lg bg-background/85 px-2 py-1 text-[11px] font-medium">
+                      <Layers className="size-3.5" />
+                      {photoCount}
+                    </span>
+                  ) : null}
                   <Badge
                     variant="outline"
                     className={`absolute right-3 top-3 capitalize ${statusTone(status)}`}

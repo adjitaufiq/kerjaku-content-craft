@@ -3,7 +3,18 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { CalendarClock, Heart, ImageUp, MessageCircle, Save, Send, Zap } from "lucide-react";
+import {
+  CalendarClock,
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  ImageUp,
+  MessageCircle,
+  Save,
+  Send,
+  X,
+  Zap,
+} from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -19,10 +30,19 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useMetaTokenStatus } from "@/lib/use-schedule-runner";
-import { detectNumberFromFilename, fetchBank, fetchLogs, indexLogs, uploadImage } from "@/lib/content-data";
+import {
+  detectNumberFromFilename,
+  fetchBank,
+  fetchLogs,
+  imagesOf,
+  indexLogs,
+  uploadImage,
+} from "@/lib/content-data";
 import { publishToInstagram } from "@/lib/instagram.functions";
 
 type Search = { no?: number | undefined };
+
+const MAX_IMAGES = 10;
 
 export const Route = createFileRoute("/_authenticated/editor")({
   validateSearch: (search: Record<string, unknown>): Search => ({
@@ -65,7 +85,8 @@ function EditorPage() {
   const existing = indexLogs(logs.data ?? []).get(selectedNo);
 
   const [caption, setCaption] = useState("");
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [activeImage, setActiveImage] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [mode, setMode] = useState<"now" | "schedule">("now");
   const [scheduleAt, setScheduleAt] = useState("");
@@ -75,11 +96,23 @@ function EditorPage() {
 
   useEffect(() => {
     setCaption(existing?.caption || row?.caption || "");
-    setImageUrl(existing?.image_url ?? null);
-  }, [selectedNo, row?.caption, existing?.caption, existing?.image_url]);
+    setImageUrls(existing ? imagesOf(existing) : []);
+    setActiveImage(0);
+  }, [selectedNo, row?.caption, existing?.caption, existing?.image_url, existing?.image_urls]);
 
-  async function handleFile(file: File) {
-    const detected = detectNumberFromFilename(file.name);
+  async function handleFiles(files: File[]) {
+    if (!files.length) return;
+    const room = MAX_IMAGES - imageUrls.length;
+    if (room <= 0) {
+      toast.error(`Maksimal ${MAX_IMAGES} foto per postingan (aturan Instagram).`);
+      return;
+    }
+    const batch = files.slice(0, room);
+    if (files.length > room) {
+      toast.info(`Hanya ${room} foto pertama dipakai — maksimal ${MAX_IMAGES} foto per postingan.`);
+    }
+
+    const detected = detectNumberFromFilename(batch[0]!.name);
     const target = detected && rows.some((r) => r.no === detected) ? detected : selectedNo;
     if (target !== selectedNo) {
       await navigate({ search: { no: target } });
@@ -87,9 +120,12 @@ function EditorPage() {
     }
     setUploading(true);
     try {
-      const url = await uploadImage(file, target);
-      setImageUrl(url);
-      toast.success("Foto berhasil diunggah.");
+      const uploaded: string[] = [];
+      for (const file of batch) uploaded.push(await uploadImage(file, target));
+      setImageUrls((prev) => [...prev, ...uploaded]);
+      toast.success(
+        uploaded.length > 1 ? `${uploaded.length} foto berhasil diunggah.` : "Foto berhasil diunggah.",
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Gagal mengunggah foto.");
     } finally {
@@ -97,8 +133,24 @@ function EditorPage() {
     }
   }
 
+  function removeImage(index: number) {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
+    setActiveImage(0);
+  }
+
+  function moveImage(index: number, delta: number) {
+    setImageUrls((prev) => {
+      const next = [...prev];
+      const to = index + delta;
+      if (to < 0 || to >= next.length) return prev;
+      [next[index], next[to]] = [next[to]!, next[index]!];
+      return next;
+    });
+    setActiveImage(0);
+  }
+
   async function handleSaveDraft() {
-    if (!imageUrl) {
+    if (!imageUrls.length) {
       toast.error("Unggah foto terlebih dahulu.");
       return;
     }
@@ -107,7 +159,8 @@ function EditorPage() {
       const { error } = await supabase.from("content_logs").insert({
         content_number: selectedNo,
         title: row?.title ?? "",
-        image_url: imageUrl,
+        image_url: imageUrls[0]!,
+        image_urls: imageUrls,
         caption,
         status: "draft",
         scheduled_at: null,
@@ -131,7 +184,7 @@ function EditorPage() {
       );
       return;
     }
-    if (!imageUrl) {
+    if (!imageUrls.length) {
       toast.error("Unggah foto terlebih dahulu.");
       return;
     }
@@ -158,7 +211,8 @@ function EditorPage() {
         const { error } = await supabase.from("content_logs").insert({
           content_number: selectedNo,
           title: row?.title ?? "",
-          image_url: imageUrl,
+          image_url: imageUrls[0]!,
+        image_urls: imageUrls,
           caption,
           status: "scheduled",
           scheduled_at: new Date(scheduledUnix * 1000).toISOString(),
@@ -170,13 +224,14 @@ function EditorPage() {
       }
 
       const result = await publish({
-        data: { imageUrl, caption },
+        data: { imageUrls, caption },
       });
 
       await supabase.from("content_logs").insert({
         content_number: selectedNo,
         title: row?.title ?? "",
-        image_url: imageUrl,
+        image_url: imageUrls[0]!,
+        image_urls: imageUrls,
         caption,
         status: result.mode,
         ig_creation_id: result.creationId,
@@ -192,7 +247,8 @@ function EditorPage() {
       await supabase.from("content_logs").insert({
         content_number: selectedNo,
         title: row?.title ?? "",
-        image_url: imageUrl,
+        image_url: imageUrls[0]!,
+        image_urls: imageUrls,
         caption,
         status: "failed",
         error_message: message,
@@ -235,9 +291,38 @@ function EditorPage() {
               <p className="text-[11px] text-muted-foreground">Sponsored preview</p>
             </div>
           </div>
-          <div className="aspect-4/5 w-full bg-secondary/50">
-            {imageUrl ? (
-              <img src={imageUrl} alt={`Preview konten ${selectedNo}`} className="size-full object-cover" />
+          <div className="relative aspect-4/5 w-full bg-secondary/50">
+            {imageUrls.length ? (
+              <>
+                <img
+                  src={imageUrls[Math.min(activeImage, imageUrls.length - 1)]}
+                  alt={`Preview konten ${selectedNo} foto ${activeImage + 1}`}
+                  className="size-full object-cover"
+                />
+                {imageUrls.length > 1 ? (
+                  <>
+                    <span className="absolute right-3 top-3 rounded-full bg-background/80 px-2 py-1 text-[11px] font-medium">
+                      {Math.min(activeImage, imageUrls.length - 1) + 1}/{imageUrls.length}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Foto sebelumnya"
+                      onClick={() => setActiveImage((i) => (i - 1 + imageUrls.length) % imageUrls.length)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5"
+                    >
+                      <ChevronLeft className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Foto berikutnya"
+                      onClick={() => setActiveImage((i) => (i + 1) % imageUrls.length)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5"
+                    >
+                      <ChevronRight className="size-4" />
+                    </button>
+                  </>
+                ) : null}
+              </>
             ) : (
               <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
                 <ImageUp className="size-8" />
@@ -291,8 +376,7 @@ function EditorPage() {
               onDrop={(e) => {
                 e.preventDefault();
                 setDragging(false);
-                const file = e.dataTransfer.files?.[0];
-                if (file) void handleFile(file);
+                void handleFiles(Array.from(e.dataTransfer.files ?? []));
               }}
               className={`mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-8 text-center transition-colors ${
                 dragging ? "border-primary bg-primary/10" : "border-border hover:border-primary/60"
@@ -300,22 +384,84 @@ function EditorPage() {
             >
               <ImageUp className="size-6 text-primary" />
               <p className="text-sm font-medium">
-                {uploading ? "Mengunggah…" : "Drop foto AI di sini (mis. 7.png)"}
+                {uploading ? "Mengunggah…" : "Drop foto AI di sini (bisa pilih banyak)"}
               </p>
               <p className="text-xs text-muted-foreground">
-                Nomor pada nama file otomatis dicocokkan dengan bank konten.
+                Pilih 2–{MAX_IMAGES} foto untuk membuat carousel. Nomor pada nama file otomatis
+                dicocokkan dengan bank konten.
               </p>
             </div>
             <input
               ref={fileRef}
               type="file"
               accept="image/*"
+              multiple
               className="hidden"
               onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void handleFile(file);
+                void handleFiles(Array.from(e.target.files ?? []));
+                e.target.value = "";
               }}
             />
+
+            {imageUrls.length ? (
+              <div className="mt-4 space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  {imageUrls.length > 1
+                    ? `Carousel — ${imageUrls.length} foto, urutan sesuai daftar di bawah.`
+                    : "1 foto — postingan tunggal."}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {imageUrls.map((url, index) => (
+                    <div
+                      key={url}
+                      className={`relative size-20 overflow-hidden rounded-lg border ${
+                        index === activeImage ? "border-primary" : "border-border"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setActiveImage(index)}
+                        className="size-full"
+                        aria-label={`Lihat foto ${index + 1}`}
+                      >
+                        <img src={url} alt={`Foto ${index + 1}`} className="size-full object-cover" />
+                      </button>
+                      <span className="absolute left-1 top-1 rounded bg-background/85 px-1 text-[10px] font-semibold">
+                        {index + 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        aria-label={`Hapus foto ${index + 1}`}
+                        className="absolute right-1 top-1 rounded bg-background/85 p-0.5 text-destructive"
+                      >
+                        <X className="size-3" />
+                      </button>
+                      <div className="absolute inset-x-0 bottom-0 flex justify-between bg-background/80">
+                        <button
+                          type="button"
+                          onClick={() => moveImage(index, -1)}
+                          disabled={index === 0}
+                          aria-label={`Geser foto ${index + 1} ke kiri`}
+                          className="px-1 disabled:opacity-30"
+                        >
+                          <ChevronLeft className="size-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveImage(index, 1)}
+                          disabled={index === imageUrls.length - 1}
+                          aria-label={`Geser foto ${index + 1} ke kanan`}
+                          className="px-1 disabled:opacity-30"
+                        >
+                          <ChevronRight className="size-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="surface-panel p-5">

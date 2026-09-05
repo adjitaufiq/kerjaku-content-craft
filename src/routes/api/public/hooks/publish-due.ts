@@ -44,6 +44,38 @@ async function graphPost(url: string, body: Record<string, string>) {
   return json.id;
 }
 
+/** Single photo, or a CAROUSEL container for 2-10 photos. */
+async function createContainer(
+  igAccountId: string,
+  token: string,
+  images: string[],
+  caption: string,
+) {
+  if (images.length === 1) {
+    return graphPost(`${GRAPH}/${igAccountId}/media`, {
+      image_url: images[0]!,
+      caption,
+      access_token: token,
+    });
+  }
+  const children: string[] = [];
+  for (const url of images) {
+    children.push(
+      await graphPost(`${GRAPH}/${igAccountId}/media`, {
+        image_url: url,
+        is_carousel_item: "true",
+        access_token: token,
+      }),
+    );
+  }
+  return graphPost(`${GRAPH}/${igAccountId}/media`, {
+    media_type: "CAROUSEL",
+    children: children.join(","),
+    caption,
+    access_token: token,
+  });
+}
+
 async function runDueJobs() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -56,7 +88,7 @@ async function runDueJobs() {
 
   const { data: due, error } = await supabaseAdmin
     .from("content_logs")
-    .select("id, content_number, caption, image_url")
+    .select("id, content_number, caption, image_url, image_urls")
     .eq("status", "scheduled")
     .lte("scheduled_at", new Date().toISOString())
     .order("scheduled_at", { ascending: true })
@@ -83,7 +115,8 @@ async function runDueJobs() {
     if (!won?.length) continue;
     claimed += 1;
 
-    if (!job.image_url) {
+    const images = job.image_urls?.length ? job.image_urls : job.image_url ? [job.image_url] : [];
+    if (!images.length) {
       failed += 1;
       await supabaseAdmin
         .from("content_logs")
@@ -93,11 +126,7 @@ async function runDueJobs() {
     }
 
     try {
-      const creationId = await graphPost(`${GRAPH}/${igAccountId}/media`, {
-        image_url: job.image_url,
-        caption: job.caption ?? "",
-        access_token: token,
-      });
+      const creationId = await createContainer(igAccountId, token, images, job.caption ?? "");
       const postId = await graphPost(`${GRAPH}/${igAccountId}/media_publish`, {
         creation_id: creationId,
         access_token: token,

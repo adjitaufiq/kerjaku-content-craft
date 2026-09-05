@@ -13,6 +13,7 @@ export type ContentLog = {
   content_number: number;
   title: string;
   image_url: string | null;
+  image_urls: string[] | null;
   caption: string;
   status: string;
   scheduled_at: string | null;
@@ -68,6 +69,12 @@ export function indexLogs(logs: ContentLog[]) {
     if (!map.has(log.content_number)) map.set(log.content_number, log);
   }
   return map;
+}
+
+/** All photos of a log, falling back to the legacy single photo. */
+export function imagesOf(log: { image_urls?: string[] | null; image_url?: string | null }) {
+  if (log.image_urls?.length) return log.image_urls;
+  return log.image_url ? [log.image_url] : [];
 }
 
 export function statusTone(status: string) {

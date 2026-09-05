@@ -1,15 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
 
 type PublishInput = {
-  imageUrl: string;
+  imageUrls: string[];
   caption: string;
 };
 
 const GRAPH = "https://graph.facebook.com/v19.0";
+export const MAX_CAROUSEL = 10;
 
 function validate(input: PublishInput): PublishInput {
-  if (!input.imageUrl?.trim()) throw new Error("Foto belum diunggah.");
-  return input;
+  const urls = (input.imageUrls ?? []).filter((u) => typeof u === "string" && u.trim());
+  if (!urls.length) throw new Error("Foto belum diunggah.");
+  if (urls.length > MAX_CAROUSEL)
+    throw new Error(`Instagram hanya mengizinkan maksimal ${MAX_CAROUSEL} foto per postingan.`);
+  return { imageUrls: urls, caption: input.caption ?? "" };
 }
 
 function humanize(message: string) {
@@ -45,7 +49,52 @@ async function graphPost(url: string, body: Record<string, string>) {
 }
 
 /**
- * Publishes immediately using the 2-step Instagram Content Publishing flow.
+ * Builds the media container for a single photo or a carousel (2-10 photos)
+ * and returns the creation id ready for `media_publish`.
+ */
+export async function createMediaContainer(opts: {
+  igAccountId: string;
+  token: string;
+  imageUrls: string[];
+  caption: string;
+}) {
+  const { igAccountId, token, imageUrls, caption } = opts;
+  if (imageUrls.length === 1) {
+    return graphPost(`${GRAPH}/${igAccountId}/media`, {
+      image_url: imageUrls[0]!,
+      caption,
+      access_token: token,
+    });
+  }
+  const children: string[] = [];
+  for (const url of imageUrls) {
+    children.push(
+      await graphPost(`${GRAPH}/${igAccountId}/media`, {
+        image_url: url,
+        is_carousel_item: "true",
+        access_token: token,
+      }),
+    );
+  }
+  return graphPost(`${GRAPH}/${igAccountId}/media`, {
+    media_type: "CAROUSEL",
+    children: children.join(","),
+    caption,
+    access_token: token,
+  });
+}
+
+export async function publishMedia(igAccountId: string, token: string, creationId: string) {
+  return graphPost(`${GRAPH}/${igAccountId}/media_publish`, {
+    creation_id: creationId,
+    access_token: token,
+  });
+}
+
+/**
+ * Publishes immediately using the Instagram Content Publishing flow —
+ * single photo or carousel (2-10 photos).
+ *
  * Credentials come from server-side secrets only (META_ACCESS_TOKEN /
  * META_IG_ACCOUNT_ID) and are shared by Instant Publish and the scheduler.
  *
@@ -58,14 +107,12 @@ export const publishToInstagram = createServerFn({ method: "POST" })
     const { requirePublishCredentials } = await import("@/lib/meta-token.server");
     const { token, igAccountId } = await requirePublishCredentials();
 
-    const creationId = await graphPost(`${GRAPH}/${igAccountId}/media`, {
-      image_url: data.imageUrl,
+    const creationId = await createMediaContainer({
+      igAccountId,
+      token,
+      imageUrls: data.imageUrls,
       caption: data.caption ?? "",
-      access_token: token,
     });
-    const postId = await graphPost(`${GRAPH}/${igAccountId}/media_publish`, {
-      creation_id: creationId,
-      access_token: token,
-    });
+    const postId = await publishMedia(igAccountId, token, creationId);
     return { mode: "published" as const, creationId, postId };
   });
