@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { publishToInstagram } from "@/lib/instagram.functions";
+import { imagesOf } from "@/lib/content-data";
 import { getMetaTokenStatus } from "@/lib/meta-token.functions";
 
 export const TOKEN_EXPIRED_MESSAGE =
@@ -50,7 +51,8 @@ export function useScheduleRunner() {
         if (error || !data?.length) return;
 
         for (const job of data) {
-          if (!job.image_url) continue;
+          const images = imagesOf(job);
+          if (!images.length) continue;
           // Claim the job first so a second open tab cannot publish it again.
           const { data: claimed } = await supabase
             .from("content_logs")
@@ -61,7 +63,7 @@ export function useScheduleRunner() {
           if (!claimed?.length) continue;
           try {
             const result = await publish({
-              data: { imageUrl: job.image_url, caption: job.caption ?? "" },
+              data: { imageUrls: images, caption: job.caption ?? "" },
             });
             await supabase
               .from("content_logs")
