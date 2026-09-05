@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, CheckCircle2, FileEdit, ImageIcon } from "lucide-react";
+import { CalendarClock, CheckCircle2, FileEdit, ImageIcon, Layers } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
-import { fetchBank, fetchLogs, indexLogs, statusTone } from "@/lib/content-data";
+import { fetchBank, fetchLogs, imagesOf, indexLogs, statusTone } from "@/lib/content-data";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
