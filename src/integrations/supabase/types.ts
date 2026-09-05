@@ -51,6 +51,7 @@ export type Database = {
           ig_creation_id: string | null
           ig_post_id: string | null
           image_url: string | null
+          image_urls: string[]
           scheduled_at: string | null
           status: string
           title: string
@@ -64,6 +65,7 @@ export type Database = {
           ig_creation_id?: string | null
           ig_post_id?: string | null
           image_url?: string | null
+          image_urls?: string[]
           scheduled_at?: string | null
           status?: string
           title?: string
@@ -77,6 +79,7 @@ export type Database = {
           ig_creation_id?: string | null
           ig_post_id?: string | null
           image_url?: string | null
+          image_urls?: string[]
           scheduled_at?: string | null
           status?: string
           title?: string
