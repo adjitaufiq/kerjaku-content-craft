@@ -41,6 +41,93 @@ export type Database = {
         }
         Relationships: []
       }
+      content_downloads: {
+        Row: {
+          audience_type: string | null
+          caption: string
+          category: string | null
+          content_structure: string | null
+          content_type: string
+          created_at: string
+          creator_username: string | null
+          cta_analysis: string | null
+          duration: number | null
+          editing_style: string | null
+          error_message: string | null
+          hook_analysis: string | null
+          id: string
+          is_favorite: boolean
+          notes: string
+          resolution: string | null
+          source_platform: string
+          source_url: string
+          status: string
+          tags: string[]
+          thumbnail_path: string | null
+          thumbnail_url: string | null
+          updated_at: string
+          video_path: string | null
+          video_url: string | null
+          viral_pattern: string | null
+        }
+        Insert: {
+          audience_type?: string | null
+          caption?: string
+          category?: string | null
+          content_structure?: string | null
+          content_type?: string
+          created_at?: string
+          creator_username?: string | null
+          cta_analysis?: string | null
+          duration?: number | null
+          editing_style?: string | null
+          error_message?: string | null
+          hook_analysis?: string | null
+          id?: string
+          is_favorite?: boolean
+          notes?: string
+          resolution?: string | null
+          source_platform?: string
+          source_url: string
+          status?: string
+          tags?: string[]
+          thumbnail_path?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          video_path?: string | null
+          video_url?: string | null
+          viral_pattern?: string | null
+        }
+        Update: {
+          audience_type?: string | null
+          caption?: string
+          category?: string | null
+          content_structure?: string | null
+          content_type?: string
+          created_at?: string
+          creator_username?: string | null
+          cta_analysis?: string | null
+          duration?: number | null
+          editing_style?: string | null
+          error_message?: string | null
+          hook_analysis?: string | null
+          id?: string
+          is_favorite?: boolean
+          notes?: string
+          resolution?: string | null
+          source_platform?: string
+          source_url?: string
+          status?: string
+          tags?: string[]
+          thumbnail_path?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          video_path?: string | null
+          video_url?: string | null
+          viral_pattern?: string | null
+        }
+        Relationships: []
+      }
       content_logs: {
         Row: {
           caption: string
