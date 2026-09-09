@@ -15,7 +15,13 @@ import {
 } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { ContentRemixView } from "@/components/ContentRemixView";
 import { ViralAnalysisReportView } from "@/components/ViralAnalysisReport";
+import {
+  deleteContentRemix,
+  generateContentRemixFn,
+  listContentRemixes,
+} from "@/lib/content-remix.functions";
 import {
   analyzeViralReferenceFn,
   deleteAnalysisReport,
@@ -150,6 +156,35 @@ function ViralPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const runRemix = useServerFn(generateContentRemixFn);
+  const fetchRemixes = useServerFn(listContentRemixes);
+  const removeRemix = useServerFn(deleteContentRemix);
+
+  const remixes = useQuery({
+    queryKey: ["viral-remixes"],
+    queryFn: () => fetchRemixes({}),
+  });
+
+  const remix = useMutation({
+    mutationFn: (id: string) => runRemix({ data: { referenceId: id } }),
+    onSuccess: (_d, id) => {
+      toast.success("Konten KERJAKU berhasil dibuat.");
+      setSelectedRef(id);
+      void invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const dropRemix = useMutation({
+    mutationFn: (id: string) => removeRemix({ data: { referenceId: id } }),
+    onSuccess: () => {
+      toast.success("Hasil remix dihapus.");
+      void invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
   const [title, setTitle] = useState("");
   const [platform, setPlatform] = useState<string>("instagram");
   const [sourceUrl, setSourceUrl] = useState("");
@@ -163,6 +198,7 @@ function ViralPage() {
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["viral-workspace"] });
     void queryClient.invalidateQueries({ queryKey: ["viral-reports"] });
+    void queryClient.invalidateQueries({ queryKey: ["viral-remixes"] });
   };
 
   const create = useMutation({
@@ -421,6 +457,21 @@ function ViralPage() {
                       )}
                       Analisis AI
                     </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1 text-xs"
+                      disabled={remix.isPending}
+                      onClick={() => remix.mutate(r.id)}
+                    >
+                      {remix.isPending && remix.variables === r.id ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="size-3.5" />
+                      )}
+                      Generate Konten
+                    </Button>
                     <Select
                       value={r.status}
                       onValueChange={(v) =>
@@ -575,6 +626,37 @@ function ViralPage() {
                 >
                   <Trash2 className="size-3.5" />
                   Hapus laporan
+                </Button>
+              </div>
+            </section>
+          );
+        })()}
+
+        {(() => {
+          if (!selectedRef) return null;
+          if (remix.isPending && remix.variables === selectedRef) {
+            return (
+              <section className="flex items-center gap-2 rounded-2xl border border-border/70 bg-card/60 p-5 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin text-primary" />
+                Membuat versi konten KERJAKU dari formula viral ini…
+              </section>
+            );
+          }
+          const item = (remixes.data ?? []).find((x) => x.reference_id === selectedRef);
+          if (!item) return null;
+          return (
+            <section className="space-y-3">
+              <ContentRemixView remix={item} />
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground hover:text-destructive"
+                  onClick={() => dropRemix.mutate(selectedRef)}
+                >
+                  <Trash2 className="size-3.5" />
+                  Hapus hasil remix
                 </Button>
               </div>
             </section>
