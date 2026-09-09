@@ -160,7 +160,10 @@ function ViralPage() {
   const [draftTitle, setDraftTitle] = useState("");
   const [draftType, setDraftType] = useState<ContentType>("carousel");
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["viral-workspace"] });
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ["viral-workspace"] });
+    void queryClient.invalidateQueries({ queryKey: ["viral-reports"] });
+  };
 
   const create = useMutation({
     mutationFn: () =>
