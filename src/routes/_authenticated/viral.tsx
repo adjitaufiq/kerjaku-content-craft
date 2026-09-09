@@ -15,7 +15,13 @@ import {
 } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { ContentRemixView } from "@/components/ContentRemixView";
 import { ViralAnalysisReportView } from "@/components/ViralAnalysisReport";
+import {
+  deleteContentRemix,
+  generateContentRemixFn,
+  listContentRemixes,
+} from "@/lib/content-remix.functions";
 import {
   analyzeViralReferenceFn,
   deleteAnalysisReport,
