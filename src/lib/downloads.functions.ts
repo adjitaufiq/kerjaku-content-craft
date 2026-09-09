@@ -147,7 +147,9 @@ export const updateDownloadMeta = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { id, ...patch } = data;
-    const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
+    const clean = Object.fromEntries(
+      Object.entries(patch).filter(([, v]) => v !== undefined),
+    ) as Omit<typeof patch, never>;
     const { error } = await context.supabase.from("content_downloads").update(clean).eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
