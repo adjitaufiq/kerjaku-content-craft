@@ -183,7 +183,16 @@ export const addToContentBank = createServerFn({ method: "POST" })
       .select("content_number")
       .order("content_number", { ascending: false })
       .limit(1);
-    const nextNumber = (last?.[0]?.content_number ?? 0) + 1;
+    const { data: lastLog } = await context.supabase
+      .from("content_logs")
+      .select("content_number")
+      .order("content_number", { ascending: false })
+      .limit(1);
+    const seed = (await import("@/data/bank-konten.json")).default as { no: number }[];
+    const seedMax = seed.reduce((max, row) => Math.max(max, row.no), 0);
+    const nextNumber =
+      Math.max(last?.[0]?.content_number ?? 0, lastLog?.[0]?.content_number ?? 0, seedMax) + 1;
+
 
     const title = `Referensi ${ref.category ?? "Riset"}${
       ref.creator_username ? ` — @${ref.creator_username}` : ""
