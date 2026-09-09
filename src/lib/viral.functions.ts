@@ -118,7 +118,12 @@ export const updateViralReference = createServerFn({ method: "POST" })
     }) => input,
   )
   .handler(async ({ data, context }) => {
-    const patch: Record<string, unknown> = {};
+    const patch: {
+      status?: WorkflowStatus;
+      content_analysis_status?: AnalysisStatus;
+      category?: string | null;
+      title?: string;
+    } = {};
     if (data.status) patch.status = data.status;
     if (data.contentAnalysisStatus) patch.content_analysis_status = data.contentAnalysisStatus;
     if (data.category !== undefined) patch.category = data.category?.trim() || null;
