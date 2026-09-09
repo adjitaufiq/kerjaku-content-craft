@@ -457,6 +457,21 @@ function ViralPage() {
                       )}
                       Analisis AI
                     </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1 text-xs"
+                      disabled={remix.isPending}
+                      onClick={() => remix.mutate(r.id)}
+                    >
+                      {remix.isPending && remix.variables === r.id ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="size-3.5" />
+                      )}
+                      Generate Konten
+                    </Button>
                     <Select
                       value={r.status}
                       onValueChange={(v) =>
