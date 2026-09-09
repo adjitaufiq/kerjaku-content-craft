@@ -322,6 +322,86 @@ export type Database = {
         }
         Relationships: []
       }
+      viral_analysis_reports: {
+        Row: {
+          audience: string
+          content_category: string
+          content_summary: string
+          created_at: string
+          curiosity_gap: string
+          emotional_angle: string
+          hook_formula: string
+          id: string
+          main_topic: string
+          model: string
+          modification_ideas: string
+          pattern_interrupt: string
+          power_word: string
+          problem: string
+          psychological_trigger: string
+          reference_id: string
+          solution: string
+          storytelling_style: string
+          updated_at: string
+          user_id: string
+          why_this_works: string
+        }
+        Insert: {
+          audience?: string
+          content_category?: string
+          content_summary?: string
+          created_at?: string
+          curiosity_gap?: string
+          emotional_angle?: string
+          hook_formula?: string
+          id?: string
+          main_topic?: string
+          model?: string
+          modification_ideas?: string
+          pattern_interrupt?: string
+          power_word?: string
+          problem?: string
+          psychological_trigger?: string
+          reference_id: string
+          solution?: string
+          storytelling_style?: string
+          updated_at?: string
+          user_id: string
+          why_this_works?: string
+        }
+        Update: {
+          audience?: string
+          content_category?: string
+          content_summary?: string
+          created_at?: string
+          curiosity_gap?: string
+          emotional_angle?: string
+          hook_formula?: string
+          id?: string
+          main_topic?: string
+          model?: string
+          modification_ideas?: string
+          pattern_interrupt?: string
+          power_word?: string
+          problem?: string
+          psychological_trigger?: string
+          reference_id?: string
+          solution?: string
+          storytelling_style?: string
+          updated_at?: string
+          user_id?: string
+          why_this_works?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "viral_analysis_reports_reference_id_fkey"
+            columns: ["reference_id"]
+            isOneToOne: true
+            referencedRelation: "viral_content_references"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       viral_content_references: {
         Row: {
           category: string | null
