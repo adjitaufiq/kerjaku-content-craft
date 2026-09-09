@@ -156,6 +156,35 @@ function ViralPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const runRemix = useServerFn(generateContentRemixFn);
+  const fetchRemixes = useServerFn(listContentRemixes);
+  const removeRemix = useServerFn(deleteContentRemix);
+
+  const remixes = useQuery({
+    queryKey: ["viral-remixes"],
+    queryFn: () => fetchRemixes({}),
+  });
+
+  const remix = useMutation({
+    mutationFn: (id: string) => runRemix({ data: { referenceId: id } }),
+    onSuccess: (_d, id) => {
+      toast.success("Konten KERJAKU berhasil dibuat.");
+      setSelectedRef(id);
+      void invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const dropRemix = useMutation({
+    mutationFn: (id: string) => removeRemix({ data: { referenceId: id } }),
+    onSuccess: () => {
+      toast.success("Hasil remix dihapus.");
+      void invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
   const [title, setTitle] = useState("");
   const [platform, setPlatform] = useState<string>("instagram");
   const [sourceUrl, setSourceUrl] = useState("");
