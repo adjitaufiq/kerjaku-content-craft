@@ -173,6 +173,47 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_content_drafts: {
+        Row: {
+          content_title: string
+          content_type: Database["public"]["Enums"]["generated_content_type"]
+          created_at: string
+          id: string
+          reference_id: string
+          status: Database["public"]["Enums"]["viral_workflow_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_title?: string
+          content_type?: Database["public"]["Enums"]["generated_content_type"]
+          created_at?: string
+          id?: string
+          reference_id: string
+          status?: Database["public"]["Enums"]["viral_workflow_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_title?: string
+          content_type?: Database["public"]["Enums"]["generated_content_type"]
+          created_at?: string
+          id?: string
+          reference_id?: string
+          status?: Database["public"]["Enums"]["viral_workflow_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_content_drafts_reference_id_fkey"
+            columns: ["reference_id"]
+            isOneToOne: false
+            referencedRelation: "viral_content_references"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meta_credentials: {
         Row: {
           app_id: string | null
@@ -281,6 +322,48 @@ export type Database = {
         }
         Relationships: []
       }
+      viral_content_references: {
+        Row: {
+          category: string | null
+          content_analysis_status: Database["public"]["Enums"]["viral_analysis_status"]
+          created_at: string
+          id: string
+          source_platform: string
+          source_url: string | null
+          status: Database["public"]["Enums"]["viral_workflow_status"]
+          title: string
+          updated_at: string
+          uploaded_file: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          content_analysis_status?: Database["public"]["Enums"]["viral_analysis_status"]
+          created_at?: string
+          id?: string
+          source_platform?: string
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["viral_workflow_status"]
+          title?: string
+          updated_at?: string
+          uploaded_file?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          content_analysis_status?: Database["public"]["Enums"]["viral_analysis_status"]
+          created_at?: string
+          id?: string
+          source_platform?: string
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["viral_workflow_status"]
+          title?: string
+          updated_at?: string
+          uploaded_file?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -296,6 +379,21 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      generated_content_type: "carousel" | "photo_to_video" | "video_content"
+      viral_analysis_status:
+        | "not_started"
+        | "queued"
+        | "in_progress"
+        | "completed"
+        | "failed"
+      viral_workflow_status:
+        | "draft"
+        | "analyzing"
+        | "analyzed"
+        | "revision_needed"
+        | "approved"
+        | "ready_production"
+        | "published"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -424,6 +522,23 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      generated_content_type: ["carousel", "photo_to_video", "video_content"],
+      viral_analysis_status: [
+        "not_started",
+        "queued",
+        "in_progress",
+        "completed",
+        "failed",
+      ],
+      viral_workflow_status: [
+        "draft",
+        "analyzing",
+        "analyzed",
+        "revision_needed",
+        "approved",
+        "ready_production",
+        "published",
+      ],
     },
   },
 } as const

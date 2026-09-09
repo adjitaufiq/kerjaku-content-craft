@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedDownloaderRouteImport } from './routes/_authenticated/downloader'
 import { Route as AuthenticatedEditorRouteImport } from './routes/_authenticated/editor'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedViralRouteImport } from './routes/_authenticated/viral'
 import { Route as ApiPublicHooksPublishDueRouteImport } from './routes/api/public/hooks/publish-due'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -46,6 +47,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedViralRoute = AuthenticatedViralRouteImport.update({
+  id: '/viral',
+  path: '/viral',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicHooksPublishDueRoute =
   ApiPublicHooksPublishDueRouteImport.update({
     id: '/api/public/hooks/publish-due',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/viral': typeof AuthenticatedViralRoute
   '/api/public/hooks/publish-due': typeof ApiPublicHooksPublishDueRoute
 }
 export interface FileRoutesByTo {
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/viral': typeof AuthenticatedViralRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/public/hooks/publish-due': typeof ApiPublicHooksPublishDueRoute
 }
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/_authenticated/downloader': typeof AuthenticatedDownloaderRoute
   '/_authenticated/editor': typeof AuthenticatedEditorRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/viral': typeof AuthenticatedViralRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/hooks/publish-due': typeof ApiPublicHooksPublishDueRoute
 }
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/downloader'
     | '/editor'
     | '/settings'
+    | '/viral'
     | '/api/public/hooks/publish-due'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
     | '/downloader'
     | '/editor'
     | '/settings'
+    | '/viral'
     | '/'
     | '/api/public/hooks/publish-due'
   id:
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
     | '/_authenticated/downloader'
     | '/_authenticated/editor'
     | '/_authenticated/settings'
+    | '/_authenticated/viral'
     | '/_authenticated/'
     | '/api/public/hooks/publish-due'
   fileRoutesById: FileRoutesById
@@ -157,6 +169,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/viral': {
+      id: '/_authenticated/viral'
+      path: '/viral'
+      fullPath: '/viral'
+      preLoaderRoute: typeof AuthenticatedViralRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/hooks/publish-due': {
       id: '/api/public/hooks/publish-due'
       path: '/api/public/hooks/publish-due'
@@ -171,6 +190,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDownloaderRoute: typeof AuthenticatedDownloaderRoute
   AuthenticatedEditorRoute: typeof AuthenticatedEditorRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedViralRoute: typeof AuthenticatedViralRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -178,6 +198,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDownloaderRoute: AuthenticatedDownloaderRoute,
   AuthenticatedEditorRoute: AuthenticatedEditorRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedViralRoute: AuthenticatedViralRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
