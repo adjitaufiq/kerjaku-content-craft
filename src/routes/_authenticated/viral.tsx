@@ -632,6 +632,37 @@ function ViralPage() {
           );
         })()}
 
+        {(() => {
+          if (!selectedRef) return null;
+          if (remix.isPending && remix.variables === selectedRef) {
+            return (
+              <section className="flex items-center gap-2 rounded-2xl border border-border/70 bg-card/60 p-5 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin text-primary" />
+                Membuat versi konten KERJAKU dari formula viral ini…
+              </section>
+            );
+          }
+          const item = (remixes.data ?? []).find((x) => x.reference_id === selectedRef);
+          if (!item) return null;
+          return (
+            <section className="space-y-3">
+              <ContentRemixView remix={item} />
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground hover:text-destructive"
+                  onClick={() => dropRemix.mutate(selectedRef)}
+                >
+                  <Trash2 className="size-3.5" />
+                  Hapus hasil remix
+                </Button>
+              </div>
+            </section>
+          );
+        })()}
+
         <section className="grid gap-6 lg:grid-cols-2">
           <Panel
             title="Analisis terbaru"
