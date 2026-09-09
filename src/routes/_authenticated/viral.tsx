@@ -114,9 +114,40 @@ function ViralPage() {
   const patchDraft = useServerFn(updateGeneratedDraft);
   const removeDraft = useServerFn(deleteGeneratedDraft);
 
+  const runAnalysis = useServerFn(analyzeViralReferenceFn);
+  const fetchReports = useServerFn(listAnalysisReports);
+  const removeReport = useServerFn(deleteAnalysisReport);
+
   const workspace = useQuery({
     queryKey: ["viral-workspace"],
     queryFn: () => fetchWorkspace({}),
+  });
+
+  const reports = useQuery({
+    queryKey: ["viral-reports"],
+    queryFn: () => fetchReports({}),
+  });
+
+  const analyze = useMutation({
+    mutationFn: (id: string) => runAnalysis({ data: { referenceId: id } }),
+    onSuccess: (_d, id) => {
+      toast.success("Analisis viral selesai.");
+      setSelectedRef(id);
+      void invalidate();
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+      void invalidate();
+    },
+  });
+
+  const dropReport = useMutation({
+    mutationFn: (id: string) => removeReport({ data: { referenceId: id } }),
+    onSuccess: () => {
+      toast.success("Laporan analisis dihapus.");
+      void invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const [title, setTitle] = useState("");
