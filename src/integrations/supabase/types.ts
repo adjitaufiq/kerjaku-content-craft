@@ -173,6 +173,68 @@ export type Database = {
         }
         Relationships: []
       }
+      content_remix_results: {
+        Row: {
+          angle_rationale: string
+          captions: Json
+          content_angle: string
+          content_type: Database["public"]["Enums"]["generated_content_type"]
+          created_at: string
+          ctas: Json
+          hashtags: string[]
+          id: string
+          model: string
+          quality_check: Json
+          reference_id: string
+          slides: Json
+          structure_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          angle_rationale?: string
+          captions?: Json
+          content_angle?: string
+          content_type?: Database["public"]["Enums"]["generated_content_type"]
+          created_at?: string
+          ctas?: Json
+          hashtags?: string[]
+          id?: string
+          model?: string
+          quality_check?: Json
+          reference_id: string
+          slides?: Json
+          structure_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          angle_rationale?: string
+          captions?: Json
+          content_angle?: string
+          content_type?: Database["public"]["Enums"]["generated_content_type"]
+          created_at?: string
+          ctas?: Json
+          hashtags?: string[]
+          id?: string
+          model?: string
+          quality_check?: Json
+          reference_id?: string
+          slides?: Json
+          structure_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_remix_results_reference_id_fkey"
+            columns: ["reference_id"]
+            isOneToOne: true
+            referencedRelation: "viral_content_references"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generated_content_drafts: {
         Row: {
           content_title: string
