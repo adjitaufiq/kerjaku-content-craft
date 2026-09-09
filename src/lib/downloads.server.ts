@@ -12,6 +12,15 @@ export type ExtractedMedia = {
 
 const INSTAGRAM_HOSTS = ["instagram.com", "www.instagram.com", "m.instagram.com", "instagr.am"];
 
+/** Instagram menutup pratinjau publik: tautan valid, tapi metadata tidak dibagikan. */
+export const MISSING_PREVIEW =
+  "Instagram tidak membagikan pratinjau publik untuk tautan ini. Anda tetap bisa mengunggah videonya secara manual.";
+
+export function isMissingPreview(message: string) {
+  return message === MISSING_PREVIEW;
+}
+
+
 export function normalizeUrl(raw: string): { url: string; contentType: string } {
   let parsed: URL;
   try {
@@ -97,10 +106,9 @@ export async function extractPublicMetadata(url: string, contentType: string): P
     null;
 
   if (!thumbnailUrl && !videoUrl) {
-    throw new Error(
-      "Instagram tidak membagikan pratinjau publik untuk tautan ini. Anda tetap bisa mengunggah videonya secara manual.",
-    );
+    throw new Error(MISSING_PREVIEW);
   }
+
 
   return {
     creatorUsername: handle,

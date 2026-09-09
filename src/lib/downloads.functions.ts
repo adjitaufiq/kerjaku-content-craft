@@ -103,12 +103,28 @@ export const analyzeAndDownload = createServerFn({ method: "POST" })
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : "Gagal memproses tautan.";
+      const { isMissingPreview } = await import("./downloads.server");
+      // Instagram sering menutup pratinjau publik. Tautannya sendiri tetap valid,
+      // jadi referensi disimpan agar bisa dilengkapi manual.
+      if (isMissingPreview(message)) {
+        await context.supabase
+          .from("content_downloads")
+          .update({ status: "completed", error_message: null })
+          .eq("id", id);
+        return {
+          id,
+          status: "completed",
+          message:
+            "Instagram tidak membagikan pratinjau untuk tautan ini. Referensi tetap tersimpan — lengkapi caption, catatan, dan videonya secara manual.",
+        };
+      }
       await context.supabase
         .from("content_downloads")
         .update({ status: "failed", error_message: message })
         .eq("id", id);
       return { id, status: "failed", message };
     }
+
   });
 
 export const updateDownloadMeta = createServerFn({ method: "POST" })
@@ -167,7 +183,16 @@ export const addToContentBank = createServerFn({ method: "POST" })
       .select("content_number")
       .order("content_number", { ascending: false })
       .limit(1);
-    const nextNumber = (last?.[0]?.content_number ?? 0) + 1;
+    const { data: lastLog } = await context.supabase
+      .from("content_logs")
+      .select("content_number")
+      .order("content_number", { ascending: false })
+      .limit(1);
+    const seed = (await import("@/data/bank-konten.json")).default as { no: number }[];
+    const seedMax = seed.reduce((max, row) => Math.max(max, row.no), 0);
+    const nextNumber =
+      Math.max(last?.[0]?.content_number ?? 0, lastLog?.[0]?.content_number ?? 0, seedMax) + 1;
+
 
     const title = `Referensi ${ref.category ?? "Riset"}${
       ref.creator_username ? ` — @${ref.creator_username}` : ""
