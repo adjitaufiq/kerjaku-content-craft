@@ -3,9 +3,24 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Brain, ExternalLink, Loader2, PlusCircle, Sparkles, Trash2, UploadCloud } from "lucide-react";
+import {
+  Brain,
+  ExternalLink,
+  Loader2,
+  PlusCircle,
+  Sparkles,
+  Trash2,
+  UploadCloud,
+  Wand2,
+} from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { ViralAnalysisReportView } from "@/components/ViralAnalysisReport";
+import {
+  analyzeViralReferenceFn,
+  deleteAnalysisReport,
+  listAnalysisReports,
+} from "@/lib/viral-analysis.functions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
