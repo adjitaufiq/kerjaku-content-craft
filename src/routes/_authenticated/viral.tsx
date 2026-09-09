@@ -198,6 +198,7 @@ function ViralPage() {
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["viral-workspace"] });
     void queryClient.invalidateQueries({ queryKey: ["viral-reports"] });
+    void queryClient.invalidateQueries({ queryKey: ["viral-remixes"] });
   };
 
   const create = useMutation({
