@@ -3,9 +3,24 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Brain, ExternalLink, Loader2, PlusCircle, Sparkles, Trash2, UploadCloud } from "lucide-react";
+import {
+  Brain,
+  ExternalLink,
+  Loader2,
+  PlusCircle,
+  Sparkles,
+  Trash2,
+  UploadCloud,
+  Wand2,
+} from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { ViralAnalysisReportView } from "@/components/ViralAnalysisReport";
+import {
+  analyzeViralReferenceFn,
+  deleteAnalysisReport,
+  listAnalysisReports,
+} from "@/lib/viral-analysis.functions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,9 +114,40 @@ function ViralPage() {
   const patchDraft = useServerFn(updateGeneratedDraft);
   const removeDraft = useServerFn(deleteGeneratedDraft);
 
+  const runAnalysis = useServerFn(analyzeViralReferenceFn);
+  const fetchReports = useServerFn(listAnalysisReports);
+  const removeReport = useServerFn(deleteAnalysisReport);
+
   const workspace = useQuery({
     queryKey: ["viral-workspace"],
     queryFn: () => fetchWorkspace({}),
+  });
+
+  const reports = useQuery({
+    queryKey: ["viral-reports"],
+    queryFn: () => fetchReports({}),
+  });
+
+  const analyze = useMutation({
+    mutationFn: (id: string) => runAnalysis({ data: { referenceId: id } }),
+    onSuccess: (_d, id) => {
+      toast.success("Analisis viral selesai.");
+      setSelectedRef(id);
+      void invalidate();
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+      void invalidate();
+    },
+  });
+
+  const dropReport = useMutation({
+    mutationFn: (id: string) => removeReport({ data: { referenceId: id } }),
+    onSuccess: () => {
+      toast.success("Laporan analisis dihapus.");
+      void invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const [title, setTitle] = useState("");
@@ -114,7 +160,10 @@ function ViralPage() {
   const [draftTitle, setDraftTitle] = useState("");
   const [draftType, setDraftType] = useState<ContentType>("carousel");
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["viral-workspace"] });
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ["viral-workspace"] });
+    void queryClient.invalidateQueries({ queryKey: ["viral-reports"] });
+  };
 
   const create = useMutation({
     mutationFn: () =>
@@ -357,6 +406,21 @@ function ViralPage() {
                       </a>
                     ) : null}
                     <Badge className={STATUS_CLASS[r.status]}>{STATUS_LABEL[r.status]}</Badge>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1 text-xs"
+                      disabled={analyze.isPending}
+                      onClick={() => analyze.mutate(r.id)}
+                    >
+                      {analyze.isPending && analyze.variables === r.id ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <Wand2 className="size-3.5" />
+                      )}
+                      Analisis AI
+                    </Button>
                     <Select
                       value={r.status}
                       onValueChange={(v) =>
@@ -478,6 +542,44 @@ function ViralPage() {
             </ul>
           </div>
         </section>
+
+        {(() => {
+          const report = (reports.data ?? []).find((x) => x.reference_id === selectedRef);
+          if (!selectedRef) return null;
+          if (analyze.isPending && analyze.variables === selectedRef) {
+            return (
+              <section className="flex items-center gap-2 rounded-2xl border border-border/70 bg-card/60 p-5 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin text-primary" />
+                Menganalisis formula viral referensi ini…
+              </section>
+            );
+          }
+          if (!report) {
+            return (
+              <section className="rounded-2xl border border-border/70 bg-card/60 p-5 text-sm text-muted-foreground">
+                Belum ada laporan analisis untuk referensi terpilih. Tekan “Analisis AI” pada
+                referensi tersebut.
+              </section>
+            );
+          }
+          return (
+            <section className="space-y-3">
+              <ViralAnalysisReportView report={report} />
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground hover:text-destructive"
+                  onClick={() => dropReport.mutate(selectedRef)}
+                >
+                  <Trash2 className="size-3.5" />
+                  Hapus laporan
+                </Button>
+              </div>
+            </section>
+          );
+        })()}
 
         <section className="grid gap-6 lg:grid-cols-2">
           <Panel
