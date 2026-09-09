@@ -97,10 +97,9 @@ export async function extractPublicMetadata(url: string, contentType: string): P
     null;
 
   if (!thumbnailUrl && !videoUrl) {
-    throw new Error(
-      "Instagram tidak membagikan pratinjau publik untuk tautan ini. Anda tetap bisa mengunggah videonya secara manual.",
-    );
+    throw new Error(MISSING_PREVIEW);
   }
+
 
   return {
     creatorUsername: handle,

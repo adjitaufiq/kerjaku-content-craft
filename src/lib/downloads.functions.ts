@@ -103,12 +103,28 @@ export const analyzeAndDownload = createServerFn({ method: "POST" })
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : "Gagal memproses tautan.";
+      const { isMissingPreview } = await import("./downloads.server");
+      // Instagram sering menutup pratinjau publik. Tautannya sendiri tetap valid,
+      // jadi referensi disimpan agar bisa dilengkapi manual.
+      if (isMissingPreview(message)) {
+        await context.supabase
+          .from("content_downloads")
+          .update({ status: "completed", error_message: null })
+          .eq("id", id);
+        return {
+          id,
+          status: "completed",
+          message:
+            "Instagram tidak membagikan pratinjau untuk tautan ini. Referensi tetap tersimpan — lengkapi caption, catatan, dan videonya secara manual.",
+        };
+      }
       await context.supabase
         .from("content_downloads")
         .update({ status: "failed", error_message: message })
         .eq("id", id);
       return { id, status: "failed", message };
     }
+
   });
 
 export const updateDownloadMeta = createServerFn({ method: "POST" })
