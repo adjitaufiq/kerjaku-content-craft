@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 import type { ViralSource } from "@/lib/viral-sources.functions";
 
 export type ExtractionStatus =
@@ -197,7 +198,7 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
           transcript,
           visual_analysis: visual.scenes,
           on_screen_text: visual.on_screen_text,
-          source_report: validation.report as unknown as Record<string, unknown>,
+          source_report: validation.report as unknown as Json,
           verification_status: status,
           confidence_score: score,
           has_audio: hasAudio,
