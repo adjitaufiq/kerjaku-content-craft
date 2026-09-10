@@ -10,6 +10,31 @@ export type ExtractionStatus =
   | "failed"
   | "needs_review";
 
+export type ReportEvidence = {
+  source_type: "transcript" | "on_screen_text" | "visual";
+  timestamp: string;
+  quote: string;
+  verified: boolean;
+};
+export type ReportField = { value: string; evidence: ReportEvidence[]; verified: boolean };
+export type ReportItem = {
+  text?: string;
+  name?: string;
+  evidence: ReportEvidence[];
+  verified: boolean;
+};
+export type SourceReportData = Partial<{
+  summary: ReportField;
+  topic: ReportField;
+  category: ReportField;
+  problem: ReportField;
+  solution: ReportField;
+  benefit_viewer: ReportField;
+  main_information: ReportItem[];
+  tools_products: ReportItem[];
+  steps_framework: ReportItem[];
+}>;
+
 export type SourceExtraction = {
   id: string;
   source_id: string;
@@ -22,7 +47,7 @@ export type SourceExtraction = {
     objects: string[];
   }>;
   on_screen_text: Array<{ timestamp: string; text: string }>;
-  source_report: Record<string, unknown>;
+  source_report: SourceReportData;
   verification_status: ExtractionStatus;
   confidence_score: number;
   has_audio: boolean;
