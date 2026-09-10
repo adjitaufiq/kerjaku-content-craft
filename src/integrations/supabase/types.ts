@@ -14,6 +14,129 @@ export type Database = {
   }
   public: {
     Tables: {
+      brand_power_words: {
+        Row: {
+          context: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          word: string
+        }
+        Insert: {
+          context?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          word?: string
+        }
+        Update: {
+          context?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          word?: string
+        }
+        Relationships: []
+      }
+      brand_products: {
+        Row: {
+          benefit: string
+          created_at: string
+          description: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          benefit?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          benefit?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      brand_profile: {
+        Row: {
+          audience: string
+          brand_name: string
+          created_at: string
+          id: string
+          mission: string
+          positioning: string
+          tone_of_voice: string
+          updated_at: string
+          user_id: string
+          version: string
+        }
+        Insert: {
+          audience?: string
+          brand_name?: string
+          created_at?: string
+          id?: string
+          mission?: string
+          positioning?: string
+          tone_of_voice?: string
+          updated_at?: string
+          user_id: string
+          version?: string
+        }
+        Update: {
+          audience?: string
+          brand_name?: string
+          created_at?: string
+          id?: string
+          mission?: string
+          positioning?: string
+          tone_of_voice?: string
+          updated_at?: string
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      brand_rules: {
+        Row: {
+          created_at: string
+          id: string
+          rule: string
+          rule_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rule?: string
+          rule_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rule?: string
+          rule_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       content_bank: {
         Row: {
           caption: string
@@ -272,6 +395,68 @@ export type Database = {
             columns: ["reference_id"]
             isOneToOne: false
             referencedRelation: "viral_content_references"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kerjaku_versions: {
+        Row: {
+          adaptation: Json
+          angle: string
+          approval_note: string
+          approved_at: string | null
+          atm_mode: Database["public"]["Enums"]["atm_mode"]
+          brand_profile_version: string
+          created_at: string
+          id: string
+          model: string
+          reason: string
+          source_id: string
+          source_mapping: Json
+          status: Database["public"]["Enums"]["atm_version_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adaptation?: Json
+          angle?: string
+          approval_note?: string
+          approved_at?: string | null
+          atm_mode?: Database["public"]["Enums"]["atm_mode"]
+          brand_profile_version?: string
+          created_at?: string
+          id?: string
+          model?: string
+          reason?: string
+          source_id: string
+          source_mapping?: Json
+          status?: Database["public"]["Enums"]["atm_version_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adaptation?: Json
+          angle?: string
+          approval_note?: string
+          approved_at?: string | null
+          atm_mode?: Database["public"]["Enums"]["atm_mode"]
+          brand_profile_version?: string
+          created_at?: string
+          id?: string
+          model?: string
+          reason?: string
+          source_id?: string
+          source_mapping?: Json
+          status?: Database["public"]["Enums"]["atm_version_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kerjaku_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "viral_sources"
             referencedColumns: ["id"]
           },
         ]
@@ -568,6 +753,77 @@ export type Database = {
         }
         Relationships: []
       }
+      viral_intelligence: {
+        Row: {
+          created_at: string
+          curiosity_gap: string
+          engagement_factor: string
+          evidence: Json
+          hook: string
+          hook_reason: string
+          hook_type: string
+          id: string
+          model: string
+          pattern_interrupt: string
+          power_words: string[]
+          psychological_trigger: string
+          retention_factor: string
+          source_id: string
+          story_beats: Json
+          structure_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          curiosity_gap?: string
+          engagement_factor?: string
+          evidence?: Json
+          hook?: string
+          hook_reason?: string
+          hook_type?: string
+          id?: string
+          model?: string
+          pattern_interrupt?: string
+          power_words?: string[]
+          psychological_trigger?: string
+          retention_factor?: string
+          source_id: string
+          story_beats?: Json
+          structure_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          curiosity_gap?: string
+          engagement_factor?: string
+          evidence?: Json
+          hook?: string
+          hook_reason?: string
+          hook_type?: string
+          id?: string
+          model?: string
+          pattern_interrupt?: string
+          power_words?: string[]
+          psychological_trigger?: string
+          retention_factor?: string
+          source_id?: string
+          story_beats?: Json
+          structure_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "viral_intelligence_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: true
+            referencedRelation: "viral_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       viral_sources: {
         Row: {
           category: string | null
@@ -634,6 +890,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      atm_mode: "conservative" | "creative"
+      atm_version_status: "draft" | "pending_approval" | "approved" | "rejected"
       generated_content_type: "carousel" | "photo_to_video" | "video_content"
       source_extraction_status:
         | "processing"
@@ -793,6 +1051,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      atm_mode: ["conservative", "creative"],
+      atm_version_status: ["draft", "pending_approval", "approved", "rejected"],
       generated_content_type: ["carousel", "photo_to_video", "video_content"],
       source_extraction_status: [
         "processing",
