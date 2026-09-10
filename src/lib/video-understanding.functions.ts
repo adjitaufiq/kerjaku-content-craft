@@ -16,6 +16,7 @@ export type ReportEvidence = {
   timestamp: string;
   quote: string;
   verified: boolean;
+  reason?: string | undefined;
 };
 export type ReportField = { value: string; evidence: ReportEvidence[]; verified: boolean };
 export type ReportItem = {
@@ -180,6 +181,7 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
         transcript,
         onScreenText: visual.on_screen_text,
         scenes: visual.scenes,
+        snapshots: data.snapshots,
       });
 
       // Video tanpa suara tetap diproses, tapi ditandai low confidence.

@@ -98,6 +98,9 @@ function EvidenceList({ evidence }: { evidence: Evidence[] }) {
             {EVIDENCE_LABEL[ev.source_type]} · {ev.timestamp}
           </Badge>
           <span className="text-muted-foreground">“{ev.quote}”</span>
+          {!ev.verified && ev.reason ? (
+            <span className="text-amber-400/90">— {ev.reason}</span>
+          ) : null}
         </li>
       ))}
     </ul>
