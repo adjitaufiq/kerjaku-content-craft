@@ -24,6 +24,10 @@ import {
   runSourceExtraction,
   setSourceProcessing,
   type ExtractionStatus,
+  type ReportEvidence,
+  type ReportField,
+  type ReportItem,
+  type SourceReportData,
 } from "@/lib/video-understanding.functions";
 
 export const Route = createFileRoute("/_authenticated/source-detail")({
@@ -50,25 +54,8 @@ export const Route = createFileRoute("/_authenticated/source-detail")({
   component: SourceDetailPage,
 });
 
-type Evidence = {
-  source_type: "transcript" | "on_screen_text" | "visual";
-  timestamp: string;
-  quote: string;
-  verified?: boolean;
-};
-type ReportField = { value: string; evidence: Evidence[]; verified?: boolean };
-type ReportItem = { text?: string; name?: string; evidence: Evidence[]; verified?: boolean };
-type SourceReport = Partial<{
-  summary: ReportField;
-  topic: ReportField;
-  category: ReportField;
-  problem: ReportField;
-  solution: ReportField;
-  benefit_viewer: ReportField;
-  main_information: ReportItem[];
-  tools_products: ReportItem[];
-  steps_framework: ReportItem[];
-}>;
+type Evidence = ReportEvidence;
+type SourceReport = SourceReportData;
 
 const STATUS_LABEL: Record<ExtractionStatus, string> = {
   processing: "Processing",
