@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Clock, Film, Loader2, Trash2, UploadCloud, Video } from "lucide-react";
+import { Clock, Film, Loader2, Sparkles, Trash2, UploadCloud, Video } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
@@ -422,6 +422,13 @@ function SourceCard({
           </a>
         ) : null}
       </div>
+
+      <Button asChild variant="secondary" size="sm" className="w-full">
+        <Link to="/source-detail" search={{ id: row.id }}>
+          <Sparkles className="size-4" />
+          Pahami Video
+        </Link>
+      </Button>
 
       <div className="flex items-center gap-2">
         <Select value={row.status} onValueChange={(v) => onStatus(v as SourceStatus)}>
