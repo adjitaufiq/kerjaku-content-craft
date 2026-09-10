@@ -2,7 +2,16 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Brain, Download, Instagram, LayoutGrid, LogOut, Settings2, Wand2 } from "lucide-react";
+import {
+  Brain,
+  Download,
+  Instagram,
+  LayoutGrid,
+  LogOut,
+  Settings2,
+  Video,
+  Wand2,
+} from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getAccessContext } from "@/lib/roles.functions";
