@@ -363,6 +363,68 @@ export type Database = {
         }
         Relationships: []
       }
+      source_extractions: {
+        Row: {
+          confidence_score: number
+          created_at: string
+          error_message: string | null
+          has_audio: boolean
+          id: string
+          model: string
+          on_screen_text: Json
+          snapshot_data: Json
+          source_id: string
+          source_report: Json
+          transcript: Json
+          updated_at: string
+          user_id: string
+          verification_status: Database["public"]["Enums"]["source_extraction_status"]
+          visual_analysis: Json
+        }
+        Insert: {
+          confidence_score?: number
+          created_at?: string
+          error_message?: string | null
+          has_audio?: boolean
+          id?: string
+          model?: string
+          on_screen_text?: Json
+          snapshot_data?: Json
+          source_id: string
+          source_report?: Json
+          transcript?: Json
+          updated_at?: string
+          user_id: string
+          verification_status?: Database["public"]["Enums"]["source_extraction_status"]
+          visual_analysis?: Json
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string
+          error_message?: string | null
+          has_audio?: boolean
+          id?: string
+          model?: string
+          on_screen_text?: Json
+          snapshot_data?: Json
+          source_id?: string
+          source_report?: Json
+          transcript?: Json
+          updated_at?: string
+          user_id?: string
+          verification_status?: Database["public"]["Enums"]["source_extraction_status"]
+          visual_analysis?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "source_extractions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: true
+            referencedRelation: "viral_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -573,6 +635,12 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       generated_content_type: "carousel" | "photo_to_video" | "video_content"
+      source_extraction_status:
+        | "processing"
+        | "completed"
+        | "partial"
+        | "failed"
+        | "needs_review"
       viral_analysis_status:
         | "not_started"
         | "queued"
@@ -726,6 +794,13 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       generated_content_type: ["carousel", "photo_to_video", "video_content"],
+      source_extraction_status: [
+        "processing",
+        "completed",
+        "partial",
+        "failed",
+        "needs_review",
+      ],
       viral_analysis_status: [
         "not_started",
         "queued",
