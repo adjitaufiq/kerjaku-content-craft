@@ -18,6 +18,7 @@ import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { evaluateExtractionGate } from "@/lib/extraction-gate";
 import { extractAudioChunks, extractFrames } from "@/lib/video-media";
 import {
   getSourceDetail,
@@ -98,6 +99,9 @@ function EvidenceList({ evidence }: { evidence: Evidence[] }) {
             {EVIDENCE_LABEL[ev.source_type]} · {ev.timestamp}
           </Badge>
           <span className="text-muted-foreground">“{ev.quote}”</span>
+          {!ev.verified && ev.reason ? (
+            <span className="text-amber-400/90">— {ev.reason}</span>
+          ) : null}
         </li>
       ))}
     </ul>
@@ -169,6 +173,7 @@ function SourceDetailPage() {
   const source = detail.data?.source ?? null;
   const extraction = detail.data?.extraction ?? null;
   const report = (extraction?.source_report ?? {}) as SourceReport;
+  const gate = evaluateExtractionGate(extraction);
 
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
@@ -333,6 +338,29 @@ function SourceDetailPage() {
             <Loader2 className="size-4 animate-spin" /> {progress}
           </div>
         ) : null}
+
+        {extraction ? (
+          <div
+            className={`surface-panel flex flex-wrap items-center gap-2 p-4 text-sm ${
+              gate.level === "ready"
+                ? "text-accent"
+                : gate.level === "blocked"
+                  ? "text-destructive"
+                  : "text-amber-400"
+            }`}
+          >
+            {gate.allowed ? (
+              <BadgeCheck className="size-4" />
+            ) : (
+              <ShieldAlert className="size-4" />
+            )}
+            <span className="font-medium">
+              {gate.allowed ? "Siap untuk analisis lanjutan" : "Belum siap untuk analisis lanjutan"}
+            </span>
+            <span className="text-muted-foreground">{gate.reason}</span>
+          </div>
+        ) : null}
+
 
         {detail.isLoading ? (
           <div className="surface-panel flex items-center gap-2 p-6 text-sm text-muted-foreground">

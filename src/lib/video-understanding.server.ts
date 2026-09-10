@@ -381,8 +381,9 @@ function buildSegments(items: Array<{ timestamp: string; text: string }>): Segme
 function withinSegment(segment: Segment, at: number): boolean {
   if (segment.start === null) return true;
   const start = segment.start - TIME_TOLERANCE;
-  const end = (segment.end ?? segment.start + 30) + TIME_TOLERANCE;
-  return at >= start && at <= end;
+  // Segmen berikutnya menutup segmen ini (eksklusif) supaya waktu tidak saling tumpang tindih.
+  if (segment.end !== null) return at >= start && at < segment.end;
+  return at >= start && at <= segment.start + 30 + TIME_TOLERANCE;
 }
 
 export type EvidenceCheckMaterial = {
