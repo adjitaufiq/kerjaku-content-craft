@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedDownloaderRouteImport } from './routes/_authenticated/downloader'
 import { Route as AuthenticatedEditorRouteImport } from './routes/_authenticated/editor'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSourceDetailRouteImport } from './routes/_authenticated/source-detail'
 import { Route as AuthenticatedSourcesRouteImport } from './routes/_authenticated/sources'
 import { Route as AuthenticatedViralRouteImport } from './routes/_authenticated/viral'
 import { Route as ApiPublicHooksPublishDueRouteImport } from './routes/api/public/hooks/publish-due'
@@ -48,6 +49,12 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSourceDetailRoute =
+  AuthenticatedSourceDetailRouteImport.update({
+    id: '/source-detail',
+    path: '/source-detail',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSourcesRoute = AuthenticatedSourcesRouteImport.update({
   id: '/sources',
   path: '/sources',
@@ -71,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/source-detail': typeof AuthenticatedSourceDetailRoute
   '/sources': typeof AuthenticatedSourcesRoute
   '/viral': typeof AuthenticatedViralRoute
   '/api/public/hooks/publish-due': typeof ApiPublicHooksPublishDueRoute
@@ -80,6 +88,7 @@ export interface FileRoutesByTo {
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/source-detail': typeof AuthenticatedSourceDetailRoute
   '/sources': typeof AuthenticatedSourcesRoute
   '/viral': typeof AuthenticatedViralRoute
   '/': typeof AuthenticatedIndexRoute
@@ -92,6 +101,7 @@ export interface FileRoutesById {
   '/_authenticated/downloader': typeof AuthenticatedDownloaderRoute
   '/_authenticated/editor': typeof AuthenticatedEditorRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/source-detail': typeof AuthenticatedSourceDetailRoute
   '/_authenticated/sources': typeof AuthenticatedSourcesRoute
   '/_authenticated/viral': typeof AuthenticatedViralRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/downloader'
     | '/editor'
     | '/settings'
+    | '/source-detail'
     | '/sources'
     | '/viral'
     | '/api/public/hooks/publish-due'
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
     | '/downloader'
     | '/editor'
     | '/settings'
+    | '/source-detail'
     | '/sources'
     | '/viral'
     | '/'
@@ -125,6 +137,7 @@ export interface FileRouteTypes {
     | '/_authenticated/downloader'
     | '/_authenticated/editor'
     | '/_authenticated/settings'
+    | '/_authenticated/source-detail'
     | '/_authenticated/sources'
     | '/_authenticated/viral'
     | '/_authenticated/'
@@ -181,6 +194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/source-detail': {
+      id: '/_authenticated/source-detail'
+      path: '/source-detail'
+      fullPath: '/source-detail'
+      preLoaderRoute: typeof AuthenticatedSourceDetailRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/sources': {
       id: '/_authenticated/sources'
       path: '/sources'
@@ -209,6 +229,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDownloaderRoute: typeof AuthenticatedDownloaderRoute
   AuthenticatedEditorRoute: typeof AuthenticatedEditorRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSourceDetailRoute: typeof AuthenticatedSourceDetailRoute
   AuthenticatedSourcesRoute: typeof AuthenticatedSourcesRoute
   AuthenticatedViralRoute: typeof AuthenticatedViralRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -218,6 +239,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDownloaderRoute: AuthenticatedDownloaderRoute,
   AuthenticatedEditorRoute: AuthenticatedEditorRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSourceDetailRoute: AuthenticatedSourceDetailRoute,
   AuthenticatedSourcesRoute: AuthenticatedSourcesRoute,
   AuthenticatedViralRoute: AuthenticatedViralRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
