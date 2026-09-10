@@ -506,6 +506,57 @@ export type Database = {
         }
         Relationships: []
       }
+      viral_sources: {
+        Row: {
+          category: string | null
+          created_at: string
+          creator_name: string | null
+          expires_at: string | null
+          id: string
+          notes: string
+          platform: string
+          source_url: string | null
+          status: Database["public"]["Enums"]["viral_source_status"]
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          video_path: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          creator_name?: string | null
+          expires_at?: string | null
+          id?: string
+          notes?: string
+          platform?: string
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["viral_source_status"]
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+          video_path?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          creator_name?: string | null
+          expires_at?: string | null
+          id?: string
+          notes?: string
+          platform?: string
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["viral_source_status"]
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          video_path?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -527,6 +578,16 @@ export type Database = {
         | "queued"
         | "in_progress"
         | "completed"
+        | "failed"
+      viral_source_status:
+        | "draft"
+        | "processing"
+        | "understanding"
+        | "source_extracted"
+        | "analysis_complete"
+        | "production"
+        | "approved"
+        | "published"
         | "failed"
       viral_workflow_status:
         | "draft"
@@ -670,6 +731,17 @@ export const Constants = {
         "queued",
         "in_progress",
         "completed",
+        "failed",
+      ],
+      viral_source_status: [
+        "draft",
+        "processing",
+        "understanding",
+        "source_extracted",
+        "analysis_complete",
+        "production",
+        "approved",
+        "published",
         "failed",
       ],
       viral_workflow_status: [

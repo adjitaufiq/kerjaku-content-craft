@@ -2,7 +2,16 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Brain, Download, Instagram, LayoutGrid, LogOut, Settings2, Wand2 } from "lucide-react";
+import {
+  Brain,
+  Download,
+  Instagram,
+  LayoutGrid,
+  LogOut,
+  Settings2,
+  Video,
+  Wand2,
+} from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getAccessContext } from "@/lib/roles.functions";
@@ -12,6 +21,7 @@ const nav = [
   { to: "/", label: "Content Grid", icon: LayoutGrid },
   { to: "/editor", label: "Editor & Publisher", icon: Wand2 },
   { to: "/viral", label: "Viral Content Intelligence", icon: Brain },
+  { to: "/sources", label: "Viral Source Intake", icon: Video },
   { to: "/downloader", label: "Content Downloader", icon: Download },
   { to: "/settings", label: "Settings", icon: Settings2 },
 ] as const;
