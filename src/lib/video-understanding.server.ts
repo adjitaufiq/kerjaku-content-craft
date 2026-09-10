@@ -10,6 +10,8 @@ export type Evidence = {
   timestamp: string;
   quote: string;
   verified?: boolean;
+  /** Alasan bila bukti ditolak (kutipan/waktu/frame tidak cocok). */
+  reason?: string | undefined;
 };
 
 export type ReportField = { value: string; evidence: Evidence[]; verified?: boolean };
@@ -331,7 +333,7 @@ export async function buildSourceReport(input: {
 }
 
 /* ------------------------------------------------------------------ */
-/* PART 4. Source Lock Validation (deterministic, bukan AI)            */
+/* PART 4. Source Lock Validation (deterministik, quote + timestamp)   */
 /* ------------------------------------------------------------------ */
 
 export function normalizeText(value: string): string {
@@ -343,22 +345,56 @@ export function normalizeText(value: string): string {
     .trim();
 }
 
-function corpusFor(
-  type: Evidence["source_type"],
-  corpora: { transcript: string; ocr: string; visual: string },
-): string {
-  if (type === "transcript") return corpora.transcript;
-  if (type === "on_screen_text") return corpora.ocr;
-  return corpora.visual;
+/** "01:23" | "00:01:23" | "12" | "12.5s" | "00:10-00:14" -> detik atau null. */
+export function parseTimestamp(value: string): number | null {
+  const raw = (value ?? "").trim();
+  if (!raw) return null;
+  const first = raw.split(/[-–—>]/)[0]?.trim() ?? raw;
+  const clock = first.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+  if (clock) {
+    const a = Number(clock[1]);
+    const b = Number(clock[2]);
+    const c = clock[3] === undefined ? null : Number(clock[3]);
+    return c === null ? a * 60 + b : a * 3600 + b * 60 + c;
+  }
+  const seconds = first.match(/^(\d+(?:[.,]\d+)?)/);
+  if (seconds?.[1]) return Number(seconds[1].replace(",", "."));
+  return null;
 }
+
+/** Toleransi pembulatan waktu (detik) di luar rentang segmen. */
+const TIME_TOLERANCE = 3;
+
+type Segment = { start: number | null; end: number | null; text: string };
+
+function buildSegments(items: Array<{ timestamp: string; text: string }>): Segment[] {
+  const parsed = items.map((item) => ({
+    start: parseTimestamp(item.timestamp),
+    text: normalizeText(item.text ?? ""),
+  }));
+  return parsed.map((item, index) => {
+    const next = parsed.slice(index + 1).find((p) => p.start !== null);
+    return { start: item.start, end: next?.start ?? null, text: item.text };
+  });
+}
+
+function withinSegment(segment: Segment, at: number): boolean {
+  if (segment.start === null) return true;
+  const start = segment.start - TIME_TOLERANCE;
+  const end = (segment.end ?? segment.start + 30) + TIME_TOLERANCE;
+  return at >= start && at <= end;
+}
+
+export type EvidenceCheckMaterial = {
+  transcript: TranscriptSegment[];
+  onScreenText: OnScreenTextItem[];
+  scenes: SceneItem[];
+  snapshots?: SnapshotItem[];
+};
 
 export function validateReport(
   report: SourceReport,
-  material: {
-    transcript: TranscriptSegment[];
-    onScreenText: OnScreenTextItem[];
-    scenes: SceneItem[];
-  },
+  material: EvidenceCheckMaterial,
 ): {
   report: SourceReport;
   verification_status: "completed" | "partial" | "needs_review";
@@ -366,27 +402,76 @@ export function validateReport(
   checked: number;
   verified: number;
 } {
-  const corpora = {
-    transcript: normalizeText(material.transcript.map((t) => t.text).join(" ")),
-    ocr: normalizeText(material.onScreenText.map((t) => t.text).join(" ")),
-    visual: normalizeText(
-      material.scenes.map((s) => `${s.scene} ${s.description} ${s.objects.join(" ")}`).join(" "),
+  const segments: Record<Evidence["source_type"], Segment[]> = {
+    transcript: buildSegments(material.transcript ?? []),
+    on_screen_text: buildSegments(material.onScreenText ?? []),
+    visual: buildSegments(
+      (material.scenes ?? []).map((s) => ({
+        timestamp: s.timestamp,
+        text: `${s.scene} ${s.description} ${(s.objects ?? []).join(" ")}`,
+      })),
     ),
   };
-  const textCorpus = `${corpora.transcript} ${corpora.ocr}`.trim();
+
+  const frameTimes = (material.snapshots ?? [])
+    .map((s) => parseTimestamp(s.timestamp))
+    .filter((t): t is number => t !== null);
+  const sceneTimes = (material.scenes ?? [])
+    .map((s) => parseTimestamp(s.timestamp))
+    .filter((t): t is number => t !== null);
+  const knownFrameTimes = frameTimes.length ? frameTimes : sceneTimes;
+
+  const textCorpus = normalizeText(
+    [
+      ...(material.transcript ?? []).map((t) => t.text),
+      ...(material.onScreenText ?? []).map((t) => t.text),
+    ].join(" "),
+  );
+
+  const checkOne = (ev: Evidence): Evidence => {
+    const quote = normalizeText(ev.quote ?? "");
+    const list = segments[ev.source_type] ?? [];
+    const at = parseTimestamp(ev.timestamp ?? "");
+
+    if (!quote) return { ...ev, verified: false, reason: "Kutipan kosong." };
+    if (!list.length) {
+      return { ...ev, verified: false, reason: "Sumber bukti tidak tersedia pada ekstraksi." };
+    }
+
+    // Bukti visual wajib menunjuk frame yang benar-benar diambil.
+    if (ev.source_type === "visual") {
+      if (at === null) return { ...ev, verified: false, reason: "Timestamp bukti tidak valid." };
+      const frameExists = knownFrameTimes.some((t) => Math.abs(t - at) <= TIME_TOLERANCE);
+      if (!frameExists) {
+        return { ...ev, verified: false, reason: "Tidak ada frame video pada waktu tersebut." };
+      }
+    }
+
+    const anywhere = list.some((seg) => seg.text.includes(quote));
+    if (!anywhere) {
+      return {
+        ...ev,
+        verified: false,
+        reason: "Kutipan tidak ditemukan pada sumber (kemungkinan parafrase).",
+      };
+    }
+
+    if (at === null) return { ...ev, verified: false, reason: "Timestamp bukti tidak valid." };
+
+    const atTime = list.some((seg) => withinSegment(seg, at) && seg.text.includes(quote));
+    if (!atTime) {
+      return { ...ev, verified: false, reason: "Kutipan ada, tetapi bukan pada waktu tersebut." };
+    }
+
+    return { ...ev, verified: true, reason: undefined };
+  };
 
   let checked = 0;
   let verified = 0;
 
   const checkEvidence = (evidence: Evidence[]): { evidence: Evidence[]; verified: boolean } => {
-    const list = (evidence ?? []).map((ev) => {
-      const quote = normalizeText(ev.quote ?? "");
-      const corpus = corpusFor(ev.source_type, corpora);
-      const ok = quote.length > 0 && corpus.includes(quote);
-      return { ...ev, verified: ok };
-    });
-    const ok = list.length > 0 && list.every((ev) => ev.verified);
-    return { evidence: list, verified: ok };
+    const list = (evidence ?? []).map(checkOne);
+    return { evidence: list, verified: list.length > 0 && list.every((ev) => ev.verified) };
   };
 
   const checkField = (field: ReportField): ReportField => {
@@ -417,7 +502,14 @@ export function validateReport(
       const res = checkEvidence(item.evidence ?? []);
       const ok = mentioned && res.verified;
       if (ok) verified += 1;
-      return { name: item.name ?? "", evidence: res.evidence, verified: ok };
+      const evidence = mentioned
+        ? res.evidence
+        : res.evidence.map((ev) => ({
+            ...ev,
+            verified: false,
+            reason: ev.reason ?? "Nama tool/produk tidak disebut pada transkrip atau teks di layar.",
+          }));
+      return { name: item.name ?? "", evidence, verified: ok };
     });
 
   const validated: SourceReport = {
