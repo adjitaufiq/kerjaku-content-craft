@@ -104,7 +104,7 @@ function EvidenceList({ evidence }: { evidence: Evidence[] }) {
   );
 }
 
-function VerifiedBadge({ verified }: { verified?: boolean }) {
+function VerifiedBadge({ verified }: { verified?: boolean | undefined }) {
   return (
     <Badge
       variant="outline"
@@ -119,7 +119,7 @@ function VerifiedBadge({ verified }: { verified?: boolean }) {
   );
 }
 
-function FieldBlock({ label, field }: { label: string; field?: ReportField }) {
+function FieldBlock({ label, field }: { label: string; field?: ReportField | undefined }) {
   if (!field) return null;
   return (
     <div className="space-y-1.5 rounded-xl border border-border bg-secondary/30 p-3">
@@ -133,7 +133,7 @@ function FieldBlock({ label, field }: { label: string; field?: ReportField }) {
   );
 }
 
-function ItemsBlock({ label, items }: { label: string; items?: ReportItem[] }) {
+function ItemsBlock({ label, items }: { label: string; items?: ReportItem[] | undefined }) {
   if (!items?.length) return null;
   return (
     <div className="space-y-2 rounded-xl border border-border bg-secondary/30 p-3">
