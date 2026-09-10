@@ -67,16 +67,8 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
     }) => input,
   )
   .handler(async ({ data, context }): Promise<{ status: ExtractionStatus; score: number }> => {
-    const {
-      EXTRACTION_MODEL,
-      analyzeFrames,
-      buildSourceReport,
-      transcribeChunk,
-      validateReport,
-      type: _t,
-    } = (await import("@/lib/video-understanding.server")) as typeof import("@/lib/video-understanding.server") & {
-      type?: never;
-    };
+    const { EXTRACTION_MODEL, analyzeFrames, buildSourceReport, transcribeChunk, validateReport } =
+      await import("@/lib/video-understanding.server");
 
     const { data: source, error: sourceError } = await context.supabase
       .from("viral_sources")
