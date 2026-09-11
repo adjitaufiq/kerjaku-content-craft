@@ -205,15 +205,18 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
         snapshots: data.snapshots,
       });
 
-      // Video tanpa suara tetap diproses, tapi ditandai low confidence.
+      // Video tanpa suara tetap diproses, tapi ditandai low confidence (visual-only).
       const score = hasAudio
         ? validation.confidence_score
         : Math.min(validation.confidence_score, 49);
-      const status: ExtractionStatus = hasAudio
-        ? validation.verification_status
-        : score < 50
-          ? "needs_review"
-          : "partial";
+      const status: ExtractionStatus =
+        validation.verification_status === "failed"
+          ? "failed"
+          : hasAudio
+            ? validation.verification_status
+            : score < 50
+              ? "needs_review"
+              : "partial";
 
       await context.supabase
         .from("source_extractions")
@@ -224,11 +227,16 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
           source_report: validation.report as unknown as Json,
           verification_status: status,
           confidence_score: score,
+          report_confidence: validation.scores.report_confidence,
+          source_confidence: validation.scores.source_confidence,
+          coverage_score: validation.scores.coverage_score,
+          completeness_score: validation.scores.completeness_score,
           has_audio: hasAudio,
           error_message: null,
         })
         .eq("source_id", data.sourceId)
         .throwOnError();
+
 
       await context.supabase
         .from("viral_sources")
