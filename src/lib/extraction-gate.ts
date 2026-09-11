@@ -1,7 +1,12 @@
 import type { ExtractionStatus } from "@/lib/video-understanding.functions";
 
-/** Ambang minimal keyakinan agar hasil "partial" boleh dipakai tahap berikutnya. */
-export const MIN_PARTIAL_CONFIDENCE = 70;
+/** Satu standar ambang untuk validator dan gerbang mutu. */
+export const READY_CONFIDENCE = 70;
+export const PARTIAL_CONFIDENCE = 50;
+/** Kelengkapan minimum agar laporan layak jadi input Viral DNA / ATM. */
+export const MIN_COMPLETENESS = 60;
+/** Alias lama (dipakai kode/uji sebelumnya). */
+export const MIN_PARTIAL_CONFIDENCE = READY_CONFIDENCE;
 
 export type ExtractionGate = {
   allowed: boolean;
@@ -9,15 +14,19 @@ export type ExtractionGate = {
   reason: string;
 };
 
+type GateInput = {
+  verification_status: ExtractionStatus;
+  confidence_score: number;
+  report_confidence?: number | null;
+  completeness_score?: number | null;
+};
+
 /**
  * Gerbang mutu ekstraksi: hasil hanya boleh menjadi input analisis lanjutan
- * (Viral DNA) bila statusnya completed, atau partial dengan keyakinan minimal.
+ * (Viral DNA / ATM) bila keyakinan laporan >= 70 dan kelengkapan memadai.
  */
 export function evaluateExtractionGate(
-  extraction:
-    | { verification_status: ExtractionStatus; confidence_score: number }
-    | null
-    | undefined,
+  extraction: GateInput | null | undefined,
 ): ExtractionGate {
   if (!extraction) {
     return {
@@ -28,7 +37,8 @@ export function evaluateExtractionGate(
   }
 
   const status = extraction.verification_status;
-  const score = extraction.confidence_score;
+  const score = extraction.report_confidence ?? extraction.confidence_score;
+  const completeness = extraction.completeness_score ?? 100;
 
   if (status === "processing") {
     return { allowed: false, level: "warning", reason: "Pemrosesan video masih berjalan." };
@@ -37,21 +47,28 @@ export function evaluateExtractionGate(
     return {
       allowed: false,
       level: "blocked",
-      reason: "Ekstraksi gagal. Proses ulang video sebelum lanjut ke analisis.",
+      reason: "Mayoritas bukti gagal diverifikasi. Proses ulang video sebelum lanjut ke analisis.",
     };
   }
-  if (status === "needs_review") {
+  if (status === "needs_review" || score < PARTIAL_CONFIDENCE) {
     return {
       allowed: false,
       level: "warning",
-      reason: `Terlalu banyak bukti yang tidak terverifikasi (keyakinan ${score}%). Tinjau bukti atau proses ulang video.`,
+      reason: `Keyakinan laporan ${score}% di bawah ${PARTIAL_CONFIDENCE}%. Tinjau bukti yang ditolak atau proses ulang video.`,
     };
   }
-  if (status === "partial" && score < MIN_PARTIAL_CONFIDENCE) {
+  if (score < READY_CONFIDENCE) {
     return {
       allowed: false,
       level: "warning",
-      reason: `Keyakinan ${score}% di bawah minimum ${MIN_PARTIAL_CONFIDENCE}%. Tinjau bukti yang ditolak atau proses ulang video.`,
+      reason: `Keyakinan laporan ${score}% di bawah minimum ${READY_CONFIDENCE}%. Tinjau bukti yang ditolak atau proses ulang video.`,
+    };
+  }
+  if (completeness < MIN_COMPLETENESS) {
+    return {
+      allowed: false,
+      level: "warning",
+      reason: `Kelengkapan informasi baru ${completeness}%. Terlalu banyak bagian laporan tidak teramati pada sumber.`,
     };
   }
 
@@ -60,7 +77,8 @@ export function evaluateExtractionGate(
     level: "ready",
     reason:
       status === "completed"
-        ? "Semua bukti terverifikasi. Siap untuk analisis lanjutan."
-        : `Sebagian bukti terverifikasi (keyakinan ${score}%). Siap untuk analisis lanjutan.`,
+        ? `Semua bukti utama terverifikasi (keyakinan ${score}%, kelengkapan ${completeness}%). Siap untuk analisis lanjutan.`
+        : `Keyakinan laporan ${score}% dan kelengkapan ${completeness}%. Siap untuk analisis lanjutan.`,
   };
 }
+
