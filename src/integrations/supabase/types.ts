@@ -14,28 +14,64 @@ export type Database = {
   }
   public: {
     Tables: {
-      brand_power_words: {
+      brand_knowledge_versions: {
         Row: {
-          context: string
           created_at: string
           id: string
+          readiness: string
+          snapshot: Json
+          user_id: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          readiness?: string
+          snapshot?: Json
+          user_id: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          readiness?: string
+          snapshot?: Json
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      brand_power_words: {
+        Row: {
+          category: string
+          context: string
+          created_at: string
+          forbidden_usage: string
+          id: string
           updated_at: string
+          usage_example: string
           user_id: string
           word: string
         }
         Insert: {
+          category?: string
           context?: string
           created_at?: string
+          forbidden_usage?: string
           id?: string
           updated_at?: string
+          usage_example?: string
           user_id: string
           word?: string
         }
         Update: {
+          category?: string
           context?: string
           created_at?: string
+          forbidden_usage?: string
           id?: string
           updated_at?: string
+          usage_example?: string
           user_id?: string
           word?: string
         }
@@ -43,29 +79,47 @@ export type Database = {
       }
       brand_products: {
         Row: {
+          allowed_claims: string[]
           benefit: string
+          category: string
           created_at: string
           description: string
+          features: string[]
+          forbidden_claims: string[]
           id: string
           name: string
+          status: string
+          target_user: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          allowed_claims?: string[]
           benefit?: string
+          category?: string
           created_at?: string
           description?: string
+          features?: string[]
+          forbidden_claims?: string[]
           id?: string
           name?: string
+          status?: string
+          target_user?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          allowed_claims?: string[]
           benefit?: string
+          category?: string
           created_at?: string
           description?: string
+          features?: string[]
+          forbidden_claims?: string[]
           id?: string
           name?: string
+          status?: string
+          target_user?: string
           updated_at?: string
           user_id?: string
         }
@@ -76,37 +130,61 @@ export type Database = {
           audience: string
           brand_name: string
           created_at: string
+          customer_desire: string
+          customer_problem: string
+          description: string
+          forbidden_style: string
           id: string
           mission: string
+          personality: string
           positioning: string
+          preferred_style: string
           tone_of_voice: string
           updated_at: string
           user_id: string
           version: string
+          visual_direction: string
+          writing_style: string
         }
         Insert: {
           audience?: string
           brand_name?: string
           created_at?: string
+          customer_desire?: string
+          customer_problem?: string
+          description?: string
+          forbidden_style?: string
           id?: string
           mission?: string
+          personality?: string
           positioning?: string
+          preferred_style?: string
           tone_of_voice?: string
           updated_at?: string
           user_id: string
           version?: string
+          visual_direction?: string
+          writing_style?: string
         }
         Update: {
           audience?: string
           brand_name?: string
           created_at?: string
+          customer_desire?: string
+          customer_problem?: string
+          description?: string
+          forbidden_style?: string
           id?: string
           mission?: string
+          personality?: string
           positioning?: string
+          preferred_style?: string
           tone_of_voice?: string
           updated_at?: string
           user_id?: string
           version?: string
+          visual_direction?: string
+          writing_style?: string
         }
         Relationships: []
       }
@@ -115,7 +193,9 @@ export type Database = {
           created_at: string
           id: string
           rule: string
+          rule_category: string
           rule_type: string
+          severity: string
           updated_at: string
           user_id: string
         }
@@ -123,7 +203,9 @@ export type Database = {
           created_at?: string
           id?: string
           rule?: string
+          rule_category?: string
           rule_type?: string
+          severity?: string
           updated_at?: string
           user_id: string
         }
@@ -131,7 +213,9 @@ export type Database = {
           created_at?: string
           id?: string
           rule?: string
+          rule_category?: string
           rule_type?: string
+          severity?: string
           updated_at?: string
           user_id?: string
         }
