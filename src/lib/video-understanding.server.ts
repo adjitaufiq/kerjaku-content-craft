@@ -422,15 +422,36 @@ export type EvidenceCheckMaterial = {
   snapshots?: SnapshotItem[];
 };
 
+/** Nilai yang dianggap "tidak teramati" pada sumber. */
+const EMPTY_PATTERNS =
+  /^(tidak ditemukan|tidak ada|tidak diketahui|tidak disebut|belum ditemukan|unknown|none|n\/?a|-)\b/i;
+
+export function isNotObserved(value: string): boolean {
+  const text = (value ?? "").trim();
+  return !text || EMPTY_PATTERNS.test(text);
+}
+
+export type ValidationScores = {
+  /** Bukti teks terverifikasi / bukti teks diperiksa. */
+  report_confidence: number;
+  /** Kualitas bahan mentah: transkrip + cakupan frame. */
+  source_confidence: number;
+  /** Sebaran frame + ketersediaan audio. */
+  coverage_score: number;
+  /** Informasi teramati / total slot informasi. */
+  completeness_score: number;
+};
+
 export function validateReport(
   report: SourceReport,
   material: EvidenceCheckMaterial,
 ): {
   report: SourceReport;
-  verification_status: "completed" | "partial" | "needs_review";
+  verification_status: "completed" | "partial" | "needs_review" | "failed";
   confidence_score: number;
   checked: number;
   verified: number;
+  scores: ValidationScores;
 } {
   const segments: Record<Evidence["source_type"], Segment[]> = {
     transcript: buildSegments(material.transcript ?? []),
@@ -458,76 +479,119 @@ export function validateReport(
     ].join(" "),
   );
 
-  const checkOne = (ev: Evidence): Evidence => {
+  /**
+   * Bukti visual TIDAK PERNAH dihitung sebagai bukti literal: deskripsi visual
+   * dibuat oleh AI, sehingga mencocokkannya ke deskripsi itu sendiri berarti AI
+   * memvalidasi dirinya sendiri. Bukti visual hanya dicek keberadaan frame-nya.
+   */
+  const checkVisual = (ev: Evidence): Evidence => {
+    const at = parseTimestamp(ev.timestamp ?? "");
+    const frameExists = at !== null && knownFrameTimes.some((t) => Math.abs(t - at) <= TIME_TOLERANCE);
+    return {
+      ...ev,
+      evidence_type: "visual",
+      verified: false,
+      verification_status: frameExists ? "visual_confirmed" : "unverifiable_by_text",
+      reason: frameExists
+        ? "Bukti visual: frame tersedia, tidak dihitung sebagai bukti literal."
+        : "Bukti visual tanpa frame video pada waktu tersebut.",
+    };
+  };
+
+  const checkText = (ev: Evidence): Evidence => {
     const quote = normalizeText(ev.quote ?? "");
     const list = segments[ev.source_type] ?? [];
     const at = parseTimestamp(ev.timestamp ?? "");
+    const rejected = (reason: string): Evidence => ({
+      ...ev,
+      evidence_type: "text",
+      verified: false,
+      verification_status: "rejected",
+      reason,
+    });
 
-    if (!quote) return { ...ev, verified: false, reason: "Kutipan kosong." };
-    if (!list.length) {
-      return { ...ev, verified: false, reason: "Sumber bukti tidak tersedia pada ekstraksi." };
+    if (!quote) return rejected("Kutipan kosong.");
+    if (!list.length) return rejected("Sumber bukti tidak tersedia pada ekstraksi.");
+    if (!list.some((seg) => seg.text.includes(quote))) {
+      return rejected("Kutipan tidak ditemukan pada sumber (kemungkinan parafrase).");
     }
-
-    // Bukti visual wajib menunjuk frame yang benar-benar diambil.
-    if (ev.source_type === "visual") {
-      if (at === null) return { ...ev, verified: false, reason: "Timestamp bukti tidak valid." };
-      const frameExists = knownFrameTimes.some((t) => Math.abs(t - at) <= TIME_TOLERANCE);
-      if (!frameExists) {
-        return { ...ev, verified: false, reason: "Tidak ada frame video pada waktu tersebut." };
-      }
+    if (at === null) return rejected("Timestamp bukti tidak valid.");
+    if (!list.some((seg) => withinSegment(seg, at) && seg.text.includes(quote))) {
+      return rejected("Kutipan ada, tetapi bukan pada waktu tersebut.");
     }
-
-    const anywhere = list.some((seg) => seg.text.includes(quote));
-    if (!anywhere) {
-      return {
-        ...ev,
-        verified: false,
-        reason: "Kutipan tidak ditemukan pada sumber (kemungkinan parafrase).",
-      };
-    }
-
-    if (at === null) return { ...ev, verified: false, reason: "Timestamp bukti tidak valid." };
-
-    const atTime = list.some((seg) => withinSegment(seg, at) && seg.text.includes(quote));
-    if (!atTime) {
-      return { ...ev, verified: false, reason: "Kutipan ada, tetapi bukan pada waktu tersebut." };
-    }
-
-    return { ...ev, verified: true, reason: undefined };
+    return {
+      ...ev,
+      evidence_type: "text",
+      verified: true,
+      verification_status: "verified",
+      reason: undefined,
+    };
   };
 
-  let checked = 0;
-  let verified = 0;
+  const checkOne = (ev: Evidence): Evidence =>
+    ev.source_type === "visual" ? checkVisual(ev) : checkText(ev);
 
-  const checkEvidence = (evidence: Evidence[]): { evidence: Evidence[]; verified: boolean } => {
+  let checked = 0; // klaim teramati yang diperiksa
+  let verified = 0; // klaim dengan bukti teks lolos
+  let slots = 0; // total slot informasi
+  let observed = 0; // slot yang benar-benar berisi informasi
+
+  const checkEvidence = (evidence: Evidence[]) => {
     const list = (evidence ?? []).map(checkOne);
-    return { evidence: list, verified: list.length > 0 && list.every((ev) => ev.verified) };
+    const textEvidence = list.filter((ev) => ev.evidence_type === "text");
+    return {
+      evidence: list,
+      // Minimal satu bukti teks, dan seluruh bukti teks harus lolos.
+      verified: textEvidence.length > 0 && textEvidence.every((ev) => ev.verified),
+    };
   };
+
+  const statusOf = (ok: boolean): InformationStatus => (ok ? "verified" : "unverified");
 
   const checkField = (field: ReportField): ReportField => {
+    slots += 1;
     const value = (field?.value ?? "").trim();
-    if (!value || /^tidak ditemukan/i.test(value)) {
-      return { value: value || "Tidak ditemukan pada sumber", evidence: [], verified: true };
+    if (isNotObserved(value)) {
+      // Informasi kosong TIDAK dianggap terverifikasi.
+      return {
+        value: value || "Tidak ditemukan pada sumber",
+        evidence: [],
+        verified: false,
+        status: "not_observed",
+      };
     }
+    observed += 1;
     checked += 1;
     const res = checkEvidence(field.evidence ?? []);
     if (res.verified) verified += 1;
-    return { value, evidence: res.evidence, verified: res.verified };
+    return { value, evidence: res.evidence, verified: res.verified, status: statusOf(res.verified) };
   };
 
   const checkItems = (items: ReportItem[]): ReportItem[] =>
     (items ?? []).map((item) => {
+      slots += 1;
+      const text = (item.text ?? "").trim();
+      if (isNotObserved(text)) {
+        return { text, evidence: [], verified: false, status: "not_observed" };
+      }
+      observed += 1;
       checked += 1;
       const res = checkEvidence(item.evidence ?? []);
       if (res.verified) verified += 1;
-      return { text: item.text ?? "", evidence: res.evidence, verified: res.verified };
+      return { text, evidence: res.evidence, verified: res.verified, status: statusOf(res.verified) };
     });
 
   // Tools/product harus benar-benar disebut pada transcript atau teks di layar.
   const checkTools = (items: ToolItem[]): ToolItem[] =>
     (items ?? []).map((item) => {
+      slots += 1;
+      const rawName = (item.name ?? "").trim();
+      if (isNotObserved(rawName)) {
+        return { name: rawName, evidence: [], verified: false, status: "not_observed" };
+      }
+      observed += 1;
       checked += 1;
-      const name = normalizeText(item.name ?? "");
+      const name = normalizeText(rawName);
       const mentioned = name.length > 0 && textCorpus.includes(name);
       const res = checkEvidence(item.evidence ?? []);
       const ok = mentioned && res.verified;
@@ -537,9 +601,10 @@ export function validateReport(
         : res.evidence.map((ev) => ({
             ...ev,
             verified: false,
+            verification_status: "rejected" as EvidenceVerification,
             reason: ev.reason ?? "Nama tool/produk tidak disebut pada transkrip atau teks di layar.",
           }));
-      return { name: item.name ?? "", evidence, verified: ok };
+      return { name: rawName, evidence, verified: ok, status: statusOf(ok) };
     });
 
   const validated: SourceReport = {
@@ -554,8 +619,43 @@ export function validateReport(
     steps_framework: checkItems(report.steps_framework),
   };
 
-  const score = checked === 0 ? 0 : Math.round((verified / checked) * 100);
-  const status = checked === 0 || score < 50 ? "needs_review" : score === 100 ? "completed" : "partial";
+  const pct = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
 
-  return { report: validated, verification_status: status, confidence_score: score, checked, verified };
+  const reportConfidence = checked === 0 ? 0 : pct((verified / checked) * 100);
+  const completeness = slots === 0 ? 0 : pct((observed / slots) * 100);
+
+  // Coverage: ketersediaan audio + sebaran frame (8 frame dianggap cakupan penuh).
+  const transcriptSegments = (material.transcript ?? []).filter((t) => (t.text ?? "").trim()).length;
+  const frameCoverage = Math.min(1, knownFrameTimes.length / 8);
+  const audioCoverage = transcriptSegments > 0 ? Math.min(1, transcriptSegments / 4) : 0;
+  const coverage = pct((frameCoverage * 0.5 + audioCoverage * 0.5) * 100);
+
+  // Source confidence: mutu bahan mentah (coverage + kelengkapan informasi teramati).
+  const sourceConfidence = pct(coverage * 0.6 + completeness * 0.4);
+
+  // Satu standar ambang: >=70 siap, 50-69 sebagian, <50 perlu ditinjau.
+  const status: "completed" | "partial" | "needs_review" | "failed" =
+    checked === 0
+      ? "needs_review"
+      : verified === 0
+        ? "failed"
+        : reportConfidence >= 90 && completeness >= 70
+          ? "completed"
+          : reportConfidence >= 50
+            ? "partial"
+            : "needs_review";
+
+  return {
+    report: validated,
+    verification_status: status,
+    confidence_score: reportConfidence,
+    checked,
+    verified,
+    scores: {
+      report_confidence: reportConfidence,
+      source_confidence: sourceConfidence,
+      coverage_score: coverage,
+      completeness_score: completeness,
+    },
+  };
 }
