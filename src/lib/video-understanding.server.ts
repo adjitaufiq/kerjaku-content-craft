@@ -5,6 +5,14 @@ export type SnapshotItem = { path: string; timestamp: string; reason: string };
 export type SceneItem = { timestamp: string; scene: string; description: string; objects: string[] };
 export type OnScreenTextItem = { timestamp: string; text: string };
 
+/** Bukti teks divalidasi literal; bukti visual tidak pernah dihitung sebagai bukti literal. */
+export type EvidenceKind = "text" | "visual";
+export type EvidenceVerification =
+  | "verified"
+  | "rejected"
+  | "visual_confirmed"
+  | "unverifiable_by_text";
+
 export type Evidence = {
   source_type: "transcript" | "on_screen_text" | "visual";
   timestamp: string;
@@ -12,11 +20,32 @@ export type Evidence = {
   verified?: boolean;
   /** Alasan bila bukti ditolak (kutipan/waktu/frame tidak cocok). */
   reason?: string | undefined;
+  evidence_type?: EvidenceKind;
+  verification_status?: EvidenceVerification;
 };
 
-export type ReportField = { value: string; evidence: Evidence[]; verified?: boolean };
-export type ReportItem = { text: string; evidence: Evidence[]; verified?: boolean };
-export type ToolItem = { name: string; evidence: Evidence[]; verified?: boolean };
+/** Status informasi pada Source Content Report. */
+export type InformationStatus = "verified" | "unverified" | "not_observed";
+
+export type ReportField = {
+  value: string;
+  evidence: Evidence[];
+  verified?: boolean;
+  status?: InformationStatus;
+};
+export type ReportItem = {
+  text: string;
+  evidence: Evidence[];
+  verified?: boolean;
+  status?: InformationStatus;
+};
+export type ToolItem = {
+  name: string;
+  evidence: Evidence[];
+  verified?: boolean;
+  status?: InformationStatus;
+};
+
 
 export type SourceReport = {
   summary: ReportField;
