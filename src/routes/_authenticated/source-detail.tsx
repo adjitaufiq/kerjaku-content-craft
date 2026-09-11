@@ -86,30 +86,51 @@ function EvidenceList({ evidence }: { evidence: Evidence[] }) {
   }
   return (
     <ul className="space-y-1">
-      {evidence.map((ev, i) => (
-        <li key={i} className="flex flex-wrap items-center gap-1.5 text-[11px]">
-          <Badge
-            variant="outline"
-            className={
-              ev.verified
-                ? "border-accent/40 bg-accent/10 text-accent"
-                : "border-amber-500/40 bg-amber-500/10 text-amber-400"
-            }
-          >
-            {ev.verified ? <BadgeCheck className="mr-1 size-3" /> : <ShieldAlert className="mr-1 size-3" />}
-            {EVIDENCE_LABEL[ev.source_type]} · {ev.timestamp}
-          </Badge>
-          <span className="text-muted-foreground">“{ev.quote}”</span>
-          {!ev.verified && ev.reason ? (
-            <span className="text-amber-400/90">— {ev.reason}</span>
-          ) : null}
-        </li>
-      ))}
+      {evidence.map((ev, i) => {
+        const isVisual = ev.source_type === "visual";
+        const tone = ev.verified
+          ? "border-accent/40 bg-accent/10 text-accent"
+          : isVisual
+            ? "border-sky-500/40 bg-sky-500/10 text-sky-300"
+            : "border-amber-500/40 bg-amber-500/10 text-amber-400";
+        const note = isVisual
+          ? ev.verification_status === "visual_confirmed"
+            ? "Terlihat pada frame (bukan bukti literal)"
+            : "Frame tidak ditemukan"
+          : ev.reason;
+        return (
+          <li key={i} className="flex flex-wrap items-center gap-1.5 text-[11px]">
+            <Badge variant="outline" className={tone}>
+              {ev.verified ? (
+                <BadgeCheck className="mr-1 size-3" />
+              ) : (
+                <ShieldAlert className="mr-1 size-3" />
+              )}
+              {EVIDENCE_LABEL[ev.source_type]} · {ev.timestamp}
+            </Badge>
+            <span className="text-muted-foreground">“{ev.quote}”</span>
+            {!ev.verified && note ? <span className="text-muted-foreground">— {note}</span> : null}
+          </li>
+        );
+      })}
     </ul>
   );
 }
 
-function VerifiedBadge({ verified }: { verified?: boolean | undefined }) {
+function VerifiedBadge({
+  verified,
+  status,
+}: {
+  verified?: boolean | undefined;
+  status?: "verified" | "unverified" | "not_observed" | undefined;
+}) {
+  if (status === "not_observed") {
+    return (
+      <Badge variant="outline" className="border-border bg-secondary/50 text-muted-foreground">
+        Tidak Teramati
+      </Badge>
+    );
+  }
   return (
     <Badge
       variant="outline"
@@ -124,13 +145,14 @@ function VerifiedBadge({ verified }: { verified?: boolean | undefined }) {
   );
 }
 
+
 function FieldBlock({ label, field }: { label: string; field?: ReportField | undefined }) {
   if (!field) return null;
   return (
     <div className="space-y-1.5 rounded-xl border border-border bg-secondary/30 p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-        <VerifiedBadge verified={field.verified} />
+        <VerifiedBadge verified={field.verified} status={field.status} />
       </div>
       <p className="text-sm">{field.value}</p>
       <EvidenceList evidence={field.evidence ?? []} />
@@ -148,7 +170,7 @@ function ItemsBlock({ label, items }: { label: string; items?: ReportItem[] | un
           <li key={i} className="space-y-1">
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm">{item.text ?? item.name}</p>
-              <VerifiedBadge verified={item.verified} />
+              <VerifiedBadge verified={item.verified} status={item.status} />
             </div>
             <EvidenceList evidence={item.evidence ?? []} />
           </li>
@@ -458,7 +480,10 @@ function SourceDetailPage() {
                       <Badge variant="outline" className={statusTone(extraction.verification_status)}>
                         {STATUS_LABEL[extraction.verification_status]}
                       </Badge>
-                      <Badge variant="outline">Keyakinan {extraction.confidence_score}%</Badge>
+                      <Badge variant="outline">Laporan {extraction.report_confidence || extraction.confidence_score}%</Badge>
+                      <Badge variant="outline">Sumber {extraction.source_confidence}%</Badge>
+                      <Badge variant="outline">Kelengkapan {extraction.completeness_score}%</Badge>
+                      <Badge variant="outline">Cakupan {extraction.coverage_score}%</Badge>
                     </div>
                   ) : null}
                 </div>

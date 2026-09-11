@@ -11,19 +11,35 @@ export type ExtractionStatus =
   | "failed"
   | "needs_review";
 
+export type EvidenceKind = "text" | "visual";
+export type EvidenceVerification =
+  | "verified"
+  | "rejected"
+  | "visual_confirmed"
+  | "unverifiable_by_text";
+export type InformationStatus = "verified" | "unverified" | "not_observed";
+
 export type ReportEvidence = {
   source_type: "transcript" | "on_screen_text" | "visual";
   timestamp: string;
   quote: string;
   verified: boolean;
   reason?: string | undefined;
+  evidence_type?: EvidenceKind;
+  verification_status?: EvidenceVerification;
 };
-export type ReportField = { value: string; evidence: ReportEvidence[]; verified: boolean };
+export type ReportField = {
+  value: string;
+  evidence: ReportEvidence[];
+  verified: boolean;
+  status?: InformationStatus;
+};
 export type ReportItem = {
   text?: string;
   name?: string;
   evidence: ReportEvidence[];
   verified: boolean;
+  status?: InformationStatus;
 };
 export type SourceReportData = Partial<{
   summary: ReportField;
@@ -52,12 +68,17 @@ export type SourceExtraction = {
   source_report: SourceReportData;
   verification_status: ExtractionStatus;
   confidence_score: number;
+  completeness_score: number;
+  coverage_score: number;
+  source_confidence: number;
+  report_confidence: number;
   has_audio: boolean;
   model: string;
   error_message: string | null;
   created_at: string;
   updated_at: string;
 };
+
 
 export const getSourceDetail = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -184,15 +205,18 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
         snapshots: data.snapshots,
       });
 
-      // Video tanpa suara tetap diproses, tapi ditandai low confidence.
+      // Video tanpa suara tetap diproses, tapi ditandai low confidence (visual-only).
       const score = hasAudio
         ? validation.confidence_score
         : Math.min(validation.confidence_score, 49);
-      const status: ExtractionStatus = hasAudio
-        ? validation.verification_status
-        : score < 50
-          ? "needs_review"
-          : "partial";
+      const status: ExtractionStatus =
+        validation.verification_status === "failed"
+          ? "failed"
+          : hasAudio
+            ? validation.verification_status
+            : score < 50
+              ? "needs_review"
+              : "partial";
 
       await context.supabase
         .from("source_extractions")
@@ -203,11 +227,16 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
           source_report: validation.report as unknown as Json,
           verification_status: status,
           confidence_score: score,
+          report_confidence: validation.scores.report_confidence,
+          source_confidence: validation.scores.source_confidence,
+          coverage_score: validation.scores.coverage_score,
+          completeness_score: validation.scores.completeness_score,
           has_audio: hasAudio,
           error_message: null,
         })
         .eq("source_id", data.sourceId)
         .throwOnError();
+
 
       await context.supabase
         .from("viral_sources")
