@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { CliperIntelligencePanel } from "@/components/CliperIntelligencePanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -533,6 +534,10 @@ function SourceDetailPage() {
             </section>
           </div>
         )}
+
+        {source && extraction ? (
+          <CliperIntelligencePanel sourceId={id} gateAllowed={gate.allowed} />
+        ) : null}
       </div>
     </AppShell>
   );

@@ -20,7 +20,7 @@ import { useScheduleRunner } from "@/lib/use-schedule-runner";
 const nav = [
   { to: "/", label: "Content Grid", icon: LayoutGrid },
   { to: "/editor", label: "Editor & Publisher", icon: Wand2 },
-  { to: "/viral", label: "Viral Content Intelligence", icon: Brain },
+  { to: "/viral", label: "Viral References", icon: Brain },
   { to: "/sources", label: "Viral Source Intake", icon: Video },
   { to: "/downloader", label: "Content Downloader", icon: Download },
   { to: "/settings", label: "Settings", icon: Settings2 },
@@ -60,7 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
           </Link>
 
-          <nav className="ml-auto flex items-center gap-1 overflow-x-auto">
+          <nav className="flex w-full min-w-0 items-center gap-1 overflow-x-auto lg:ml-auto lg:w-auto">
             {nav.map((item) => (
               <Link
                 key={item.to}
