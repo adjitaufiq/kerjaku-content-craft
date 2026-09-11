@@ -550,14 +550,18 @@ export type Database = {
       }
       source_extractions: {
         Row: {
+          completeness_score: number
           confidence_score: number
+          coverage_score: number
           created_at: string
           error_message: string | null
           has_audio: boolean
           id: string
           model: string
           on_screen_text: Json
+          report_confidence: number
           snapshot_data: Json
+          source_confidence: number
           source_id: string
           source_report: Json
           transcript: Json
@@ -567,14 +571,18 @@ export type Database = {
           visual_analysis: Json
         }
         Insert: {
+          completeness_score?: number
           confidence_score?: number
+          coverage_score?: number
           created_at?: string
           error_message?: string | null
           has_audio?: boolean
           id?: string
           model?: string
           on_screen_text?: Json
+          report_confidence?: number
           snapshot_data?: Json
+          source_confidence?: number
           source_id: string
           source_report?: Json
           transcript?: Json
@@ -584,14 +592,18 @@ export type Database = {
           visual_analysis?: Json
         }
         Update: {
+          completeness_score?: number
           confidence_score?: number
+          coverage_score?: number
           created_at?: string
           error_message?: string | null
           has_audio?: boolean
           id?: string
           model?: string
           on_screen_text?: Json
+          report_confidence?: number
           snapshot_data?: Json
+          source_confidence?: number
           source_id?: string
           source_report?: Json
           transcript?: Json
