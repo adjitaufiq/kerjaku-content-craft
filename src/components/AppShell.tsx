@@ -20,7 +20,7 @@ import { useScheduleRunner } from "@/lib/use-schedule-runner";
 const nav = [
   { to: "/", label: "Content Grid", icon: LayoutGrid },
   { to: "/editor", label: "Editor & Publisher", icon: Wand2 },
-  { to: "/viral", label: "Viral Content Intelligence", icon: Brain },
+  { to: "/viral", label: "Viral References", icon: Brain },
   { to: "/sources", label: "Viral Source Intake", icon: Video },
   { to: "/downloader", label: "Content Downloader", icon: Download },
   { to: "/settings", label: "Settings", icon: Settings2 },

@@ -103,13 +103,6 @@ function lockDnaEvidence<T extends {
   };
 }
 
-async function getOwnedExtraction(
-  context: Parameters<Parameters<typeof requireSupabaseAuth>[0]>[0] extends never ? never : never,
-  _sourceId: string,
-) {
-  return context;
-}
-
 export const getIntelligenceWorkspace = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { sourceId: string }) => input)
