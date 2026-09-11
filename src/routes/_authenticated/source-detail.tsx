@@ -152,7 +152,7 @@ function FieldBlock({ label, field }: { label: string; field?: ReportField | und
     <div className="space-y-1.5 rounded-xl border border-border bg-secondary/30 p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-        <VerifiedBadge verified={field.verified} />
+        <VerifiedBadge verified={field.verified} status={field.status} />
       </div>
       <p className="text-sm">{field.value}</p>
       <EvidenceList evidence={field.evidence ?? []} />
@@ -170,7 +170,7 @@ function ItemsBlock({ label, items }: { label: string; items?: ReportItem[] | un
           <li key={i} className="space-y-1">
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm">{item.text ?? item.name}</p>
-              <VerifiedBadge verified={item.verified} />
+              <VerifiedBadge verified={item.verified} status={item.status} />
             </div>
             <EvidenceList evidence={item.evidence ?? []} />
           </li>
@@ -480,7 +480,10 @@ function SourceDetailPage() {
                       <Badge variant="outline" className={statusTone(extraction.verification_status)}>
                         {STATUS_LABEL[extraction.verification_status]}
                       </Badge>
-                      <Badge variant="outline">Keyakinan {extraction.confidence_score}%</Badge>
+                      <Badge variant="outline">Laporan {extraction.report_confidence || extraction.confidence_score}%</Badge>
+                      <Badge variant="outline">Sumber {extraction.source_confidence}%</Badge>
+                      <Badge variant="outline">Kelengkapan {extraction.completeness_score}%</Badge>
+                      <Badge variant="outline">Cakupan {extraction.coverage_score}%</Badge>
                     </div>
                   ) : null}
                 </div>
