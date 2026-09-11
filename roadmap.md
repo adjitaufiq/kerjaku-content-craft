@@ -6,4 +6,4 @@
 - [x] Viral DNA and ATM authenticated workflow functions
 - [x] Viral DNA, ATM, and approval UI on source detail
 - [x] Brand Knowledge editor in Settings
-- [ ] Build, runtime, responsive, and AI-path verification
+- [x] Build, runtime, responsive, and AI-path verification
