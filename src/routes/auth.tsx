@@ -22,6 +22,8 @@ export const Route = createFileRoute("/auth")({
         property: "og:description",
         content: "Akses internal KERJAKU Instagram Publisher.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: AuthPage,

@@ -60,7 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
           </Link>
 
-          <nav className="ml-auto flex items-center gap-1 overflow-x-auto">
+          <nav className="flex w-full min-w-0 items-center gap-1 overflow-x-auto lg:ml-auto lg:w-auto">
             {nav.map((item) => (
               <Link
                 key={item.to}
