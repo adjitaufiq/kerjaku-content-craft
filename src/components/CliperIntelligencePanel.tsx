@@ -75,7 +75,8 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
       {dna ? (
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="surface-panel space-y-4 p-5">
-            <div className="flex items-center justify-between gap-2"><h3 className="font-display font-semibold">Viral DNA Report</h3><Badge variant="outline">{dna.hook_type}</Badge></div>
+            <div className="flex items-center justify-between gap-2"><h3 className="font-display font-semibold">Viral DNA Report</h3><div className="flex flex-wrap items-center gap-1"><Badge variant="outline">{dna.hook_type}</Badge>{dna.confidence_score ? <Badge variant="secondary">Keyakinan {Math.round(dna.confidence_score)}%</Badge> : null}</div></div>
+            <div className="flex flex-wrap gap-1">{[dna.hook_category, dna.structure_category, dna.trigger_category].filter(Boolean).map((tag) => <Badge key={tag} variant="outline" className="text-[11px]">{tag.replace(/_/g, " ")}</Badge>)}</div>
             <DnaRow label="Hook" value={dna.hook} />
             <DnaRow label="Kenapa hook bekerja" value={dna.hook_reason} />
             <DnaRow label="Pattern interrupt" value={dna.pattern_interrupt} />
@@ -84,6 +85,9 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
             <DnaRow label="Structure" value={dna.structure_type} />
             <DnaRow label="Retention" value={dna.retention_factor} />
             <DnaRow label="Engagement" value={dna.engagement_factor} />
+            <DnaRow label="Pemicu simpan" value={dna.save_trigger} />
+            <DnaRow label="Pemicu bagikan" value={dna.share_trigger} />
+            <DnaRow label="Pemicu komentar" value={dna.comment_trigger} />
             <div><p className="text-xs font-semibold uppercase text-muted-foreground">Power words</p><div className="mt-2 flex flex-wrap gap-1">{dna.power_words.map((word) => <Badge key={word} variant="secondary">{word}</Badge>)}</div></div>
             <Evidence items={dna.evidence} />
           </div>

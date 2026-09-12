@@ -23,6 +23,12 @@ export type ViralDnaResult = {
   story_beats: StoryBeat[];
   retention_factor: string;
   engagement_factor: string;
+  save_trigger: string;
+  share_trigger: string;
+  comment_trigger: string;
+  hook_category: string;
+  structure_category: string;
+  trigger_category: string;
   evidence: DnaEvidence[];
 };
 
@@ -76,7 +82,8 @@ const DNA_SCHEMA = {
   required: [
     "hook", "hook_type", "hook_reason", "pattern_interrupt", "psychological_trigger",
     "curiosity_gap", "power_words", "structure_type", "story_beats", "retention_factor",
-    "engagement_factor", "evidence",
+    "engagement_factor", "save_trigger", "share_trigger", "comment_trigger",
+    "hook_category", "structure_category", "trigger_category", "evidence",
   ],
   properties: {
     hook: { type: "string" },
@@ -103,6 +110,21 @@ const DNA_SCHEMA = {
     },
     retention_factor: { type: "string" },
     engagement_factor: { type: "string" },
+    save_trigger: { type: "string" },
+    share_trigger: { type: "string" },
+    comment_trigger: { type: "string" },
+    hook_category: {
+      type: "string",
+      enum: ["question", "bold_claim", "problem_callout", "story_open", "contrarian", "demonstration", "list_promise", "other"],
+    },
+    structure_category: {
+      type: "string",
+      enum: ["problem_solution", "story_arc", "listicle", "tutorial", "comparison", "myth_busting", "case_study", "other"],
+    },
+    trigger_category: {
+      type: "string",
+      enum: ["curiosity", "fear_of_missing_out", "social_proof", "identity", "urgency", "surprise", "empathy", "other"],
+    },
     evidence: { type: "array", items: EVIDENCE_SCHEMA },
   },
 } as const;
@@ -228,7 +250,7 @@ export async function analyzeViralDna(sourceReport: unknown): Promise<{ result: 
   const result = await streamStructured<ViralDnaResult>({
     name: "viral_dna_analysis",
     schema: DNA_SCHEMA,
-    instructions: `Kamu adalah reverse-engineering analyst untuk konten viral. Analisis mengapa struktur sumber bekerja, bukan membuat ide atau menyalin konten. Gunakan HANYA Source Content Report yang diberikan. Setiap klaim harus didukung evidence terverifikasi yang sudah ada; salin source_type, timestamp, dan quote persis dari evidence sumber. Jangan menambah fakta, produk, klaim, atau timestamp baru. Jawab ringkas dalam Bahasa Indonesia.`,
+    instructions: `Kamu adalah reverse-engineering analyst untuk konten viral. Analisis mengapa struktur sumber bekerja, bukan membuat ide atau menyalin konten. Gunakan HANYA Source Content Report yang diberikan. Setiap klaim harus didukung evidence terverifikasi yang sudah ada; salin source_type, timestamp, dan quote persis dari evidence sumber. Jangan menambah fakta, produk, klaim, atau timestamp baru. Tentukan juga save_trigger (alasan konten layak disimpan), share_trigger (alasan layak dibagikan), dan comment_trigger (pemicu komentar) berdasarkan mekanisme yang teramati di sumber. Pilih hook_category, structure_category, dan trigger_category dari enum yang tersedia agar pola bisa dipakai ulang. Jawab ringkas dalam Bahasa Indonesia.`,
     prompt: `Analisis Viral DNA dari Source Content Report berikut. Abaikan semua evidence dengan verified=false.\n\n${JSON.stringify(sourceReport)}`,
   });
   return { result, model: MODEL };
