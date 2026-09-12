@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { BadgeCheck, Brain, Loader2, ShieldAlert, Sparkles, XCircle } from "lucide-react";
 import { toast } from "sonner";
