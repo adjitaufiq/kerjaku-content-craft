@@ -30,6 +30,13 @@ export type ViralDna = {
   }>;
   retention_factor: string;
   engagement_factor: string;
+  save_trigger: string;
+  share_trigger: string;
+  comment_trigger: string;
+  hook_category: string;
+  structure_category: string;
+  trigger_category: string;
+  confidence_score: number;
   evidence: DnaEvidence[];
   model: string;
   updated_at: string;
