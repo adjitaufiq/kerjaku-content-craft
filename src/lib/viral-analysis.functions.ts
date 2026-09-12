@@ -36,59 +36,18 @@ export const listAnalysisReports = createServerFn({ method: "GET" })
     return (data ?? []) as ViralAnalysisReport[];
   });
 
+export const LEGACY_PIPELINE_MESSAGE =
+  "Pipeline analisis lama sudah berstatus arsip (read only). Analisis baru hanya dijalankan lewat Cliper Intelligence: video sumber → ekstraksi → laporan sumber → Viral DNA.";
+
+/**
+ * Legacy pipeline lock: laporan lama tetap bisa dibaca dan dihapus, tetapi
+ * tidak boleh lagi menghasilkan analisis baru berbasis judul/metadata.
+ */
 export const analyzeViralReferenceFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { referenceId: string; notes?: string | null }) => input)
-  .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { data: ref, error: refError } = await context.supabase
-      .from("viral_content_references")
-      .select("*")
-      .eq("id", data.referenceId)
-      .single();
-    if (refError) throw new Error(refError.message);
-
-    await context.supabase
-      .from("viral_content_references")
-      .update({ content_analysis_status: "in_progress", status: "analyzing" })
-      .eq("id", data.referenceId);
-
-    try {
-      const { analyzeViralReference } = await import("@/lib/viral-analysis.server");
-      const { result, model } = await analyzeViralReference({
-        title: ref.title,
-        platform: ref.source_platform,
-        category: ref.category,
-        sourceUrl: ref.source_url,
-        hasUpload: Boolean(ref.uploaded_file),
-        notes: data.notes ?? null,
-      });
-
-      const { error: upsertError } = await context.supabase
-        .from("viral_analysis_reports")
-        .upsert(
-          {
-            reference_id: data.referenceId,
-            user_id: context.userId,
-            model,
-            ...result,
-          },
-          { onConflict: "reference_id" },
-        );
-      if (upsertError) throw new Error(upsertError.message);
-
-      await context.supabase
-        .from("viral_content_references")
-        .update({ content_analysis_status: "completed", status: "analyzed" })
-        .eq("id", data.referenceId);
-
-      return { ok: true };
-    } catch (e) {
-      await context.supabase
-        .from("viral_content_references")
-        .update({ content_analysis_status: "failed", status: "revision_needed" })
-        .eq("id", data.referenceId);
-      throw e instanceof Error ? e : new Error("Analisis AI gagal.");
-    }
+  .handler(async (): Promise<never> => {
+    throw new Error(LEGACY_PIPELINE_MESSAGE);
   });
 
 export const deleteAnalysisReport = createServerFn({ method: "POST" })
