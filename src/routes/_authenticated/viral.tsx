@@ -4,29 +4,20 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
+  Archive,
   Brain,
   ExternalLink,
   Loader2,
   PlusCircle,
-  Sparkles,
   Trash2,
   UploadCloud,
-  Wand2,
 } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { ContentRemixView } from "@/components/ContentRemixView";
 import { ViralAnalysisReportView } from "@/components/ViralAnalysisReport";
-import {
-  deleteContentRemix,
-  generateContentRemixFn,
-  listContentRemixes,
-} from "@/lib/content-remix.functions";
-import {
-  analyzeViralReferenceFn,
-  deleteAnalysisReport,
-  listAnalysisReports,
-} from "@/lib/viral-analysis.functions";
+import { deleteContentRemix, listContentRemixes } from "@/lib/content-remix.functions";
+import { deleteAnalysisReport, listAnalysisReports } from "@/lib/viral-analysis.functions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,7 +111,7 @@ function ViralPage() {
   const patchDraft = useServerFn(updateGeneratedDraft);
   const removeDraft = useServerFn(deleteGeneratedDraft);
 
-  const runAnalysis = useServerFn(analyzeViralReferenceFn);
+  
   const fetchReports = useServerFn(listAnalysisReports);
   const removeReport = useServerFn(deleteAnalysisReport);
 
@@ -134,18 +125,6 @@ function ViralPage() {
     queryFn: () => fetchReports({}),
   });
 
-  const analyze = useMutation({
-    mutationFn: (id: string) => runAnalysis({ data: { referenceId: id } }),
-    onSuccess: (_d, id) => {
-      toast.success("Analisis viral selesai.");
-      setSelectedRef(id);
-      void invalidate();
-    },
-    onError: (e: Error) => {
-      toast.error(e.message);
-      void invalidate();
-    },
-  });
 
   const dropReport = useMutation({
     mutationFn: (id: string) => removeReport({ data: { referenceId: id } }),
@@ -156,7 +135,7 @@ function ViralPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const runRemix = useServerFn(generateContentRemixFn);
+  
   const fetchRemixes = useServerFn(listContentRemixes);
   const removeRemix = useServerFn(deleteContentRemix);
 
@@ -165,15 +144,6 @@ function ViralPage() {
     queryFn: () => fetchRemixes({}),
   });
 
-  const remix = useMutation({
-    mutationFn: (id: string) => runRemix({ data: { referenceId: id } }),
-    onSuccess: (_d, id) => {
-      toast.success("Konten KERJAKU berhasil dibuat.");
-      setSelectedRef(id);
-      void invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const dropRemix = useMutation({
     mutationFn: (id: string) => removeRemix({ data: { referenceId: id } }),
@@ -298,14 +268,21 @@ function ViralPage() {
   return (
     <AppShell>
       <div className="space-y-8">
-        <header className="space-y-1">
-          <h1 className="flex items-center gap-2 font-display text-2xl font-bold tracking-tight">
+        <header className="space-y-2">
+          <h1 className="flex flex-wrap items-center gap-2 font-display text-2xl font-bold tracking-tight">
             <Brain className="size-6 text-primary" />
-            Viral Content Intelligence
+            Viral References
+            <Badge className="bg-amber-500/15 text-amber-400">Legacy Analysis · Read Only</Badge>
           </h1>
           <p className="text-sm text-muted-foreground">
-            Kumpulkan referensi viral dari TikTok, Instagram, atau video unggahan, lalu kawal
-            statusnya sampai siap produksi.
+            Arsip referensi dan hasil analisis lama. Data lama tetap tersimpan dan bisa dibaca,
+            tetapi tidak lagi dipakai sebagai bahan analisis baru.
+          </p>
+          <p className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
+            <Archive className="mt-0.5 size-4 shrink-0" />
+            Analisis dan pembuatan konten baru kini hanya berjalan lewat Cliper Intelligence:
+            video sumber → ekstraksi → laporan sumber → Viral DNA. Analisis berbasis judul dan
+            metadata sudah dinonaktifkan.
           </p>
         </header>
 
@@ -442,36 +419,6 @@ function ViralPage() {
                       </a>
                     ) : null}
                     <Badge className={STATUS_CLASS[r.status]}>{STATUS_LABEL[r.status]}</Badge>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-8 gap-1 text-xs"
-                      disabled={analyze.isPending}
-                      onClick={() => analyze.mutate(r.id)}
-                    >
-                      {analyze.isPending && analyze.variables === r.id ? (
-                        <Loader2 className="size-3.5 animate-spin" />
-                      ) : (
-                        <Wand2 className="size-3.5" />
-                      )}
-                      Analisis AI
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-8 gap-1 text-xs"
-                      disabled={remix.isPending}
-                      onClick={() => remix.mutate(r.id)}
-                    >
-                      {remix.isPending && remix.variables === r.id ? (
-                        <Loader2 className="size-3.5 animate-spin" />
-                      ) : (
-                        <Sparkles className="size-3.5" />
-                      )}
-                      Generate Konten
-                    </Button>
                     <Select
                       value={r.status}
                       onValueChange={(v) =>
@@ -597,19 +544,11 @@ function ViralPage() {
         {(() => {
           const report = (reports.data ?? []).find((x) => x.reference_id === selectedRef);
           if (!selectedRef) return null;
-          if (analyze.isPending && analyze.variables === selectedRef) {
-            return (
-              <section className="flex items-center gap-2 rounded-2xl border border-border/70 bg-card/60 p-5 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin text-primary" />
-                Menganalisis formula viral referensi ini…
-              </section>
-            );
-          }
           if (!report) {
             return (
               <section className="rounded-2xl border border-border/70 bg-card/60 p-5 text-sm text-muted-foreground">
-                Belum ada laporan analisis untuk referensi terpilih. Tekan “Analisis AI” pada
-                referensi tersebut.
+                Tidak ada arsip laporan untuk referensi terpilih. Analisis baru kini dijalankan di
+                Cliper Intelligence melalui video sumber.
               </section>
             );
           }
@@ -634,14 +573,6 @@ function ViralPage() {
 
         {(() => {
           if (!selectedRef) return null;
-          if (remix.isPending && remix.variables === selectedRef) {
-            return (
-              <section className="flex items-center gap-2 rounded-2xl border border-border/70 bg-card/60 p-5 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin text-primary" />
-                Membuat versi konten KERJAKU dari formula viral ini…
-              </section>
-            );
-          }
           const item = (remixes.data ?? []).find((x) => x.reference_id === selectedRef);
           if (!item) return null;
           return (
