@@ -104,7 +104,7 @@ export const runContentProduction = createServerFn({ method: "POST" })
       mode: version.atm_mode,
       angle: version.angle,
       dna: dna.data as unknown as Parameters<typeof generateContentProduction>[0]["dna"],
-      sourceReport: (extraction.data as SourceExtraction).source_report,
+      sourceReport: (extraction.data as unknown as SourceExtraction).source_report,
       sourceMapping: version.source_mapping,
       adaptation: version.adaptation,
       brand: {
