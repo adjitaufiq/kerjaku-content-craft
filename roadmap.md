@@ -7,3 +7,4 @@
 - [x] Viral DNA, ATM, and approval UI on source detail
 - [x] Brand Knowledge editor in Settings
 - [x] Build, runtime, responsive, and AI-path verification
+- [x] Content Production Engine (carousel, visual prompt, caption, CTA, hashtag)
