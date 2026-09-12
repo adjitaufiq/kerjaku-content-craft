@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   LogOut,
   Settings2,
+  Sparkles,
   Video,
   Wand2,
 } from "lucide-react";
