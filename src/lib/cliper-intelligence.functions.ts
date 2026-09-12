@@ -188,15 +188,22 @@ export const generateKerjakuAtmVersion = createServerFn({ method: "POST" })
     const angle = data.angle.trim();
     if (!angle) throw new Error("Angle wajib diisi sebelum menjalankan ATM Engine.");
 
-    const [dna, profile, products, rules, words] = await Promise.all([
+    const [extraction, dna, profile, products, rules, words] = await Promise.all([
+      context.supabase.from("source_extractions").select("*").eq("source_id", data.sourceId).maybeSingle(),
       context.supabase.from("viral_intelligence").select("*").eq("source_id", data.sourceId).maybeSingle(),
       context.supabase.from("brand_profile").select("*").maybeSingle(),
       context.supabase.from("brand_products").select("name,description,benefit").order("created_at"),
       context.supabase.from("brand_rules").select("rule,rule_type").order("created_at"),
       context.supabase.from("brand_power_words").select("word,context").order("created_at"),
     ]);
-    const queryError = dna.error ?? profile.error ?? products.error ?? rules.error ?? words.error;
+    const queryError =
+      extraction.error ?? dna.error ?? profile.error ?? products.error ?? rules.error ?? words.error;
     if (queryError) throw new Error(queryError.message);
+
+    // Single source of truth: ATM hanya menerima sumber dari pipeline baru yang
+    // laporan sumbernya lolos gerbang mutu ekstraksi.
+    const gate = evaluateExtractionGate(extraction.data as SourceExtraction | null);
+    if (!gate.allowed) throw new Error(gate.reason);
     if (!dna.data) throw new Error("Jalankan Viral DNA Analysis terlebih dahulu.");
     if (!profile.data?.positioning || !profile.data.audience || !profile.data.tone_of_voice) {
       throw new Error("Lengkapi positioning, audience, dan tone of voice di Brand Knowledge terlebih dahulu.");
