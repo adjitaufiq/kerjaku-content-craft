@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   LogOut,
   Settings2,
+  Sparkles,
   Video,
   Wand2,
 } from "lucide-react";
@@ -24,6 +25,7 @@ const nav = [
   { to: "/viral", label: "Viral References", icon: Brain },
   { to: "/sources", label: "Viral Source Intake", icon: Video },
   { to: "/downloader", label: "Content Downloader", icon: Download },
+  { to: "/production", label: "Content Production", icon: Sparkles },
   { to: "/brand", label: "Brand Center", icon: BookOpen },
   { to: "/settings", label: "Settings", icon: Settings2 },
 ] as const;

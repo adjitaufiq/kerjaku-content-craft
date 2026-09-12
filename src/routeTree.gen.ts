@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedBrandRouteImport } from './routes/_authenticated/brand'
 import { Route as AuthenticatedDownloaderRouteImport } from './routes/_authenticated/downloader'
 import { Route as AuthenticatedEditorRouteImport } from './routes/_authenticated/editor'
+import { Route as AuthenticatedProductionRouteImport } from './routes/_authenticated/production'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSourceDetailRouteImport } from './routes/_authenticated/source-detail'
 import { Route as AuthenticatedSourcesRouteImport } from './routes/_authenticated/sources'
@@ -48,6 +49,11 @@ const AuthenticatedDownloaderRoute = AuthenticatedDownloaderRouteImport.update({
 const AuthenticatedEditorRoute = AuthenticatedEditorRouteImport.update({
   id: '/editor',
   path: '/editor',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProductionRoute = AuthenticatedProductionRouteImport.update({
+  id: '/production',
+  path: '/production',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/brand': typeof AuthenticatedBrandRoute
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
+  '/production': typeof AuthenticatedProductionRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/source-detail': typeof AuthenticatedSourceDetailRoute
   '/sources': typeof AuthenticatedSourcesRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/brand': typeof AuthenticatedBrandRoute
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
+  '/production': typeof AuthenticatedProductionRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/source-detail': typeof AuthenticatedSourceDetailRoute
   '/sources': typeof AuthenticatedSourcesRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/_authenticated/brand': typeof AuthenticatedBrandRoute
   '/_authenticated/downloader': typeof AuthenticatedDownloaderRoute
   '/_authenticated/editor': typeof AuthenticatedEditorRoute
+  '/_authenticated/production': typeof AuthenticatedProductionRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/source-detail': typeof AuthenticatedSourceDetailRoute
   '/_authenticated/sources': typeof AuthenticatedSourcesRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/brand'
     | '/downloader'
     | '/editor'
+    | '/production'
     | '/settings'
     | '/source-detail'
     | '/sources'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
     | '/brand'
     | '/downloader'
     | '/editor'
+    | '/production'
     | '/settings'
     | '/source-detail'
     | '/sources'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '/_authenticated/brand'
     | '/_authenticated/downloader'
     | '/_authenticated/editor'
+    | '/_authenticated/production'
     | '/_authenticated/settings'
     | '/_authenticated/source-detail'
     | '/_authenticated/sources'
@@ -206,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEditorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/production': {
+      id: '/_authenticated/production'
+      path: '/production'
+      fullPath: '/production'
+      preLoaderRoute: typeof AuthenticatedProductionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -248,6 +267,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBrandRoute: typeof AuthenticatedBrandRoute
   AuthenticatedDownloaderRoute: typeof AuthenticatedDownloaderRoute
   AuthenticatedEditorRoute: typeof AuthenticatedEditorRoute
+  AuthenticatedProductionRoute: typeof AuthenticatedProductionRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSourceDetailRoute: typeof AuthenticatedSourceDetailRoute
   AuthenticatedSourcesRoute: typeof AuthenticatedSourcesRoute
@@ -259,6 +279,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBrandRoute: AuthenticatedBrandRoute,
   AuthenticatedDownloaderRoute: AuthenticatedDownloaderRoute,
   AuthenticatedEditorRoute: AuthenticatedEditorRoute,
+  AuthenticatedProductionRoute: AuthenticatedProductionRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSourceDetailRoute: AuthenticatedSourceDetailRoute,
   AuthenticatedSourcesRoute: AuthenticatedSourcesRoute,
