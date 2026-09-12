@@ -851,11 +851,14 @@ export type Database = {
       }
       viral_intelligence: {
         Row: {
+          comment_trigger: string
+          confidence_score: number
           created_at: string
           curiosity_gap: string
           engagement_factor: string
           evidence: Json
           hook: string
+          hook_category: string
           hook_reason: string
           hook_type: string
           id: string
@@ -864,18 +867,25 @@ export type Database = {
           power_words: string[]
           psychological_trigger: string
           retention_factor: string
+          save_trigger: string
+          share_trigger: string
           source_id: string
           story_beats: Json
+          structure_category: string
           structure_type: string
+          trigger_category: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          comment_trigger?: string
+          confidence_score?: number
           created_at?: string
           curiosity_gap?: string
           engagement_factor?: string
           evidence?: Json
           hook?: string
+          hook_category?: string
           hook_reason?: string
           hook_type?: string
           id?: string
@@ -884,18 +894,25 @@ export type Database = {
           power_words?: string[]
           psychological_trigger?: string
           retention_factor?: string
+          save_trigger?: string
+          share_trigger?: string
           source_id: string
           story_beats?: Json
+          structure_category?: string
           structure_type?: string
+          trigger_category?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          comment_trigger?: string
+          confidence_score?: number
           created_at?: string
           curiosity_gap?: string
           engagement_factor?: string
           evidence?: Json
           hook?: string
+          hook_category?: string
           hook_reason?: string
           hook_type?: string
           id?: string
@@ -904,9 +921,13 @@ export type Database = {
           power_words?: string[]
           psychological_trigger?: string
           retention_factor?: string
+          save_trigger?: string
+          share_trigger?: string
           source_id?: string
           story_beats?: Json
+          structure_category?: string
           structure_type?: string
+          trigger_category?: string
           updated_at?: string
           user_id?: string
         }
