@@ -36,68 +36,18 @@ export const listContentRemixes = createServerFn({ method: "GET" })
     return (data ?? []) as unknown as ContentRemixRow[];
   });
 
+/**
+ * Legacy pipeline lock: hasil remix lama tetap tersimpan dan bisa dibaca,
+ * tetapi tidak boleh lagi menghasilkan konten baru dari metadata.
+ */
 export const generateContentRemixFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
     (input: { referenceId: string; preferredType?: string | null; notes?: string | null }) => input,
   )
-  .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { data: ref, error: refError } = await context.supabase
-      .from("viral_content_references")
-      .select("*")
-      .eq("id", data.referenceId)
-      .single();
-    if (refError) throw new Error(refError.message);
-
-    const { data: report, error: reportError } = await context.supabase
-      .from("viral_analysis_reports")
-      .select("*")
-      .eq("reference_id", data.referenceId)
-      .maybeSingle();
-    if (reportError) throw new Error(reportError.message);
-    if (!report)
-      throw new Error("Jalankan Analisis AI dulu untuk referensi ini sebelum generate konten.");
-
-    const analysis: Record<string, string> = {};
-    for (const [k, v] of Object.entries(report)) {
-      if (
-        typeof v === "string" &&
-        !["id", "reference_id", "user_id", "model", "created_at", "updated_at"].includes(k)
-      ) {
-        analysis[k] = v;
-      }
-    }
-
-    const { generateContentRemix } = await import("@/lib/content-remix.server");
-    const { result, model } = await generateContentRemix({
-      title: ref.title,
-      category: ref.category,
-      platform: ref.source_platform,
-      analysis,
-      preferredType: data.preferredType ?? null,
-      notes: data.notes ?? null,
-    });
-
-    const { error: upsertError } = await context.supabase.from("content_remix_results").upsert(
-      {
-        reference_id: data.referenceId,
-        user_id: context.userId,
-        model,
-        content_angle: result.content_angle,
-        angle_rationale: result.angle_rationale,
-        structure_type: result.structure_type,
-        content_type: result.content_type,
-        slides: result.slides as unknown as never,
-        captions: result.captions as unknown as never,
-        hashtags: result.hashtags,
-        ctas: result.ctas as unknown as never,
-        quality_check: result.quality_check as unknown as never,
-      },
-      { onConflict: "reference_id" },
-    );
-    if (upsertError) throw new Error(upsertError.message);
-
-    return { ok: true };
+  .handler(async (): Promise<never> => {
+    const { LEGACY_PIPELINE_MESSAGE } = await import("@/lib/viral-analysis.functions");
+    throw new Error(LEGACY_PIPELINE_MESSAGE);
   });
 
 export const deleteContentRemix = createServerFn({ method: "POST" })
