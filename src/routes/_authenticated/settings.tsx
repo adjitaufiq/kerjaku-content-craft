@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { FileSpreadsheet, KeyRound, ShieldCheck } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
-import { BrandKnowledgeEditor } from "@/components/BrandKnowledgeEditor";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getIntegrationStatus, updateMetaCredential } from "@/lib/meta-credentials.functions";
@@ -247,9 +247,6 @@ function SettingsPage() {
             {importing ? "Memproses…" : "Upload File Excel"}
           </Button>
         </section>
-      </div>
-      <div className="mt-6">
-        <BrandKnowledgeEditor />
       </div>
     </AppShell>
   );

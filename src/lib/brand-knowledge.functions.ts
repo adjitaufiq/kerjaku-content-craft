@@ -310,7 +310,7 @@ export const saveBrandKnowledge = createServerFn({ method: "POST" })
       .insert({
         user_id: context.userId,
         version,
-        snapshot: snapshot as unknown as Record<string, unknown>,
+        snapshot: JSON.parse(JSON.stringify(snapshot)),
         readiness: readiness.status,
       });
     if (versionError) throw new Error(versionError.message);
