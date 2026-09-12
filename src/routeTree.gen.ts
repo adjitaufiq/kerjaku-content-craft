@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedBrandRouteImport } from './routes/_authenticated/brand'
 import { Route as AuthenticatedDownloaderRouteImport } from './routes/_authenticated/downloader'
 import { Route as AuthenticatedEditorRouteImport } from './routes/_authenticated/editor'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -32,6 +33,11 @@ const AuthRoute = AuthRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBrandRoute = AuthenticatedBrandRouteImport.update({
+  id: '/brand',
+  path: '/brand',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDownloaderRoute = AuthenticatedDownloaderRouteImport.update({
@@ -75,6 +81,7 @@ const ApiPublicHooksPublishDueRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/brand': typeof AuthenticatedBrandRoute
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/brand': typeof AuthenticatedBrandRoute
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/brand': typeof AuthenticatedBrandRoute
   '/_authenticated/downloader': typeof AuthenticatedDownloaderRoute
   '/_authenticated/editor': typeof AuthenticatedEditorRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/brand'
     | '/downloader'
     | '/editor'
     | '/settings'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
+    | '/brand'
     | '/downloader'
     | '/editor'
     | '/settings'
@@ -134,6 +145,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/brand'
     | '/_authenticated/downloader'
     | '/_authenticated/editor'
     | '/_authenticated/settings'
@@ -171,6 +183,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/brand': {
+      id: '/_authenticated/brand'
+      path: '/brand'
+      fullPath: '/brand'
+      preLoaderRoute: typeof AuthenticatedBrandRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/downloader': {
@@ -226,6 +245,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBrandRoute: typeof AuthenticatedBrandRoute
   AuthenticatedDownloaderRoute: typeof AuthenticatedDownloaderRoute
   AuthenticatedEditorRoute: typeof AuthenticatedEditorRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -236,6 +256,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBrandRoute: AuthenticatedBrandRoute,
   AuthenticatedDownloaderRoute: AuthenticatedDownloaderRoute,
   AuthenticatedEditorRoute: AuthenticatedEditorRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
