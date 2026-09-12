@@ -171,6 +171,7 @@ export const runViralDnaAnalysis = createServerFn({ method: "POST" })
         ...result,
         story_beats: result.story_beats as unknown as Json,
         evidence: result.evidence as unknown as Json,
+        confidence_score: scoreDnaConfidence(result, typedExtraction),
         model: generated.model,
       },
       { onConflict: "source_id" },
