@@ -110,6 +110,23 @@ function lockDnaEvidence<T extends {
   };
 }
 
+/**
+ * Skor keyakinan DNA: gabungan keyakinan laporan sumber dan seberapa banyak
+ * klaim DNA benar-benar ditopang bukti terverifikasi.
+ */
+function scoreDnaConfidence(
+  result: { evidence: DnaEvidence[]; story_beats: Array<{ evidence: DnaEvidence[] }> },
+  extraction: { report_confidence?: number | null; confidence_score: number },
+): number {
+  const base = extraction.report_confidence ?? extraction.confidence_score;
+  const beats = result.story_beats ?? [];
+  const supportedBeats = beats.filter((beat) => (beat.evidence ?? []).length > 0).length;
+  const beatRatio = beats.length ? supportedBeats / beats.length : 0;
+  const hasOverallEvidence = (result.evidence ?? []).length > 0 ? 1 : 0;
+  const support = beatRatio * 0.8 + hasOverallEvidence * 0.2;
+  return Math.max(0, Math.min(100, Math.round(base * 0.5 + support * 50)));
+}
+
 export const getIntelligenceWorkspace = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { sourceId: string }) => input)
