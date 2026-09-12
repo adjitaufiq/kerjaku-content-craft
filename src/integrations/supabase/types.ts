@@ -380,6 +380,62 @@ export type Database = {
         }
         Relationships: []
       }
+      content_production_results: {
+        Row: {
+          atm_mode: Database["public"]["Enums"]["atm_mode"]
+          caption_options: Json
+          carousel_structure: Json
+          content_info: Json
+          created_at: string
+          cta_options: Json
+          hashtags: Json
+          id: string
+          model: string
+          updated_at: string
+          user_id: string
+          version_id: string
+          visual_prompts: Json
+        }
+        Insert: {
+          atm_mode: Database["public"]["Enums"]["atm_mode"]
+          caption_options?: Json
+          carousel_structure?: Json
+          content_info?: Json
+          created_at?: string
+          cta_options?: Json
+          hashtags?: Json
+          id?: string
+          model?: string
+          updated_at?: string
+          user_id: string
+          version_id: string
+          visual_prompts?: Json
+        }
+        Update: {
+          atm_mode?: Database["public"]["Enums"]["atm_mode"]
+          caption_options?: Json
+          carousel_structure?: Json
+          content_info?: Json
+          created_at?: string
+          cta_options?: Json
+          hashtags?: Json
+          id?: string
+          model?: string
+          updated_at?: string
+          user_id?: string
+          version_id?: string
+          visual_prompts?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_production_results_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: true
+            referencedRelation: "kerjaku_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_remix_results: {
         Row: {
           angle_rationale: string
