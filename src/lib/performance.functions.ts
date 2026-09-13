@@ -75,13 +75,11 @@ export const recordPerformance = createServerFn({ method: "POST" })
       : await supabase.from("content_performance").insert(payload);
     if (error) throw new Error(error.message);
 
-    await recomputeBaseline(supabase, context.userId);
+    await recomputeBaseline(context.userId);
     return { ok: true, engagement_rate: rate };
   });
 
-type SupabaseClient = Parameters<typeof ctaTypesFrom> extends never ? never : any; // eslint-disable-line @typescript-eslint/no-explicit-any
-
-async function recomputeBaseline(supabase: SupabaseClient, userId: string): Promise<Baseline> {
+    async function recomputeBaseline(userId: string): Promise<Baseline> {
   const since = new Date(Date.now() - BASELINE_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("content_performance")
@@ -117,7 +115,8 @@ async function recomputeBaseline(supabase: SupabaseClient, userId: string): Prom
   if (writeError) throw new Error(writeError.message);
 
   return { avg_views: avgViews, avg_engagement_rate: avgRate, sample_size: sample };
-}
+    }
+  });
 
 export const getPerformanceInsight = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
