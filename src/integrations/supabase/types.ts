@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_baseline: {
+        Row: {
+          avg_engagement_rate: number
+          avg_views: number
+          created_at: string
+          id: string
+          sample_size: number
+          updated_at: string
+          user_id: string
+          window_days: number
+        }
+        Insert: {
+          avg_engagement_rate?: number
+          avg_views?: number
+          created_at?: string
+          id?: string
+          sample_size?: number
+          updated_at?: string
+          user_id: string
+          window_days?: number
+        }
+        Update: {
+          avg_engagement_rate?: number
+          avg_views?: number
+          created_at?: string
+          id?: string
+          sample_size?: number
+          updated_at?: string
+          user_id?: string
+          window_days?: number
+        }
+        Relationships: []
+      }
       brand_knowledge_versions: {
         Row: {
           created_at: string
@@ -335,6 +368,90 @@ export type Database = {
         }
         Relationships: []
       }
+      content_library: {
+        Row: {
+          approval_status: Database["public"]["Enums"]["content_approval_status"]
+          atm_mode: Database["public"]["Enums"]["atm_mode"]
+          category: string | null
+          content_assets: Json
+          content_log_id: string | null
+          created_at: string
+          hook_type: string
+          id: string
+          overridden_at: string | null
+          overridden_by: string | null
+          override_note: string
+          published_at: string | null
+          quality_result: Json
+          source_data: Json
+          source_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          version_id: string
+          viral_attributes: Json
+        }
+        Insert: {
+          approval_status?: Database["public"]["Enums"]["content_approval_status"]
+          atm_mode?: Database["public"]["Enums"]["atm_mode"]
+          category?: string | null
+          content_assets?: Json
+          content_log_id?: string | null
+          created_at?: string
+          hook_type?: string
+          id?: string
+          overridden_at?: string | null
+          overridden_by?: string | null
+          override_note?: string
+          published_at?: string | null
+          quality_result?: Json
+          source_data?: Json
+          source_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+          version_id: string
+          viral_attributes?: Json
+        }
+        Update: {
+          approval_status?: Database["public"]["Enums"]["content_approval_status"]
+          atm_mode?: Database["public"]["Enums"]["atm_mode"]
+          category?: string | null
+          content_assets?: Json
+          content_log_id?: string | null
+          created_at?: string
+          hook_type?: string
+          id?: string
+          overridden_at?: string | null
+          overridden_by?: string | null
+          override_note?: string
+          published_at?: string | null
+          quality_result?: Json
+          source_data?: Json
+          source_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          version_id?: string
+          viral_attributes?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_library_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "viral_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_library_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: true
+            referencedRelation: "kerjaku_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_logs: {
         Row: {
           caption: string
@@ -379,6 +496,62 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      content_performance: {
+        Row: {
+          comments: number
+          content_id: string
+          created_at: string
+          engagement_rate: number
+          id: string
+          likes: number
+          measured_at: string
+          measurement_period: Database["public"]["Enums"]["performance_period"]
+          saves: number
+          shares: number
+          updated_at: string
+          user_id: string
+          views: number
+        }
+        Insert: {
+          comments?: number
+          content_id: string
+          created_at?: string
+          engagement_rate?: number
+          id?: string
+          likes?: number
+          measured_at?: string
+          measurement_period: Database["public"]["Enums"]["performance_period"]
+          saves?: number
+          shares?: number
+          updated_at?: string
+          user_id: string
+          views?: number
+        }
+        Update: {
+          comments?: number
+          content_id?: string
+          created_at?: string
+          engagement_rate?: number
+          id?: string
+          likes?: number
+          measured_at?: string
+          measurement_period?: Database["public"]["Enums"]["performance_period"]
+          saves?: number
+          shares?: number
+          updated_at?: string
+          user_id?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_performance_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_library"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       content_production_results: {
         Row: {
@@ -687,6 +860,92 @@ export type Database = {
           token_type?: string
         }
         Relationships: []
+      }
+      quality_scores: {
+        Row: {
+          atm_mode: Database["public"]["Enums"]["atm_mode"]
+          brand_safety: number
+          created_at: string
+          cta_score: number
+          curiosity_score: number
+          failed_criteria: Json
+          hard_failures: string[]
+          id: string
+          judge_result: Json
+          model: string
+          overall_score: number
+          pattern_score: number
+          power_score: number
+          repair_attempted: boolean
+          repair_note: string
+          rule_result: Json
+          source_fidelity_score: number
+          status: Database["public"]["Enums"]["quality_gate_status"]
+          structural_result: Json
+          trigger_score: number
+          updated_at: string
+          user_id: string
+          version_id: string
+        }
+        Insert: {
+          atm_mode?: Database["public"]["Enums"]["atm_mode"]
+          brand_safety?: number
+          created_at?: string
+          cta_score?: number
+          curiosity_score?: number
+          failed_criteria?: Json
+          hard_failures?: string[]
+          id?: string
+          judge_result?: Json
+          model?: string
+          overall_score?: number
+          pattern_score?: number
+          power_score?: number
+          repair_attempted?: boolean
+          repair_note?: string
+          rule_result?: Json
+          source_fidelity_score?: number
+          status?: Database["public"]["Enums"]["quality_gate_status"]
+          structural_result?: Json
+          trigger_score?: number
+          updated_at?: string
+          user_id: string
+          version_id: string
+        }
+        Update: {
+          atm_mode?: Database["public"]["Enums"]["atm_mode"]
+          brand_safety?: number
+          created_at?: string
+          cta_score?: number
+          curiosity_score?: number
+          failed_criteria?: Json
+          hard_failures?: string[]
+          id?: string
+          judge_result?: Json
+          model?: string
+          overall_score?: number
+          pattern_score?: number
+          power_score?: number
+          repair_attempted?: boolean
+          repair_note?: string
+          rule_result?: Json
+          source_fidelity_score?: number
+          status?: Database["public"]["Enums"]["quality_gate_status"]
+          structural_result?: Json
+          trigger_score?: number
+          updated_at?: string
+          user_id?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_scores_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: true
+            referencedRelation: "kerjaku_versions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       source_extractions: {
         Row: {
@@ -1118,7 +1377,15 @@ export type Database = {
       app_role: "admin" | "user"
       atm_mode: "conservative" | "creative"
       atm_version_status: "draft" | "pending_approval" | "approved" | "rejected"
+      content_approval_status:
+        | "draft"
+        | "revision_needed"
+        | "approved"
+        | "ready_publish"
+        | "published"
       generated_content_type: "carousel" | "photo_to_video" | "video_content"
+      performance_period: "24h" | "7d" | "30d"
+      quality_gate_status: "ready_production" | "revision_needed"
       source_extraction_status:
         | "processing"
         | "completed"
@@ -1279,7 +1546,16 @@ export const Constants = {
       app_role: ["admin", "user"],
       atm_mode: ["conservative", "creative"],
       atm_version_status: ["draft", "pending_approval", "approved", "rejected"],
+      content_approval_status: [
+        "draft",
+        "revision_needed",
+        "approved",
+        "ready_publish",
+        "published",
+      ],
       generated_content_type: ["carousel", "photo_to_video", "video_content"],
+      performance_period: ["24h", "7d", "30d"],
+      quality_gate_status: ["ready_production", "revision_needed"],
       source_extraction_status: [
         "processing",
         "completed",
