@@ -6,6 +6,7 @@ import {
   BookOpen,
   Brain,
   Download,
+  Film,
   Instagram,
   LayoutGrid,
   LogOut,
@@ -26,6 +27,7 @@ const nav = [
   { to: "/sources", label: "Viral Source Intake", icon: Video },
   { to: "/downloader", label: "Content Downloader", icon: Download },
   { to: "/production", label: "Content Production", icon: Sparkles },
+  { to: "/storyboard", label: "Video Storyboard", icon: Film },
   { to: "/brand", label: "Brand Center", icon: BookOpen },
   { to: "/settings", label: "Settings", icon: Settings2 },
 ] as const;
