@@ -54,25 +54,6 @@ export type QualityWorkspace = {
   } | null;
 };
 
-type Supa = Parameters<typeof loadVersionBundle>[0];
-
-async function loadVersionBundle(
-  supabase: {
-    from: (table: string) => {
-      select: (columns: string) => {
-        eq: (column: string, value: string) => {
-          maybeSingle: () => Promise<{ data: unknown; error: { message: string } | null }>;
-        };
-        order: (column: string) => Promise<{ data: unknown; error: { message: string } | null }>;
-      };
-    };
-  },
-  versionId: string,
-) {
-  void supabase;
-  void versionId;
-}
-
 export const getQualityWorkspace = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { versionId: string }) => input)
@@ -402,5 +383,3 @@ export const overrideApproval = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
-export type { Supa };
