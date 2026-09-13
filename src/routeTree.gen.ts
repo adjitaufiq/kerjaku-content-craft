@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedBrandRouteImport } from './routes/_authenticated/brand'
 import { Route as AuthenticatedDownloaderRouteImport } from './routes/_authenticated/downloader'
 import { Route as AuthenticatedEditorRouteImport } from './routes/_authenticated/editor'
+import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticated/library'
 import { Route as AuthenticatedProductionRouteImport } from './routes/_authenticated/production'
 import { Route as AuthenticatedQualityRouteImport } from './routes/_authenticated/quality'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -51,6 +52,11 @@ const AuthenticatedDownloaderRoute = AuthenticatedDownloaderRouteImport.update({
 const AuthenticatedEditorRoute = AuthenticatedEditorRouteImport.update({
   id: '/editor',
   path: '/editor',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLibraryRoute = AuthenticatedLibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProductionRoute = AuthenticatedProductionRouteImport.update({
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/brand': typeof AuthenticatedBrandRoute
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
+  '/library': typeof AuthenticatedLibraryRoute
   '/production': typeof AuthenticatedProductionRoute
   '/quality': typeof AuthenticatedQualityRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/brand': typeof AuthenticatedBrandRoute
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
+  '/library': typeof AuthenticatedLibraryRoute
   '/production': typeof AuthenticatedProductionRoute
   '/quality': typeof AuthenticatedQualityRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/_authenticated/brand': typeof AuthenticatedBrandRoute
   '/_authenticated/downloader': typeof AuthenticatedDownloaderRoute
   '/_authenticated/editor': typeof AuthenticatedEditorRoute
+  '/_authenticated/library': typeof AuthenticatedLibraryRoute
   '/_authenticated/production': typeof AuthenticatedProductionRoute
   '/_authenticated/quality': typeof AuthenticatedQualityRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/brand'
     | '/downloader'
     | '/editor'
+    | '/library'
     | '/production'
     | '/quality'
     | '/settings'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/brand'
     | '/downloader'
     | '/editor'
+    | '/library'
     | '/production'
     | '/quality'
     | '/settings'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/_authenticated/brand'
     | '/_authenticated/downloader'
     | '/_authenticated/editor'
+    | '/_authenticated/library'
     | '/_authenticated/production'
     | '/_authenticated/quality'
     | '/_authenticated/settings'
@@ -240,6 +252,13 @@ declare module '@tanstack/react-router' {
       path: '/editor'
       fullPath: '/editor'
       preLoaderRoute: typeof AuthenticatedEditorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/library': {
+      id: '/_authenticated/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof AuthenticatedLibraryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/production': {
@@ -305,6 +324,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBrandRoute: typeof AuthenticatedBrandRoute
   AuthenticatedDownloaderRoute: typeof AuthenticatedDownloaderRoute
   AuthenticatedEditorRoute: typeof AuthenticatedEditorRoute
+  AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
   AuthenticatedProductionRoute: typeof AuthenticatedProductionRoute
   AuthenticatedQualityRoute: typeof AuthenticatedQualityRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -319,6 +339,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBrandRoute: AuthenticatedBrandRoute,
   AuthenticatedDownloaderRoute: AuthenticatedDownloaderRoute,
   AuthenticatedEditorRoute: AuthenticatedEditorRoute,
+  AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,
   AuthenticatedProductionRoute: AuthenticatedProductionRoute,
   AuthenticatedQualityRoute: AuthenticatedQualityRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
