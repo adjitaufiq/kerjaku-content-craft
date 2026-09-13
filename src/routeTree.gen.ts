@@ -19,6 +19,7 @@ import { Route as AuthenticatedProductionRouteImport } from './routes/_authentic
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSourceDetailRouteImport } from './routes/_authenticated/source-detail'
 import { Route as AuthenticatedSourcesRouteImport } from './routes/_authenticated/sources'
+import { Route as AuthenticatedStoryboardRouteImport } from './routes/_authenticated/storyboard'
 import { Route as AuthenticatedViralRouteImport } from './routes/_authenticated/viral'
 import { Route as ApiPublicHooksPublishDueRouteImport } from './routes/api/public/hooks/publish-due'
 
@@ -72,6 +73,11 @@ const AuthenticatedSourcesRoute = AuthenticatedSourcesRouteImport.update({
   path: '/sources',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedStoryboardRoute = AuthenticatedStoryboardRouteImport.update({
+  id: '/storyboard',
+  path: '/storyboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedViralRoute = AuthenticatedViralRouteImport.update({
   id: '/viral',
   path: '/viral',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/source-detail': typeof AuthenticatedSourceDetailRoute
   '/sources': typeof AuthenticatedSourcesRoute
+  '/storyboard': typeof AuthenticatedStoryboardRoute
   '/viral': typeof AuthenticatedViralRoute
   '/api/public/hooks/publish-due': typeof ApiPublicHooksPublishDueRoute
 }
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/source-detail': typeof AuthenticatedSourceDetailRoute
   '/sources': typeof AuthenticatedSourcesRoute
+  '/storyboard': typeof AuthenticatedStoryboardRoute
   '/viral': typeof AuthenticatedViralRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/public/hooks/publish-due': typeof ApiPublicHooksPublishDueRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/source-detail': typeof AuthenticatedSourceDetailRoute
   '/_authenticated/sources': typeof AuthenticatedSourcesRoute
+  '/_authenticated/storyboard': typeof AuthenticatedStoryboardRoute
   '/_authenticated/viral': typeof AuthenticatedViralRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/hooks/publish-due': typeof ApiPublicHooksPublishDueRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/source-detail'
     | '/sources'
+    | '/storyboard'
     | '/viral'
     | '/api/public/hooks/publish-due'
   fileRoutesByTo: FileRoutesByTo
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/source-detail'
     | '/sources'
+    | '/storyboard'
     | '/viral'
     | '/'
     | '/api/public/hooks/publish-due'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/source-detail'
     | '/_authenticated/sources'
+    | '/_authenticated/storyboard'
     | '/_authenticated/viral'
     | '/_authenticated/'
     | '/api/public/hooks/publish-due'
@@ -246,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSourcesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/storyboard': {
+      id: '/_authenticated/storyboard'
+      path: '/storyboard'
+      fullPath: '/storyboard'
+      preLoaderRoute: typeof AuthenticatedStoryboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/viral': {
       id: '/_authenticated/viral'
       path: '/viral'
@@ -271,6 +290,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSourceDetailRoute: typeof AuthenticatedSourceDetailRoute
   AuthenticatedSourcesRoute: typeof AuthenticatedSourcesRoute
+  AuthenticatedStoryboardRoute: typeof AuthenticatedStoryboardRoute
   AuthenticatedViralRoute: typeof AuthenticatedViralRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -283,6 +303,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSourceDetailRoute: AuthenticatedSourceDetailRoute,
   AuthenticatedSourcesRoute: AuthenticatedSourcesRoute,
+  AuthenticatedStoryboardRoute: AuthenticatedStoryboardRoute,
   AuthenticatedViralRoute: AuthenticatedViralRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
