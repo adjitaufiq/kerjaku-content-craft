@@ -75,47 +75,42 @@ export const recordPerformance = createServerFn({ method: "POST" })
       : await supabase.from("content_performance").insert(payload);
     if (error) throw new Error(error.message);
 
-    await recomputeBaseline(context.userId);
+    // Hitung ulang baseline akun (rata-rata 30 hari terakhir, periode 24h).
+    const since = new Date(Date.now() - BASELINE_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    const { data: baseRows, error: baseError } = await supabase
+      .from("content_performance")
+      .select("views,engagement_rate,measured_at")
+      .eq("measurement_period", "24h")
+      .gte("measured_at", since);
+    if (baseError) throw new Error(baseError.message);
+
+    const rows = (baseRows ?? []) as { views: number; engagement_rate: number }[];
+    const sample = rows.length;
+    const avgViews = sample ? Math.round(rows.reduce((a, b) => a + b.views, 0) / sample) : 0;
+    const avgRate = sample
+      ? Number((rows.reduce((a, b) => a + Number(b.engagement_rate), 0) / sample).toFixed(2))
+      : 0;
+
+    const { data: baselineRow, error: baselineReadError } = await supabase
+      .from("account_baseline")
+      .select("id")
+      .eq("window_days", BASELINE_WINDOW_DAYS)
+      .maybeSingle();
+    if (baselineReadError) throw new Error(baselineReadError.message);
+
+    const baselinePayload = {
+      user_id: context.userId,
+      window_days: BASELINE_WINDOW_DAYS,
+      avg_views: avgViews,
+      avg_engagement_rate: avgRate,
+      sample_size: sample,
+    };
+    const { error: baselineWriteError } = baselineRow
+      ? await supabase.from("account_baseline").update(baselinePayload).eq("id", baselineRow.id)
+      : await supabase.from("account_baseline").insert(baselinePayload);
+    if (baselineWriteError) throw new Error(baselineWriteError.message);
+
     return { ok: true, engagement_rate: rate };
-  });
-
-    async function recomputeBaseline(userId: string): Promise<Baseline> {
-  const since = new Date(Date.now() - BASELINE_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const { data, error } = await supabase
-    .from("content_performance")
-    .select("views,engagement_rate,measured_at")
-    .eq("measurement_period", "24h")
-    .gte("measured_at", since);
-  if (error) throw new Error(error.message);
-
-  const rows = (data ?? []) as { views: number; engagement_rate: number }[];
-  const sample = rows.length;
-  const avgViews = sample ? Math.round(rows.reduce((a, b) => a + b.views, 0) / sample) : 0;
-  const avgRate = sample
-    ? Number((rows.reduce((a, b) => a + Number(b.engagement_rate), 0) / sample).toFixed(2))
-    : 0;
-
-  const { data: existing, error: existingError } = await supabase
-    .from("account_baseline")
-    .select("id")
-    .eq("window_days", BASELINE_WINDOW_DAYS)
-    .maybeSingle();
-  if (existingError) throw new Error(existingError.message);
-
-  const payload = {
-    user_id: userId,
-    window_days: BASELINE_WINDOW_DAYS,
-    avg_views: avgViews,
-    avg_engagement_rate: avgRate,
-    sample_size: sample,
-  };
-  const { error: writeError } = existing
-    ? await supabase.from("account_baseline").update(payload).eq("id", existing.id)
-    : await supabase.from("account_baseline").insert(payload);
-  if (writeError) throw new Error(writeError.message);
-
-  return { avg_views: avgViews, avg_engagement_rate: avgRate, sample_size: sample };
-    }
   });
 
 export const getPerformanceInsight = createServerFn({ method: "GET" })
