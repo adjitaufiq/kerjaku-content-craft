@@ -16,6 +16,7 @@ import { Route as AuthenticatedBrandRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedDownloaderRouteImport } from './routes/_authenticated/downloader'
 import { Route as AuthenticatedEditorRouteImport } from './routes/_authenticated/editor'
 import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticated/library'
+import { Route as AuthenticatedPerformanceRouteImport } from './routes/_authenticated/performance'
 import { Route as AuthenticatedProductionRouteImport } from './routes/_authenticated/production'
 import { Route as AuthenticatedQualityRouteImport } from './routes/_authenticated/quality'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -59,6 +60,12 @@ const AuthenticatedLibraryRoute = AuthenticatedLibraryRouteImport.update({
   path: '/library',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPerformanceRoute =
+  AuthenticatedPerformanceRouteImport.update({
+    id: '/performance',
+    path: '/performance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProductionRoute = AuthenticatedProductionRouteImport.update({
   id: '/production',
   path: '/production',
@@ -109,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
   '/library': typeof AuthenticatedLibraryRoute
+  '/performance': typeof AuthenticatedPerformanceRoute
   '/production': typeof AuthenticatedProductionRoute
   '/quality': typeof AuthenticatedQualityRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -124,6 +132,7 @@ export interface FileRoutesByTo {
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
   '/library': typeof AuthenticatedLibraryRoute
+  '/performance': typeof AuthenticatedPerformanceRoute
   '/production': typeof AuthenticatedProductionRoute
   '/quality': typeof AuthenticatedQualityRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -142,6 +151,7 @@ export interface FileRoutesById {
   '/_authenticated/downloader': typeof AuthenticatedDownloaderRoute
   '/_authenticated/editor': typeof AuthenticatedEditorRoute
   '/_authenticated/library': typeof AuthenticatedLibraryRoute
+  '/_authenticated/performance': typeof AuthenticatedPerformanceRoute
   '/_authenticated/production': typeof AuthenticatedProductionRoute
   '/_authenticated/quality': typeof AuthenticatedQualityRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/downloader'
     | '/editor'
     | '/library'
+    | '/performance'
     | '/production'
     | '/quality'
     | '/settings'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/downloader'
     | '/editor'
     | '/library'
+    | '/performance'
     | '/production'
     | '/quality'
     | '/settings'
@@ -193,6 +205,7 @@ export interface FileRouteTypes {
     | '/_authenticated/downloader'
     | '/_authenticated/editor'
     | '/_authenticated/library'
+    | '/_authenticated/performance'
     | '/_authenticated/production'
     | '/_authenticated/quality'
     | '/_authenticated/settings'
@@ -261,6 +274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLibraryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/performance': {
+      id: '/_authenticated/performance'
+      path: '/performance'
+      fullPath: '/performance'
+      preLoaderRoute: typeof AuthenticatedPerformanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/production': {
       id: '/_authenticated/production'
       path: '/production'
@@ -325,6 +345,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDownloaderRoute: typeof AuthenticatedDownloaderRoute
   AuthenticatedEditorRoute: typeof AuthenticatedEditorRoute
   AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
+  AuthenticatedPerformanceRoute: typeof AuthenticatedPerformanceRoute
   AuthenticatedProductionRoute: typeof AuthenticatedProductionRoute
   AuthenticatedQualityRoute: typeof AuthenticatedQualityRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -340,6 +361,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDownloaderRoute: AuthenticatedDownloaderRoute,
   AuthenticatedEditorRoute: AuthenticatedEditorRoute,
   AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,
+  AuthenticatedPerformanceRoute: AuthenticatedPerformanceRoute,
   AuthenticatedProductionRoute: AuthenticatedProductionRoute,
   AuthenticatedQualityRoute: AuthenticatedQualityRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,

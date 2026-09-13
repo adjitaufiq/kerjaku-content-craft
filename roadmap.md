@@ -9,3 +9,4 @@
 - [x] Build, runtime, responsive, and AI-path verification
 - [x] Content Production Engine (carousel, visual prompt, caption, CTA, hashtag)
 - [x] Photo To Video Storyboard Engine (scene management, durasi 4/6/8/10 detik, prompt video, video package)
+- [x] Quality Gate, Content Library, Performance Insight (halaman, metrik, baseline, navigasi)

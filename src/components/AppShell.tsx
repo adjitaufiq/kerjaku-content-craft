@@ -3,13 +3,16 @@ import type { ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
+  BarChart3,
   BookOpen,
   Brain,
   Download,
   Film,
   Instagram,
   LayoutGrid,
+  Library,
   LogOut,
+  ShieldCheck,
   Settings2,
   Sparkles,
   Video,
@@ -28,6 +31,9 @@ const nav = [
   { to: "/downloader", label: "Content Downloader", icon: Download },
   { to: "/production", label: "Content Production", icon: Sparkles },
   { to: "/storyboard", label: "Video Storyboard", icon: Film },
+  { to: "/quality", label: "Quality Gate", icon: ShieldCheck },
+  { to: "/library", label: "Content Library", icon: Library },
+  { to: "/performance", label: "Performance", icon: BarChart3 },
   { to: "/brand", label: "Brand Center", icon: BookOpen },
   { to: "/settings", label: "Settings", icon: Settings2 },
 ] as const;
