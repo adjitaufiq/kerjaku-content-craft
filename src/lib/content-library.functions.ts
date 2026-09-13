@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AtmMode } from "@/lib/cliper-intelligence.functions";
+import type { Json } from "@/integrations/supabase/types";
 import type { ApprovalStatus } from "@/lib/quality.functions";
 
 export type LibraryItem = {
@@ -20,9 +21,9 @@ export type LibraryItem = {
     source_fidelity?: number;
     brand_safety?: number;
   };
-  viral_attributes: Record<string, unknown>;
-  content_assets: Record<string, unknown>;
-  source_data: Record<string, unknown>;
+  viral_attributes: Json;
+  content_assets: Json;
+  source_data: Json;
   published_at: string | null;
   created_at: string;
   performance: {

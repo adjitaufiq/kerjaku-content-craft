@@ -183,13 +183,11 @@ function QualityPage() {
                   <h2 className="font-display text-lg font-semibold">Kriteria Belum Lolos</h2>
                   <ul className="mt-2 space-y-2 text-sm">
                     {quality.failed_criteria.map((item, index) => (
-                      <li key={`${item.category}-${index}`} className="rounded-lg border border-border p-3">
-                        <p className="font-medium">
-                          {item.category} — {item.score}
-                        </p>
-                        <p className="mt-1 text-muted-foreground">{item.reason}</p>
-                        {item.improvement_suggestion ? (
-                          <p className="mt-1 text-muted-foreground">Saran: {item.improvement_suggestion}</p>
+                      <li key={`${item.criteria}-${index}`} className="rounded-lg border border-border p-3">
+                        <p className="font-medium">{item.criteria}</p>
+                        <p className="mt-1 text-muted-foreground">{item.detail}</p>
+                        {item.improvement ? (
+                          <p className="mt-1 text-muted-foreground">Saran: {item.improvement}</p>
                         ) : null}
                       </li>
                     ))}

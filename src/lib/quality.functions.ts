@@ -187,11 +187,11 @@ export const runQualityGate = createServerFn({ method: "POST" })
           ruleResult,
           judge,
           model: "",
-          decision: decideQuality({ mode: version.atm_mode, structural, rules: ruleResult, judge }),
+          decision: decideQuality({ mode: version!.atm_mode, structural, rules: ruleResult, judge }),
         };
       }
       const judged = await judgeContentQuality({
-        mode: version.atm_mode,
+        mode: version!.atm_mode,
         assets,
         sourceReport,
         brandKnowledge: brand,
@@ -201,7 +201,7 @@ export const runQualityGate = createServerFn({ method: "POST" })
         ruleResult,
         judge: judged.report,
         model: judged.model,
-        decision: decideQuality({ mode: version.atm_mode, structural, rules: ruleResult, judge: judged.report }),
+        decision: decideQuality({ mode: version!.atm_mode, structural, rules: ruleResult, judge: judged.report }),
       };
     }
 

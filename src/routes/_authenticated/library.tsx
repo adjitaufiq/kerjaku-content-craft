@@ -132,7 +132,13 @@ function ContentLibraryPage() {
           <select
             className="rounded-md border border-input bg-background px-3 py-2 text-sm"
             value={filters.category ?? ""}
-            onChange={(event) => setFilters((prev) => ({ ...prev, category: event.target.value || undefined }))}
+            onChange={(event) => {
+              const value = event.target.value;
+              setFilters((prev) => {
+                const { category: _drop, ...rest } = prev;
+                return value ? { ...rest, category: value } : rest;
+              });
+            }}
             aria-label="Kategori"
           >
             <option value="">Semua kategori</option>
@@ -145,7 +151,13 @@ function ContentLibraryPage() {
           <select
             className="rounded-md border border-input bg-background px-3 py-2 text-sm"
             value={filters.hookType ?? ""}
-            onChange={(event) => setFilters((prev) => ({ ...prev, hookType: event.target.value || undefined }))}
+            onChange={(event) => {
+              const value = event.target.value;
+              setFilters((prev) => {
+                const { hookType: _drop, ...rest } = prev;
+                return value ? { ...rest, hookType: value } : rest;
+              });
+            }}
             aria-label="Tipe hook"
           >
             <option value="">Semua hook</option>
@@ -158,9 +170,10 @@ function ContentLibraryPage() {
           <select
             className="rounded-md border border-input bg-background px-3 py-2 text-sm"
             value={filters.atmMode ?? "all"}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, atmMode: event.target.value as LibraryFilters["atmMode"] }))
-            }
+            onChange={(event) => {
+              const value = event.target.value as "all" | "conservative" | "creative";
+              setFilters((prev) => ({ ...prev, atmMode: value }));
+            }}
             aria-label="Mode ATM"
           >
             <option value="all">Semua mode</option>
@@ -170,9 +183,10 @@ function ContentLibraryPage() {
           <select
             className="rounded-md border border-input bg-background px-3 py-2 text-sm"
             value={filters.performance ?? "all"}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, performance: event.target.value as LibraryFilters["performance"] }))
-            }
+            onChange={(event) => {
+              const value = event.target.value as "all" | "measured" | "unmeasured";
+              setFilters((prev) => ({ ...prev, performance: value }));
+            }}
             aria-label="Status performa"
           >
             <option value="all">Semua performa</option>

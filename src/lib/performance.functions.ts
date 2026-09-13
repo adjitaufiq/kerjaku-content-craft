@@ -125,7 +125,8 @@ export const getPerformanceInsight = createServerFn({ method: "GET" })
     const error = library.error ?? performance.error ?? baseline.error;
     if (error) throw new Error(error.message);
 
-    const preferred = new Map<string, (typeof performance.data)[number]>();
+    type MetricRow = NonNullable<typeof performance.data>[number];
+    const preferred = new Map<string, MetricRow>();
     for (const entry of performance.data ?? []) {
       const current = preferred.get(entry.content_id);
       const rank = (period: string) => (period === "24h" ? 3 : period === "7d" ? 2 : 1);
