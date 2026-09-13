@@ -303,6 +303,13 @@ export async function generateContentProduction(input: {
       `Viral DNA Report: ${JSON.stringify(input.dna)}`,
       `Source Content Report: ${JSON.stringify(input.sourceReport)}`,
       `Brand Knowledge: ${JSON.stringify(input.brand)}`,
+      ...(input.repairNotes && input.repairNotes.length > 0
+        ? [
+            `PERBAIKAN WAJIB — versi sebelumnya gagal Quality Gate karena hal berikut. Perbaiki seluruhnya tanpa melanggar aturan sumber fakta:\n- ${input.repairNotes.join(
+              "\n- ",
+            )}`,
+          ]
+        : []),
       "Hasilkan Carousel Content Report, Image Prompt Report, 5 caption, CTA strategy, dan hashtag set.",
     ].join("\n\n"),
   });
