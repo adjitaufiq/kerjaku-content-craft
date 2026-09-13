@@ -783,6 +783,59 @@ export type Database = {
         }
         Relationships: []
       }
+      video_storyboards: {
+        Row: {
+          atm_mode: Database["public"]["Enums"]["atm_mode"]
+          created_at: string
+          id: string
+          model: string
+          scene_count: number
+          scenes: Json
+          total_duration: number
+          updated_at: string
+          user_id: string
+          version_id: string
+          video_concept: Json
+          video_package: Json
+        }
+        Insert: {
+          atm_mode: Database["public"]["Enums"]["atm_mode"]
+          created_at?: string
+          id?: string
+          model?: string
+          scene_count?: number
+          scenes?: Json
+          total_duration?: number
+          updated_at?: string
+          user_id: string
+          version_id: string
+          video_concept?: Json
+          video_package?: Json
+        }
+        Update: {
+          atm_mode?: Database["public"]["Enums"]["atm_mode"]
+          created_at?: string
+          id?: string
+          model?: string
+          scene_count?: number
+          scenes?: Json
+          total_duration?: number
+          updated_at?: string
+          user_id?: string
+          version_id?: string
+          video_concept?: Json
+          video_package?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_storyboards_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: true
+            referencedRelation: "kerjaku_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       viral_analysis_reports: {
         Row: {
           audience: string
