@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Copy, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Copy, Film, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
@@ -86,13 +86,22 @@ function ContentProductionPage() {
               Fakta tidak boleh keluar dari sumber yang diizinkan mode ATM.
             </p>
           </div>
-          <Button
-            onClick={() => generate.mutate()}
-            disabled={!versionId || !approved || generate.isPending}
-          >
-            {generate.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}
-            {production ? "Buat Ulang Aset" : "Buat Aset Produksi"}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {production ? (
+              <Button asChild variant="outline">
+                <Link to="/storyboard" search={{ versionId }}>
+                  <Film /> Video Storyboard
+                </Link>
+              </Button>
+            ) : null}
+            <Button
+              onClick={() => generate.mutate()}
+              disabled={!versionId || !approved || generate.isPending}
+            >
+              {generate.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              {production ? "Buat Ulang Aset" : "Buat Aset Produksi"}
+            </Button>
+          </div>
         </div>
 
         {!versionId ? (
