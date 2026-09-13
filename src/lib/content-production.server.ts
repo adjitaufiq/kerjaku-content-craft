@@ -272,6 +272,8 @@ export async function generateContentProduction(input: {
   sourceMapping: unknown;
   adaptation: unknown;
   brand: BrandKnowledgeInput;
+  /** Catatan kegagalan Quality Gate untuk satu kali perbaikan otomatis. */
+  repairNotes?: string[];
 }): Promise<{ result: ProductionResult; model: string }> {
   const factRule =
     input.mode === "conservative"
