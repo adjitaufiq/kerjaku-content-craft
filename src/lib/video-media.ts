@@ -3,6 +3,64 @@
 export type FrameCapture = { timestamp: string; seconds: number; reason: string; blob: Blob };
 export type AudioChunk = { timestamp: string; seconds: number; blob: Blob };
 
+export type VideoAssetProbe = {
+  duration: number;
+  width: number;
+  height: number;
+  aspect_ratio: string;
+  mime_type: string;
+  file_size: number;
+  is_playable: boolean;
+};
+
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
+/**
+ * Validasi video asset nyata: durasi, dimensi, dan tipe konten harus terbaca.
+ * Thumbnail, HTML, atau placeholder akan gagal di sini (is_playable = false).
+ */
+export async function probeVideoAsset(url: string): Promise<VideoAssetProbe> {
+  let mime = "";
+  let size = 0;
+  try {
+    const head = await fetch(url, { method: "HEAD" });
+    mime = head.headers.get("content-type") ?? "";
+    size = Number(head.headers.get("content-length") ?? 0) || 0;
+  } catch {
+    /* HEAD tidak wajib berhasil; validasi utama tetap dari elemen video */
+  }
+  if (mime && !mime.startsWith("video/")) {
+    return {
+      duration: 0,
+      width: 0,
+      height: 0,
+      aspect_ratio: "",
+      mime_type: mime,
+      file_size: size,
+      is_playable: false,
+    };
+  }
+
+  const video = await loadVideo(url).catch(() => null);
+  const duration = video && Number.isFinite(video.duration) ? video.duration : 0;
+  const width = video?.videoWidth ?? 0;
+  const height = video?.videoHeight ?? 0;
+  if (video) video.src = "";
+
+  const divisor = width && height ? gcd(width, height) : 0;
+  return {
+    duration: Math.round(duration * 100) / 100,
+    width,
+    height,
+    aspect_ratio: divisor ? `${width / divisor}:${height / divisor}` : "",
+    mime_type: mime,
+    file_size: size,
+    is_playable: duration > 0 && width > 0 && height > 0,
+  };
+}
+
 export function formatTimestamp(seconds: number): string {
   const total = Math.max(0, Math.round(seconds));
   const mm = String(Math.floor(total / 60)).padStart(2, "0");
