@@ -63,6 +63,19 @@ export type AtmResult = {
   reason: string;
 };
 
+export type HookCandidate = {
+  id: string;
+  hook: string;
+  hook_type: string;
+  rationale: string;
+  psychological_trigger: string;
+  curiosity_gap: string;
+  power_words: string[];
+  risk_note: string;
+};
+
+export type HookMatrixResult = { candidates: HookCandidate[] };
+
 const MODEL = "openai/gpt-6-astra";
 
 const EVIDENCE_SCHEMA = {
@@ -161,6 +174,35 @@ const ATM_SCHEMA = {
       },
     },
     reason: { type: "string" },
+  },
+} as const;
+
+const HOOK_MATRIX_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["candidates"],
+  properties: {
+    candidates: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "id", "hook", "hook_type", "rationale", "psychological_trigger",
+          "curiosity_gap", "power_words", "risk_note",
+        ],
+        properties: {
+          id: { type: "string" },
+          hook: { type: "string" },
+          hook_type: { type: "string" },
+          rationale: { type: "string" },
+          psychological_trigger: { type: "string" },
+          curiosity_gap: { type: "string" },
+          power_words: { type: "array", items: { type: "string" } },
+          risk_note: { type: "string" },
+        },
+      },
+    },
   },
 } as const;
 
@@ -275,6 +317,29 @@ export async function generateAtmVersion(input: {
       `Viral DNA: ${JSON.stringify(input.dna)}`,
       `Brand Knowledge: ${JSON.stringify(input.brand)}`,
       "Buat pemetaan formula sumber ke arahan adaptasi orisinal KERJAKU dan jelaskan alasan strateginya.",
+    ].join("\n\n"),
+  });
+  return { result, model: MODEL };
+}
+
+export async function generateHookMatrix(input: {
+  mode: "conservative" | "creative";
+  angle: string;
+  dna: ViralDnaResult;
+  atm: AtmResult;
+  brand: BrandKnowledgeInput;
+}): Promise<{ result: HookMatrixResult; model: string }> {
+  const result = await streamStructured<HookMatrixResult>({
+    name: "kerjaku_hook_matrix",
+    schema: HOOK_MATRIX_SCHEMA,
+    instructions: `Kamu adalah KERJAKU Viral Hook Matrix Engine. Buat TEPAT 5 kandidat hook pembuka yang berbeda tipe (misalnya pertanyaan, klaim berani, problem callout, cerita, kontrarian). Hook harus orisinal milik KERJAKU—dilarang menyalin kalimat sumber. Setiap hook wajib sejalan dengan angle, arahan ATM, dan Brand Knowledge, serta memakai power words brand bila relevan. id memakai format hook-1 sampai hook-5. Jangan membuat caption, carousel, script, atau storyboard. Jawab dalam Bahasa Indonesia.`,
+    prompt: [
+      `Mode ATM: ${input.mode}`,
+      `Angle: ${input.angle}`,
+      `Viral DNA: ${JSON.stringify(input.dna)}`,
+      `Arahan ATM: ${JSON.stringify(input.atm)}`,
+      `Brand Knowledge: ${JSON.stringify(input.brand)}`,
+      "Susun 5 kandidat hook dengan alasan, trigger psikologis, curiosity gap, power words, dan catatan risiko brand.",
     ].join("\n\n"),
   });
   return { result, model: MODEL };

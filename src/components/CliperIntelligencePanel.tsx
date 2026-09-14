@@ -10,13 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  generateHookMatrix,
   generateKerjakuAtmVersion,
   getIntelligenceWorkspace,
   reviewKerjakuAtmVersion,
   runViralDnaAnalysis,
+  selectHookCandidate,
   type AtmMode,
   type AtmVersion,
   type DnaEvidence,
+  type HookCandidate,
 } from "@/lib/cliper-intelligence.functions";
 
 export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: string; gateAllowed: boolean }) {
@@ -25,6 +28,8 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
   const analyze = useServerFn(runViralDnaAnalysis);
   const generate = useServerFn(generateKerjakuAtmVersion);
   const review = useServerFn(reviewKerjakuAtmVersion);
+  const buildHooks = useServerFn(generateHookMatrix);
+  const chooseHook = useServerFn(selectHookCandidate);
   const query = useQuery({
     queryKey: ["cliper-intelligence", sourceId],
     queryFn: () => load({ data: { sourceId } }),
@@ -52,6 +57,17 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
   const reviewMutation = useMutation({
     mutationFn: (input: { version: AtmVersion; decision: "approved" | "rejected" }) => review({ data: { versionId: input.version.id, decision: input.decision, note: notes[input.version.id] ?? "" } }),
     onSuccess: async (_, input) => { await refresh(); toast.success(input.decision === "approved" ? "Versi ATM disetujui." : "Versi ATM dikembalikan untuk revisi."); },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const hookMutation = useMutation({
+    mutationFn: (versionId: string) => buildHooks({ data: { versionId } }),
+    onSuccess: async () => { await refresh(); toast.success("5 kandidat hook siap dipilih."); },
+    onError: (error: Error) => toast.error(error.message),
+  });
+  const selectMutation = useMutation({
+    mutationFn: (input: { versionId: string; hookId: string }) => chooseHook({ data: input }),
+    onSuccess: async () => { await refresh(); toast.success("Hook dipilih. Sumber siap masuk tahap prompt."); },
     onError: (error: Error) => toast.error(error.message),
   });
 
