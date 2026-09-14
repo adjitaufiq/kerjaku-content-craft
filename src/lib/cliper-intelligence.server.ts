@@ -63,6 +63,19 @@ export type AtmResult = {
   reason: string;
 };
 
+export type HookCandidate = {
+  id: string;
+  hook: string;
+  hook_type: string;
+  rationale: string;
+  psychological_trigger: string;
+  curiosity_gap: string;
+  power_words: string[];
+  risk_note: string;
+};
+
+export type HookMatrixResult = { candidates: HookCandidate[] };
+
 const MODEL = "openai/gpt-6-astra";
 
 const EVIDENCE_SCHEMA = {
