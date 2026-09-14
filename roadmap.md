@@ -10,3 +10,4 @@
 - [x] Content Production Engine (carousel, visual prompt, caption, CTA, hashtag)
 - [x] Photo To Video Storyboard Engine (scene management, durasi 4/6/8/10 detik, prompt video, video package)
 - [x] Quality Gate, Content Library, Performance Insight (halaman, metrik, baseline, navigasi)
+- [x] Hook Matrix 5 kandidat, pemilihan hook, dan status siap tahap prompt
