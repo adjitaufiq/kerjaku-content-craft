@@ -53,9 +53,58 @@ export type SourceReportData = Partial<{
   steps_framework: ReportItem[];
 }>;
 
+/** Tahap pipeline yang tersimpan permanen agar progres tetap benar setelah refresh. */
+export const PIPELINE_STAGES = [
+  "READY_FOR_ANALYSIS",
+  "RESOLVING_VIDEO_ASSET",
+  "VIDEO_NOT_AVAILABLE",
+  "EXTRACTING_METADATA",
+  "EXTRACTING_FRAMES",
+  "EXTRACTING_AUDIO",
+  "TRANSCRIBING",
+  "READING_SCREEN_TEXT",
+  "ANALYZING_SCENES",
+  "BUILDING_SOURCE_FACTS",
+  "COMPLETED",
+  "ANALYSIS_FAILED",
+] as const;
+export type PipelineStage = (typeof PIPELINE_STAGES)[number];
+
+export const STAGE_MESSAGE: Record<PipelineStage, string> = {
+  READY_FOR_ANALYSIS: "Siap dianalisis.",
+  RESOLVING_VIDEO_ASSET: "Membaca sumber video…",
+  VIDEO_NOT_AVAILABLE:
+    "File video asli belum tersedia sehingga analisis belum dapat dijalankan. Gunakan file upload atau selesaikan proses perolehan video terlebih dahulu.",
+  EXTRACTING_METADATA: "Mengambil metadata…",
+  EXTRACTING_FRAMES: "Mengambil frame asli…",
+  EXTRACTING_AUDIO: "Mengekstrak audio…",
+  TRANSCRIBING: "Membuat transkrip…",
+  READING_SCREEN_TEXT: "Membaca teks pada layar…",
+  ANALYZING_SCENES: "Menganalisis scene…",
+  BUILDING_SOURCE_FACTS: "Menyusun Source Facts…",
+  COMPLETED: "Analisis selesai.",
+  ANALYSIS_FAILED: "Analisis gagal.",
+};
+
+export type VideoAssetMetadata = Partial<{
+  asset_type: "UPLOAD" | "EXISTING_ASSET" | "DIRECT_VIDEO";
+  video_reference: string;
+  duration: number;
+  width: number;
+  height: number;
+  aspect_ratio: string;
+  mime_type: string;
+  file_size: number;
+  is_playable: boolean;
+  resolved_at: string;
+}>;
+
 export type SourceExtraction = {
   id: string;
   source_id: string;
+  pipeline_stage: PipelineStage | "";
+  failed_stage: string | null;
+  video_metadata: VideoAssetMetadata;
   transcript: Array<{ timestamp: string; text: string }>;
   snapshot_data: Array<{ path: string; timestamp: string; reason: string }>;
   visual_analysis: Array<{
