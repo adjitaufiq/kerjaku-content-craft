@@ -198,6 +198,13 @@ function SourceDetailPage() {
   const extraction = detail.data?.extraction ?? null;
   const report = (extraction?.source_report ?? {}) as SourceReport;
   const gate = evaluateExtractionGate(extraction);
+  const workspaceStep = source?.status === "ready_for_prompt_generation"
+    ? "Selected Concept"
+    : source?.status === "approved"
+      ? "Hook Matrix"
+      : source?.status === "analysis_complete"
+        ? "ATM KERJAKU"
+        : "Analysis";
 
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
@@ -355,7 +362,7 @@ function SourceDetailPage() {
           </Button>
         </div>
 
-        <CliperWorkspaceSteps current="Analysis" />
+        <CliperWorkspaceSteps current={workspaceStep} />
 
         {progress ? (
           <div className="surface-panel flex items-center gap-2 p-4 text-sm text-primary">

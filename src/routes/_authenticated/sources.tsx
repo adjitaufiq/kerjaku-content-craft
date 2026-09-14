@@ -23,7 +23,6 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   SOURCE_CATEGORIES,
   SOURCE_PLATFORMS,
-  SOURCE_RETENTION_DAYS,
   SOURCE_STATUSES,
   createViralSource,
   deleteViralSource,

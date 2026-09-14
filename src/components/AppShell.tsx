@@ -63,6 +63,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.to}
                 to={item.to}
+                aria-current={
+                  item.to === "/sources" && pathname === "/source-detail" ? "page" : undefined
+                }
+                data-workspace-active={
+                  item.to === "/sources" && pathname === "/source-detail" ? "true" : undefined
+                }
                 className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground ${
                   item.to === "/sources" && pathname === "/source-detail"
                     ? "bg-primary/12 text-primary"
