@@ -41,8 +41,21 @@ export type ViralDna = {
   model: string;
   updated_at: string;
 };
+export type HookCandidate = {
+  id: string;
+  hook: string;
+  hook_type: string;
+  rationale: string;
+  psychological_trigger: string;
+  curiosity_gap: string;
+  power_words: string[];
+  risk_note: string;
+};
 export type AtmVersion = {
   id: string;
+  hook_candidates: HookCandidate[];
+  selected_hook: HookCandidate | null;
+  hook_selected_at: string | null;
   atm_mode: AtmMode;
   angle: string;
   source_mapping: {
