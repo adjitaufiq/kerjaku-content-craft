@@ -177,6 +177,35 @@ const ATM_SCHEMA = {
   },
 } as const;
 
+const HOOK_MATRIX_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["candidates"],
+  properties: {
+    candidates: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "id", "hook", "hook_type", "rationale", "psychological_trigger",
+          "curiosity_gap", "power_words", "risk_note",
+        ],
+        properties: {
+          id: { type: "string" },
+          hook: { type: "string" },
+          hook_type: { type: "string" },
+          rationale: { type: "string" },
+          psychological_trigger: { type: "string" },
+          curiosity_gap: { type: "string" },
+          power_words: { type: "array", items: { type: "string" } },
+          risk_note: { type: "string" },
+        },
+      },
+    },
+  },
+} as const;
+
 async function streamStructured<T>(input: {
   instructions: string;
   prompt: string;
