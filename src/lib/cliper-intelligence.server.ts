@@ -321,3 +321,26 @@ export async function generateAtmVersion(input: {
   });
   return { result, model: MODEL };
 }
+
+export async function generateHookMatrix(input: {
+  mode: "conservative" | "creative";
+  angle: string;
+  dna: ViralDnaResult;
+  atm: AtmResult;
+  brand: BrandKnowledgeInput;
+}): Promise<{ result: HookMatrixResult; model: string }> {
+  const result = await streamStructured<HookMatrixResult>({
+    name: "kerjaku_hook_matrix",
+    schema: HOOK_MATRIX_SCHEMA,
+    instructions: `Kamu adalah KERJAKU Viral Hook Matrix Engine. Buat TEPAT 5 kandidat hook pembuka yang berbeda tipe (misalnya pertanyaan, klaim berani, problem callout, cerita, kontrarian). Hook harus orisinal milik KERJAKU—dilarang menyalin kalimat sumber. Setiap hook wajib sejalan dengan angle, arahan ATM, dan Brand Knowledge, serta memakai power words brand bila relevan. id memakai format hook-1 sampai hook-5. Jangan membuat caption, carousel, script, atau storyboard. Jawab dalam Bahasa Indonesia.`,
+    prompt: [
+      `Mode ATM: ${input.mode}`,
+      `Angle: ${input.angle}`,
+      `Viral DNA: ${JSON.stringify(input.dna)}`,
+      `Arahan ATM: ${JSON.stringify(input.atm)}`,
+      `Brand Knowledge: ${JSON.stringify(input.brand)}`,
+      "Susun 5 kandidat hook dengan alasan, trigger psikologis, curiosity gap, power words, dan catatan risiko brand.",
+    ].join("\n\n"),
+  });
+  return { result, model: MODEL };
+}
