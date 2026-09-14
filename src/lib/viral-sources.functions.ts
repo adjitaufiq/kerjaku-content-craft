@@ -10,6 +10,7 @@ export const SOURCE_STATUSES = [
   "analysis_complete",
   "production",
   "approved",
+  "ready_for_prompt_generation",
   "published",
   "failed",
 ] as const;
