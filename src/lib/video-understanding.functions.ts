@@ -161,6 +161,7 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
       sourceId: string;
       audioChunks: Array<{ path: string; timestamp: string }>;
       snapshots: Array<{ path: string; timestamp: string; reason: string }>;
+      videoMetadata?: VideoAssetMetadata;
     }) => input,
   )
   .handler(async ({ data, context }): Promise<{ status: ExtractionStatus; score: number }> => {
