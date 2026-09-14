@@ -197,15 +197,31 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
           source_report: {},
           confidence_score: 0,
           error_message: null,
+          pipeline_stage: "TRANSCRIBING",
+          failed_stage: null,
+          video_metadata: (data.videoMetadata ?? {}) as unknown as Json,
         },
         { onConflict: "source_id" },
       )
       .throwOnError();
 
+    const stage = async (value: PipelineStage) => {
+      await context.supabase
+        .from("source_extractions")
+        .update({ pipeline_stage: value })
+        .eq("source_id", data.sourceId);
+    };
+
+    let currentStage: PipelineStage = "TRANSCRIBING";
     const fail = async (message: string) => {
       await context.supabase
         .from("source_extractions")
-        .update({ verification_status: "failed", error_message: message })
+        .update({
+          verification_status: "failed",
+          error_message: message,
+          pipeline_stage: "ANALYSIS_FAILED",
+          failed_stage: currentStage,
+        })
         .eq("source_id", data.sourceId);
     };
 
