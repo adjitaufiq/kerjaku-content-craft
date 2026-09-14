@@ -10,13 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  generateHookMatrix,
   generateKerjakuAtmVersion,
   getIntelligenceWorkspace,
   reviewKerjakuAtmVersion,
   runViralDnaAnalysis,
+  selectHookCandidate,
   type AtmMode,
   type AtmVersion,
   type DnaEvidence,
+  type HookCandidate,
 } from "@/lib/cliper-intelligence.functions";
 
 export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: string; gateAllowed: boolean }) {
