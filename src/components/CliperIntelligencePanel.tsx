@@ -123,7 +123,7 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
         </div>
       ) : <div className="surface-panel p-6 text-sm text-muted-foreground">Belum ada Viral DNA. Jalankan analisis setelah Source Extraction lolos quality gate.</div>}
 
-      {versions.length ? <div className="space-y-3"><h3 className="font-display text-sm font-semibold">Approval Checkpoint</h3>{versions.map((version) => <VersionReview key={version.id} version={version} note={notes[version.id] ?? ""} onNote={(value) => setNotes((current) => ({ ...current, [version.id]: value }))} onDecision={(decision) => reviewMutation.mutate({ version, decision })} busy={reviewMutation.isPending} />)}</div> : null}
+      {versions.length ? <div className="space-y-3"><h3 className="font-display text-sm font-semibold">Approval Checkpoint</h3>{versions.map((version) => <VersionReview key={version.id} version={version} note={notes[version.id] ?? ""} onNote={(value) => setNotes((current) => ({ ...current, [version.id]: value }))} onDecision={(decision) => reviewMutation.mutate({ version, decision })} busy={reviewMutation.isPending} onBuildHooks={() => hookMutation.mutate(version.id)} hooksBusy={hookMutation.isPending} onSelectHook={(hookId) => selectMutation.mutate({ versionId: version.id, hookId })} selectBusy={selectMutation.isPending} />)}</div> : null}
     </section>
   );
 }
