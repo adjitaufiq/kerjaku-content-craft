@@ -123,16 +123,62 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
         </div>
       ) : <div className="surface-panel p-6 text-sm text-muted-foreground">Belum ada Viral DNA. Jalankan analisis setelah Source Extraction lolos quality gate.</div>}
 
-      {versions.length ? <div className="space-y-3"><h3 className="font-display text-sm font-semibold">Approval Checkpoint</h3>{versions.map((version) => <VersionReview key={version.id} version={version} note={notes[version.id] ?? ""} onNote={(value) => setNotes((current) => ({ ...current, [version.id]: value }))} onDecision={(decision) => reviewMutation.mutate({ version, decision })} busy={reviewMutation.isPending} />)}</div> : null}
+      {versions.length ? <div className="space-y-3"><h3 className="font-display text-sm font-semibold">Approval Checkpoint</h3>{versions.map((version) => <VersionReview key={version.id} version={version} note={notes[version.id] ?? ""} onNote={(value) => setNotes((current) => ({ ...current, [version.id]: value }))} onDecision={(decision) => reviewMutation.mutate({ version, decision })} busy={reviewMutation.isPending} onBuildHooks={() => hookMutation.mutate(version.id)} hooksBusy={hookMutation.isPending} onSelectHook={(hookId) => selectMutation.mutate({ versionId: version.id, hookId })} selectBusy={selectMutation.isPending} />)}</div> : null}
     </section>
   );
 }
 
 function DnaRow({ label, value }: { label: string; value: string }) { return <div><p className="text-xs font-semibold uppercase text-primary">{label}</p><p className="mt-1 text-sm text-muted-foreground">{value || "—"}</p></div>; }
 function Evidence({ items }: { items: DnaEvidence[] }) { if (!items.length) return null; return <div><p className="text-xs font-semibold uppercase text-muted-foreground">Bukti sumber</p><ul className="mt-2 space-y-1.5">{items.map((item, index) => <li key={`${item.timestamp}-${index}`} className="text-xs text-muted-foreground"><span className="font-mono text-primary">{item.timestamp}</span> · {item.quote}</li>)}</ul></div>; }
-function VersionReview({ version, note, onNote, onDecision, busy }: { version: AtmVersion; note: string; onNote: (value: string) => void; onDecision: (value: "approved" | "rejected") => void; busy: boolean }) {
+function VersionReview({ version, note, onNote, onDecision, busy, onBuildHooks, hooksBusy, onSelectHook, selectBusy }: { version: AtmVersion; note: string; onNote: (value: string) => void; onDecision: (value: "approved" | "rejected") => void; busy: boolean; onBuildHooks: () => void; hooksBusy: boolean; onSelectHook: (hookId: string) => void; selectBusy: boolean }) {
   const adaptation = version.adaptation;
   const mapping = version.source_mapping;
-  return <article className="surface-panel space-y-4 p-5"><div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2"><Badge>{version.atm_mode === "conservative" ? "Conservative" : "Creative"}</Badge><Badge variant="outline">{version.status.replace("_", " ")}</Badge></div><span className="text-xs text-muted-foreground">Brand {version.brand_profile_version}</span></div><div><p className="text-xs font-semibold uppercase text-primary">Angle</p><p className="mt-1 text-sm">{version.angle}</p></div><div className="grid gap-3 md:grid-cols-2"><DnaRow label="Premis strategis" value={adaptation.strategic_premise ?? ""} /><DnaRow label="Relevansi audience" value={adaptation.target_audience_relevance ?? ""} /><DnaRow label="Arah storytelling" value={adaptation.storytelling_direction ?? ""} /><DnaRow label="Arah brand voice" value={adaptation.brand_voice_direction ?? ""} /><DnaRow label="Koneksi produk" value={adaptation.product_connection ?? ""} /><DnaRow label="Alasan" value={version.reason} /></div><div className="grid gap-3 md:grid-cols-2"><BulletList label="Formula dipertahankan" items={mapping.preserved_formula ?? []} /><BulletList label="Elemen diubah" items={mapping.changed_elements ?? []} /><BulletList label="Originality safeguards" items={adaptation.originality_safeguards ?? []} /></div>{version.status === "pending_approval" ? <div className="space-y-3 border-t border-border pt-4"><div className="space-y-2"><Label htmlFor={`note-${version.id}`}>Catatan persetujuan / revisi</Label><Textarea id={`note-${version.id}`} value={note} onChange={(e) => onNote(e.target.value)} placeholder="Tambahkan arahan untuk tahap berikutnya" /></div><div className="flex flex-wrap gap-2"><Button onClick={() => onDecision("approved")} disabled={busy}><BadgeCheck />Setujui Arah</Button><Button variant="destructive" onClick={() => onDecision("rejected")} disabled={busy || !note.trim()}><XCircle />Tolak & Minta Revisi</Button></div></div> : <div className={`flex items-center gap-2 text-sm ${version.status === "approved" ? "text-accent" : "text-destructive"}`}>{version.status === "approved" ? <BadgeCheck className="size-4" /> : <XCircle className="size-4" />}<span>{version.status === "approved" ? "Disetujui untuk masuk tahap produksi berikutnya." : `Ditolak: ${version.approval_note}`}</span>{version.status === "approved" ? <Button asChild size="sm" variant="outline" className="ml-auto"><Link to="/production" search={{ versionId: version.id }}>Buka Content Production</Link></Button> : null}</div>}</article>;
+  const candidates = version.hook_candidates ?? [];
+  const selected = version.selected_hook;
+  return <article className="surface-panel space-y-4 p-5"><div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2"><Badge>{version.atm_mode === "conservative" ? "Conservative" : "Creative"}</Badge><Badge variant="outline">{version.status.replace("_", " ")}</Badge></div><span className="text-xs text-muted-foreground">Brand {version.brand_profile_version}</span></div><div><p className="text-xs font-semibold uppercase text-primary">Angle</p><p className="mt-1 text-sm">{version.angle}</p></div><div className="grid gap-3 md:grid-cols-2"><DnaRow label="Premis strategis" value={adaptation.strategic_premise ?? ""} /><DnaRow label="Relevansi audience" value={adaptation.target_audience_relevance ?? ""} /><DnaRow label="Arah storytelling" value={adaptation.storytelling_direction ?? ""} /><DnaRow label="Arah brand voice" value={adaptation.brand_voice_direction ?? ""} /><DnaRow label="Koneksi produk" value={adaptation.product_connection ?? ""} /><DnaRow label="Alasan" value={version.reason} /></div><div className="grid gap-3 md:grid-cols-2"><BulletList label="Formula dipertahankan" items={mapping.preserved_formula ?? []} /><BulletList label="Elemen diubah" items={mapping.changed_elements ?? []} /><BulletList label="Originality safeguards" items={adaptation.originality_safeguards ?? []} /></div>{version.status === "pending_approval" ? <div className="space-y-3 border-t border-border pt-4"><div className="space-y-2"><Label htmlFor={`note-${version.id}`}>Catatan persetujuan / revisi</Label><Textarea id={`note-${version.id}`} value={note} onChange={(e) => onNote(e.target.value)} placeholder="Tambahkan arahan untuk tahap berikutnya" /></div><div className="flex flex-wrap gap-2"><Button onClick={() => onDecision("approved")} disabled={busy}><BadgeCheck />Setujui Arah</Button><Button variant="destructive" onClick={() => onDecision("rejected")} disabled={busy || !note.trim()}><XCircle />Tolak & Minta Revisi</Button></div></div> : <div className={`flex items-center gap-2 text-sm ${version.status === "approved" ? "text-accent" : "text-destructive"}`}>{version.status === "approved" ? <BadgeCheck className="size-4" /> : <XCircle className="size-4" />}<span>{version.status === "approved" ? "Disetujui. Lanjut pilih hook sebelum produksi." : `Ditolak: ${version.approval_note}`}</span></div>}
+    {version.status === "approved" ? (
+      <div className="space-y-3 border-t border-border pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h4 className="font-display text-sm font-semibold">Hook Matrix</h4>
+          <Button size="sm" variant="outline" onClick={onBuildHooks} disabled={hooksBusy}>
+            {hooksBusy ? <Loader2 className="animate-spin" /> : <Sparkles />}
+            {candidates.length ? "Buat Ulang 5 Hook" : "Buat 5 Hook"}
+          </Button>
+        </div>
+        {candidates.length ? (
+          <ul className="space-y-2">
+            {candidates.map((candidate) => {
+              const isSelected = selected?.id === candidate.id;
+              return (
+                <li key={candidate.id} className={`rounded-xl border p-3 ${isSelected ? "border-accent/50 bg-accent/10" : "border-border bg-secondary/30"}`}>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">{candidate.hook}</p>
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant="outline" className="text-[10px]">{candidate.hook_type}</Badge>
+                        {candidate.power_words.map((word) => <Badge key={word} variant="secondary" className="text-[10px]">{word}</Badge>)}
+                      </div>
+                    </div>
+                    <Button size="sm" variant={isSelected ? "default" : "outline"} onClick={() => onSelectHook(candidate.id)} disabled={selectBusy || isSelected}>
+                      {isSelected ? <BadgeCheck /> : null}{isSelected ? "Terpilih" : "Pilih Hook"}
+                    </Button>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">{candidate.rationale}</p>
+                  <p className="mt-1 text-xs text-muted-foreground"><span className="text-primary">Trigger:</span> {candidate.psychological_trigger} · <span className="text-primary">Curiosity:</span> {candidate.curiosity_gap}</p>
+                  {candidate.risk_note ? <p className="mt-1 text-[11px] text-amber-400">{candidate.risk_note}</p> : null}
+                </li>
+              );
+            })}
+          </ul>
+        ) : <p className="text-xs text-muted-foreground">Belum ada kandidat hook. Buat 5 hook lalu pilih satu sebelum masuk tahap produksi.</p>}
+        {selected ? (
+          <div className="flex flex-wrap items-center gap-2 text-sm text-accent">
+            <BadgeCheck className="size-4" /> Hook terpilih. Sumber siap masuk tahap prompt.
+            <Button asChild size="sm" variant="outline" className="ml-auto"><Link to="/production" search={{ versionId: version.id }}>Buka Content Production</Link></Button>
+          </div>
+        ) : null}
+      </div>
+    ) : null}
+  </article>;
 }
 function BulletList({ label, items }: { label: string; items: string[] }) { if (!items.length) return null; return <div><p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p><ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-muted-foreground">{items.map((item) => <li key={item}>{item}</li>)}</ul></div>; }

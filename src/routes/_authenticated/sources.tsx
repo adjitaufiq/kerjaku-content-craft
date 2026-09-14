@@ -59,6 +59,7 @@ const STATUS_LABEL: Record<SourceStatus, string> = {
   understanding: "Understanding",
   source_extracted: "Source Extracted",
   analysis_complete: "Analysis Complete",
+  ready_for_prompt_generation: "Siap Tahap Prompt",
   production: "Production",
   approved: "Approved",
   published: "Published",
@@ -67,7 +68,12 @@ const STATUS_LABEL: Record<SourceStatus, string> = {
 
 function statusTone(status: SourceStatus) {
   if (status === "failed") return "border-destructive/40 bg-destructive/15 text-destructive";
-  if (status === "published" || status === "approved" || status === "analysis_complete")
+  if (
+    status === "published" ||
+    status === "approved" ||
+    status === "analysis_complete" ||
+    status === "ready_for_prompt_generation"
+  )
     return "border-accent/40 bg-accent/15 text-accent";
   if (status === "draft") return "border-border bg-secondary/60 text-muted-foreground";
   return "border-primary/40 bg-primary/15 text-primary";
