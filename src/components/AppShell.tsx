@@ -1,46 +1,32 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  BarChart3,
-  BookOpen,
-  Brain,
-  Download,
-  Film,
   Instagram,
   LayoutGrid,
-  Library,
   LogOut,
-  ShieldCheck,
   Settings2,
-  Sparkles,
   Video,
   Wand2,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getAccessContext } from "@/lib/roles.functions";
 import { useScheduleRunner } from "@/lib/use-schedule-runner";
 
 const nav = [
-  { to: "/", label: "Content Grid", icon: LayoutGrid },
-  { to: "/editor", label: "Editor & Publisher", icon: Wand2 },
-  { to: "/viral", label: "Viral References", icon: Brain },
-  { to: "/sources", label: "Viral Source Intake", icon: Video },
-  { to: "/downloader", label: "Content Downloader", icon: Download },
-  { to: "/production", label: "Content Production", icon: Sparkles },
-  { to: "/storyboard", label: "Video Storyboard", icon: Film },
-  { to: "/quality", label: "Quality Gate", icon: ShieldCheck },
-  { to: "/library", label: "Content Library", icon: Library },
-  { to: "/performance", label: "Performance", icon: BarChart3 },
-  { to: "/brand", label: "Brand Center", icon: BookOpen },
+  { to: "/", label: "Grid", icon: LayoutGrid },
+  { to: "/editor", label: "Editor", icon: Wand2 },
+  { to: "/sources", label: "Cliper", icon: Video },
   { to: "/settings", label: "Settings", icon: Settings2 },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   useScheduleRunner();
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const queryClient = useQueryClient();
   const fetchAccess = useServerFn(getAccessContext);
   const access = useQuery({
@@ -77,7 +63,17 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.to}
                 to={item.to}
-                className="flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                aria-current={
+                  item.to === "/sources" && pathname === "/source-detail" ? "page" : undefined
+                }
+                data-workspace-active={
+                  item.to === "/sources" && pathname === "/source-detail" ? "true" : undefined
+                }
+                className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground ${
+                  item.to === "/sources" && pathname === "/source-detail"
+                    ? "bg-primary/12 text-primary"
+                    : "text-muted-foreground"
+                }`}
                 activeProps={{ className: "bg-primary/12 text-primary" }}
                 activeOptions={{ exact: item.to === "/" }}
               >
@@ -93,14 +89,16 @@ export function AppShell({ children }: { children: ReactNode }) {
                     {access.data.isAdmin ? "Administrator" : "Member"}
                   </span>
                 </span>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => void signOut()}
-                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                  className="gap-1.5 text-muted-foreground"
                 >
                   <LogOut className="size-4" />
                   <span className="sr-only sm:not-sr-only">Sign out</span>
-                </button>
+                </Button>
               </div>
             ) : null}
           </nav>

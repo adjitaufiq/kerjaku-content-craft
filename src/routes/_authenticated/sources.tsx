@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Clock, Film, Loader2, Sparkles, Trash2, UploadCloud, Video } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { CliperWorkspaceSteps } from "@/components/CliperWorkspaceSteps";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,6 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   SOURCE_CATEGORIES,
   SOURCE_PLATFORMS,
-  SOURCE_RETENTION_DAYS,
   SOURCE_STATUSES,
   createViralSource,
   deleteViralSource,
@@ -195,14 +195,14 @@ function SourcesPage() {
       <div className="space-y-6">
         <header className="space-y-1.5">
           <h1 className="font-display text-2xl font-bold tracking-tight">
-            Viral <span className="brand-text">Source Intake</span>
+            <span className="brand-text">Cliper</span> Workspace
           </h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Kumpulkan sumber konten viral sebagai bahan reverse engineering. Video tersimpan privat
-            dan otomatis kedaluwarsa dalam {SOURCE_RETENTION_DAYS} hari; catatan dan hasil analisis
-            tetap tersimpan.
+            Pilih atau tambahkan video sumber, lalu lanjutkan seluruh proses intelligence dalam satu workspace.
           </p>
         </header>
+
+        <CliperWorkspaceSteps current="Source" />
 
         <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
           <section className="surface-panel space-y-4 p-5">
@@ -320,7 +320,7 @@ function SourcesPage() {
 
           <section className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-sm font-semibold">Source Library</h2>
+              <h2 className="font-display text-sm font-semibold">Source</h2>
               <span className="text-xs text-muted-foreground">{rows.length} sumber</span>
             </div>
 

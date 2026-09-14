@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { CliperWorkspaceSteps } from "@/components/CliperWorkspaceSteps";
 import { CliperIntelligencePanel } from "@/components/CliperIntelligencePanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -197,6 +198,13 @@ function SourceDetailPage() {
   const extraction = detail.data?.extraction ?? null;
   const report = (extraction?.source_report ?? {}) as SourceReport;
   const gate = evaluateExtractionGate(extraction);
+  const workspaceStep = source?.status === "ready_for_prompt_generation"
+    ? "Selected Concept"
+    : source?.status === "approved"
+      ? "Hook Matrix"
+      : source?.status === "analysis_complete"
+        ? "ATM KERJAKU"
+        : "Analysis";
 
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
@@ -332,11 +340,9 @@ function SourceDetailPage() {
               to="/sources"
               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
             >
-              <ArrowLeft className="size-3" /> Source Intake
+              <ArrowLeft className="size-3" /> Cliper
             </Link>
-            <h1 className="font-display text-2xl font-bold tracking-tight">
-              Source <span className="brand-text">Understanding</span>
-            </h1>
+            <h1 className="font-display text-2xl font-bold tracking-tight"><span className="brand-text">Cliper</span> Intelligence</h1>
             <p className="max-w-2xl text-sm text-muted-foreground">
               {source?.title || "Tanpa judul"} — AI hanya mengekstrak isi video asli, tanpa membuat
               ide baru.
@@ -355,6 +361,8 @@ function SourceDetailPage() {
             {extraction ? "Proses Ulang Video" : "Proses Video"}
           </Button>
         </div>
+
+        <CliperWorkspaceSteps current={workspaceStep} />
 
         {progress ? (
           <div className="surface-panel flex items-center gap-2 p-4 text-sm text-primary">
@@ -397,6 +405,7 @@ function SourceDetailPage() {
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
             <section className="space-y-4">
               <div className="surface-panel space-y-3 p-4">
+                <h2 className="font-display text-sm font-semibold">Source Video</h2>
                 <div className="overflow-hidden rounded-xl bg-secondary/60">
                   {videoUrl ? (
                     <video src={videoUrl} controls className="max-h-80 w-full object-contain" />
@@ -415,7 +424,7 @@ function SourceDetailPage() {
 
               <div className="surface-panel space-y-3 p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="font-display text-sm font-semibold">Transcript</h2>
+                  <h2 className="font-display text-sm font-semibold">Analysis · Transcript</h2>
                   {extraction ? (
                     <Badge variant="outline" className={statusTone(extraction.verification_status)}>
                       {STATUS_LABEL[extraction.verification_status]}
@@ -444,7 +453,7 @@ function SourceDetailPage() {
 
               {snapshots.length ? (
                 <div className="surface-panel space-y-3 p-4">
-                  <h2 className="font-display text-sm font-semibold">Snapshot ({snapshots.length})</h2>
+                  <h2 className="font-display text-sm font-semibold">Analysis · Snapshot ({snapshots.length})</h2>
                   <div className="grid grid-cols-3 gap-2">
                     {snapshots.map((snap) => (
                       <figure key={snap.path} className="space-y-1">
@@ -474,7 +483,7 @@ function SourceDetailPage() {
             <section className="space-y-4">
               <div className="surface-panel space-y-3 p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="font-display text-sm font-semibold">Source Content Report</h2>
+                  <h2 className="font-display text-sm font-semibold">Analysis · Source Facts</h2>
                   {extraction ? (
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={statusTone(extraction.verification_status)}>
@@ -516,7 +525,7 @@ function SourceDetailPage() {
               {extraction?.on_screen_text?.length ? (
                 <div className="surface-panel space-y-2 p-5">
                   <h2 className="flex items-center gap-2 font-display text-sm font-semibold">
-                    <ScanText className="size-4" /> Teks di layar
+                    <ScanText className="size-4" /> Analysis · OCR
                   </h2>
                   <ul className="space-y-1.5">
                     {extraction.on_screen_text.map((item, i) => (
@@ -533,7 +542,7 @@ function SourceDetailPage() {
 
               {extraction?.visual_analysis?.length ? (
                 <div className="surface-panel space-y-2 p-5">
-                  <h2 className="font-display text-sm font-semibold">Visual understanding</h2>
+                  <h2 className="font-display text-sm font-semibold">Analysis · Scene Understanding</h2>
                   <ul className="space-y-2.5">
                     {extraction.visual_analysis.map((scene, i) => (
                       <li key={i} className="space-y-1">

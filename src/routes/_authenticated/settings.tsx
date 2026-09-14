@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { FileSpreadsheet, KeyRound, ShieldCheck } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { BrandCenter } from "@/components/BrandCenter";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -247,6 +248,10 @@ function SettingsPage() {
             {importing ? "Memproses…" : "Upload File Excel"}
           </Button>
         </section>
+      </div>
+
+      <div className="mt-10 border-t border-border pt-8">
+        <BrandCenter />
       </div>
     </AppShell>
   );
