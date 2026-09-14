@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { BadgeCheck, Brain, Loader2, ShieldAlert, Sparkles, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -78,8 +77,8 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
     <section className="space-y-5 border-t border-border pt-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="flex items-center gap-2 font-display text-xl font-semibold"><Brain className="size-5 text-primary" /> Viral DNA & KERJAKU ATM</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Reverse engineering formula sumber, lalu adaptasi strategis sebelum produksi.</p>
+          <h2 className="flex items-center gap-2 font-display text-xl font-semibold"><Brain className="size-5 text-primary" /> Analysis · Viral DNA</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Formula sumber, ATM KERJAKU, Hook Matrix, dan konsep pilihan tetap berada di workspace ini.</p>
         </div>
         <Button onClick={() => dnaMutation.mutate()} disabled={!gateAllowed || dnaMutation.isPending}>
           {dnaMutation.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}
@@ -110,7 +109,7 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
           </div>
 
           <div className="surface-panel space-y-4 p-5">
-            <div><h3 className="font-display font-semibold">ATM Engine</h3><p className="mt-1 text-xs text-muted-foreground">Pilih tingkat kedekatan formula dan tentukan angle yang akan ditinjau manusia.</p></div>
+            <div><h3 className="font-display font-semibold">ATM KERJAKU</h3><p className="mt-1 text-xs text-muted-foreground">Amati formula sumber, tiru prinsipnya, lalu modifikasi menjadi arah KERJAKU.</p></div>
             <div className="grid grid-cols-2 gap-2">
               <Button type="button" variant={mode === "conservative" ? "default" : "outline"} onClick={() => setMode("conservative")}>Conservative</Button>
               <Button type="button" variant={mode === "creative" ? "default" : "outline"} onClick={() => setMode("creative")}>Creative</Button>
@@ -118,7 +117,7 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
             <p className="text-xs text-muted-foreground">{mode === "conservative" ? "Mempertahankan formula dan urutan persuasi utama, dengan konteks KERJAKU yang orisinal." : "Mengambil prinsip viral, lalu mengubah angle dan arah storytelling lebih jauh."}</p>
             <div className="space-y-2"><Label htmlFor="atm-angle">Angle pilihan</Label><Textarea id="atm-angle" value={angle} onChange={(e) => setAngle(e.target.value)} placeholder="Contoh: Kesalahan kecil saat interview yang membuat kandidat terlihat tidak siap" /></div>
             <Button className="w-full" onClick={() => atmMutation.mutate()} disabled={atmMutation.isPending || !angle.trim()}>{atmMutation.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}Buat Arah ATM</Button>
-            <p className="text-[11px] text-muted-foreground">Hasil hanya berupa arah strategi. Tidak membuat carousel, caption, storyboard, atau script.</p>
+            <p className="text-[11px] text-muted-foreground">Comparison Matrix tersimpan pada formula dipertahankan, elemen diubah, dan originality safeguards.</p>
           </div>
         </div>
       ) : <div className="surface-panel p-6 text-sm text-muted-foreground">Belum ada Viral DNA. Jalankan analisis setelah Source Extraction lolos quality gate.</div>}
@@ -172,9 +171,16 @@ function VersionReview({ version, note, onNote, onDecision, busy, onBuildHooks, 
           </ul>
         ) : <p className="text-xs text-muted-foreground">Belum ada kandidat hook. Buat 5 hook lalu pilih satu sebelum masuk tahap produksi.</p>}
         {selected ? (
-          <div className="flex flex-wrap items-center gap-2 text-sm text-accent">
-            <BadgeCheck className="size-4" /> Hook terpilih. Sumber siap masuk tahap prompt.
-            <Button asChild size="sm" variant="outline" className="ml-auto"><Link to="/production" search={{ versionId: version.id }}>Buka Content Production</Link></Button>
+          <div className="space-y-3 border-t border-border pt-4">
+            <div className="flex items-center gap-2 text-sm text-accent"><BadgeCheck className="size-4" /> Selected Concept tersimpan</div>
+            <div className="rounded-lg border border-accent/40 bg-accent/10 p-4">
+              <p className="text-xs font-semibold uppercase text-accent">Selected Concept</p>
+              <p className="mt-2 text-sm font-medium">{selected.hook}</p>
+              <p className="mt-2 text-xs text-muted-foreground">{selected.rationale}</p>
+            </div>
+            <div className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
+              Output Prompt · Prompt Carousel dan Prompt Reels belum aktif pada Step 1.
+            </div>
           </div>
         ) : null}
       </div>
