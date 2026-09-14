@@ -289,3 +289,101 @@ export const reviewKerjakuAtmVersion = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+/** Hook Matrix: 5 kandidat hook orisinal dari versi ATM yang sudah disetujui. */
+export const generateHookMatrix = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { versionId: string }) => input)
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { data: version, error: versionError } = await context.supabase
+      .from("kerjaku_versions")
+      .select("*")
+      .eq("id", data.versionId)
+      .maybeSingle();
+    if (versionError) throw new Error(versionError.message);
+    if (!version) throw new Error("Versi ATM tidak ditemukan.");
+    if (version.status !== "approved") throw new Error("Setujui arah ATM terlebih dahulu sebelum membuat Hook Matrix.");
+
+    const [dna, profile, products, rules, words] = await Promise.all([
+      context.supabase.from("viral_intelligence").select("*").eq("source_id", version.source_id).maybeSingle(),
+      context.supabase.from("brand_profile").select("*").maybeSingle(),
+      context.supabase.from("brand_products").select("name,description,benefit").order("created_at"),
+      context.supabase.from("brand_rules").select("rule,rule_type").order("created_at"),
+      context.supabase.from("brand_power_words").select("word,context").order("created_at"),
+    ]);
+    const queryError = dna.error ?? profile.error ?? products.error ?? rules.error ?? words.error;
+    if (queryError) throw new Error(queryError.message);
+    if (!dna.data) throw new Error("Viral DNA tidak ditemukan untuk sumber ini.");
+    if (!profile.data?.positioning) throw new Error("Lengkapi Brand Knowledge terlebih dahulu.");
+
+    const { generateHookMatrix: runHookMatrix } = await import("@/lib/cliper-intelligence.server");
+    const generated = await runHookMatrix({
+      mode: version.atm_mode as AtmMode,
+      angle: version.angle,
+      dna: dna.data as unknown as Parameters<typeof runHookMatrix>[0]["dna"],
+      atm: {
+        source_mapping: version.source_mapping as never,
+        adaptation: version.adaptation as never,
+        reason: version.reason,
+      },
+      brand: {
+        profile: {
+          brand_name: profile.data.brand_name,
+          positioning: profile.data.positioning,
+          audience: profile.data.audience,
+          tone_of_voice: profile.data.tone_of_voice,
+          mission: profile.data.mission,
+          version: profile.data.version,
+        },
+        products: products.data ?? [],
+        rules: rules.data ?? [],
+        power_words: words.data ?? [],
+      },
+    });
+
+    const candidates = (generated.result.candidates ?? []).slice(0, 5);
+    if (candidates.length < 5) throw new Error("Hook Matrix belum lengkap. Jalankan ulang pembuatan hook.");
+
+    const { error: saveError } = await context.supabase
+      .from("kerjaku_versions")
+      .update({
+        hook_candidates: candidates as unknown as Json,
+        selected_hook: null,
+        hook_selected_at: null,
+      } as never)
+      .eq("id", data.versionId);
+    if (saveError) throw new Error(saveError.message);
+    return { ok: true };
+  });
+
+/** Pemilihan hook final oleh manusia; menandai sumber siap masuk tahap prompt. */
+export const selectHookCandidate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { versionId: string; hookId: string }) => input)
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { data: version, error } = await context.supabase
+      .from("kerjaku_versions")
+      .select("*")
+      .eq("id", data.versionId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!version) throw new Error("Versi ATM tidak ditemukan.");
+
+    const candidates = ((version as unknown as { hook_candidates?: HookCandidate[] }).hook_candidates ?? []);
+    const picked = candidates.find((item) => item.id === data.hookId);
+    if (!picked) throw new Error("Hook yang dipilih tidak ada dalam Hook Matrix.");
+
+    const { error: saveError } = await context.supabase
+      .from("kerjaku_versions")
+      .update({
+        selected_hook: picked as unknown as Json,
+        hook_selected_at: new Date().toISOString(),
+      } as never)
+      .eq("id", data.versionId);
+    if (saveError) throw new Error(saveError.message);
+    await context.supabase
+      .from("viral_sources")
+      .update({ status: "ready_for_prompt_generation" as never })
+      .eq("id", version.source_id);
+    return { ok: true };
+  });
