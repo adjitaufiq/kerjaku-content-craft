@@ -963,10 +963,12 @@ export type Database = {
           coverage_score: number
           created_at: string
           error_message: string | null
+          failed_stage: string | null
           has_audio: boolean
           id: string
           model: string
           on_screen_text: Json
+          pipeline_stage: string
           report_confidence: number
           snapshot_data: Json
           source_confidence: number
@@ -976,6 +978,7 @@ export type Database = {
           updated_at: string
           user_id: string
           verification_status: Database["public"]["Enums"]["source_extraction_status"]
+          video_metadata: Json
           visual_analysis: Json
         }
         Insert: {
@@ -984,10 +987,12 @@ export type Database = {
           coverage_score?: number
           created_at?: string
           error_message?: string | null
+          failed_stage?: string | null
           has_audio?: boolean
           id?: string
           model?: string
           on_screen_text?: Json
+          pipeline_stage?: string
           report_confidence?: number
           snapshot_data?: Json
           source_confidence?: number
@@ -997,6 +1002,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           verification_status?: Database["public"]["Enums"]["source_extraction_status"]
+          video_metadata?: Json
           visual_analysis?: Json
         }
         Update: {
@@ -1005,10 +1011,12 @@ export type Database = {
           coverage_score?: number
           created_at?: string
           error_message?: string | null
+          failed_stage?: string | null
           has_audio?: boolean
           id?: string
           model?: string
           on_screen_text?: Json
+          pipeline_stage?: string
           report_confidence?: number
           snapshot_data?: Json
           source_confidence?: number
@@ -1018,6 +1026,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           verification_status?: Database["public"]["Enums"]["source_extraction_status"]
+          video_metadata?: Json
           visual_analysis?: Json
         }
         Relationships: [
