@@ -721,9 +721,12 @@ export type Database = {
           atm_mode: Database["public"]["Enums"]["atm_mode"]
           brand_profile_version: string
           created_at: string
+          hook_candidates: Json
+          hook_selected_at: string | null
           id: string
           model: string
           reason: string
+          selected_hook: Json | null
           source_id: string
           source_mapping: Json
           status: Database["public"]["Enums"]["atm_version_status"]
@@ -738,9 +741,12 @@ export type Database = {
           atm_mode?: Database["public"]["Enums"]["atm_mode"]
           brand_profile_version?: string
           created_at?: string
+          hook_candidates?: Json
+          hook_selected_at?: string | null
           id?: string
           model?: string
           reason?: string
+          selected_hook?: Json | null
           source_id: string
           source_mapping?: Json
           status?: Database["public"]["Enums"]["atm_version_status"]
@@ -755,9 +761,12 @@ export type Database = {
           atm_mode?: Database["public"]["Enums"]["atm_mode"]
           brand_profile_version?: string
           created_at?: string
+          hook_candidates?: Json
+          hook_selected_at?: string | null
           id?: string
           model?: string
           reason?: string
+          selected_hook?: Json | null
           source_id?: string
           source_mapping?: Json
           status?: Database["public"]["Enums"]["atm_version_status"]
@@ -1408,6 +1417,7 @@ export type Database = {
         | "approved"
         | "published"
         | "failed"
+        | "ready_for_prompt_generation"
       viral_workflow_status:
         | "draft"
         | "analyzing"
@@ -1580,6 +1590,7 @@ export const Constants = {
         "approved",
         "published",
         "failed",
+        "ready_for_prompt_generation",
       ],
       viral_workflow_status: [
         "draft",
