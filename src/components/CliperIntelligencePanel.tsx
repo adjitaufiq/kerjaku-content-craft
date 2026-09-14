@@ -60,6 +60,17 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const hookMutation = useMutation({
+    mutationFn: (versionId: string) => buildHooks({ data: { versionId } }),
+    onSuccess: async () => { await refresh(); toast.success("5 kandidat hook siap dipilih."); },
+    onError: (error: Error) => toast.error(error.message),
+  });
+  const selectMutation = useMutation({
+    mutationFn: (input: { versionId: string; hookId: string }) => chooseHook({ data: input }),
+    onSuccess: async () => { await refresh(); toast.success("Hook dipilih. Sumber siap masuk tahap prompt."); },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const dna = query.data?.dna ?? null;
   const versions = query.data?.versions ?? [];
 
