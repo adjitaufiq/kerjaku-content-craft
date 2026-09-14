@@ -156,7 +156,7 @@ export const getIntelligenceWorkspace = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return {
       dna: (dna.data ?? null) as ViralDna | null,
-      versions: (versions.data ?? []) as AtmVersion[],
+      versions: (versions.data ?? []) as unknown as AtmVersion[],
     };
   });
 
