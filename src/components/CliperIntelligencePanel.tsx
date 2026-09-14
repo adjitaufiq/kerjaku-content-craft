@@ -28,6 +28,8 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
   const analyze = useServerFn(runViralDnaAnalysis);
   const generate = useServerFn(generateKerjakuAtmVersion);
   const review = useServerFn(reviewKerjakuAtmVersion);
+  const buildHooks = useServerFn(generateHookMatrix);
+  const chooseHook = useServerFn(selectHookCandidate);
   const query = useQuery({
     queryKey: ["cliper-intelligence", sourceId],
     queryFn: () => load({ data: { sourceId } }),
