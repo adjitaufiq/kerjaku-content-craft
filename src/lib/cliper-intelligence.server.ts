@@ -59,6 +59,11 @@ export type AtmResult = {
     brand_voice_direction: string;
     product_connection: string;
     originality_safeguards: string[];
+    source_formula: string[];
+    target_audience: string;
+    angle_ideas: string[];
+    example_hooks: string[];
+    recommended_format: string;
   };
   reason: string;
 };
