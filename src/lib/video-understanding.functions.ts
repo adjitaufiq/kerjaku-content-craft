@@ -67,8 +67,15 @@ export const PIPELINE_STAGES = [
   "BUILDING_SOURCE_FACTS",
   "COMPLETED",
   "ANALYSIS_FAILED",
+  "ANALYSIS_TIMEOUT",
+  "PROCESS_INTERRUPTED",
 ] as const;
 export type PipelineStage = (typeof PIPELINE_STAGES)[number];
+
+/** Batas waktu tanpa kemajuan sebelum proses dianggap timeout. */
+export const ANALYSIS_TIMEOUT_MS = 4 * 60 * 1000;
+/** Batas waktu tanpa detak proses (browser ditutup) sebelum dianggap terputus. */
+export const ANALYSIS_HEARTBEAT_STALE_MS = 90 * 1000;
 
 export const STAGE_MESSAGE: Record<PipelineStage, string> = {
   READY_FOR_ANALYSIS: "Siap dianalisis.",
@@ -84,7 +91,12 @@ export const STAGE_MESSAGE: Record<PipelineStage, string> = {
   BUILDING_SOURCE_FACTS: "Menyusun Source Facts…",
   COMPLETED: "Analisis selesai.",
   ANALYSIS_FAILED: "Analisis gagal.",
+  ANALYSIS_TIMEOUT:
+    "Proses analisis berhenti karena melewati batas waktu. Silakan coba proses ulang atau hapus source dan upload kembali.",
+  PROCESS_INTERRUPTED:
+    "Proses analisis terputus sebelum selesai. Silakan proses ulang video atau hapus source ini.",
 };
+
 
 export type VideoAssetMetadata = Partial<{
   asset_type: "UPLOAD" | "EXISTING_ASSET" | "DIRECT_VIDEO";
