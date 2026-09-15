@@ -351,10 +351,12 @@ export async function generateAtmVersion(input: {
   const result = await streamStructured<AtmResult>({
     name: "kerjaku_atm_version",
     schema: ATM_SCHEMA,
-    instructions: `Kamu adalah KERJAKU ATM Engine. ATM berarti Amati formula, Tiru prinsip, Modifikasi eksekusi. Kamu hanya menyusun arahan strategis sebelum produksi—DILARANG membuat carousel, caption, storyboard, script, atau konten siap terbit. ${modeRule} Patuhi seluruh Brand Knowledge. Bukti harus disalin dari Viral DNA, jangan mengarang bukti baru. Jawab dalam Bahasa Indonesia.`,
+    instructions: `Kamu adalah KERJAKU ATM Engine. ATM berarti Amati formula, Tiru prinsip, Modifikasi eksekusi. Kamu bekerja OTOMATIS: sumber utama keputusanmu adalah Viral DNA (hook, pattern interrupt, psychological trigger, curiosity gap, retention, struktur, CTA, evidence) plus Brand Knowledge KERJAKU. Jika ada tambahan arahan pengguna, perlakukan sebagai constraint tambahan saja, bukan sumber utama; jika kosong, tentukan sendiri arah terbaik dari Viral DNA. Wajib mengisi source_formula (formula sumber yang ditemukan), preserved_formula (prinsip dipertahankan), changed_elements (elemen diubah), reason (alasan adaptasi untuk KERJAKU), target_audience, angle_ideas (2-4 ide angle), example_hooks (2-3 contoh hook baru orisinal), dan recommended_format (format konten yang disarankan, misal carousel edukasi atau reels talking head). Kamu hanya menyusun arahan strategis sebelum produksi—DILARANG membuat carousel jadi, caption, storyboard, atau script siap terbit. ${modeRule} Patuhi seluruh Brand Knowledge. Bukti harus disalin dari Viral DNA, jangan mengarang bukti baru. Jawab dalam Bahasa Indonesia.`,
     prompt: [
       `Mode: ${input.mode}`,
-      `Angle pilihan pengguna: ${input.angle}`,
+      input.angle.trim()
+        ? `Tambahan arahan pengguna (constraint tambahan, bukan sumber utama): ${input.angle.trim()}`
+        : "Tidak ada tambahan arahan pengguna. Tentukan arah dan angle sepenuhnya dari Viral DNA dan Brand Knowledge KERJAKU.",
       `Viral DNA: ${JSON.stringify(input.dna)}`,
       `Brand Knowledge: ${JSON.stringify(input.brand)}`,
       "Buat pemetaan formula sumber ke arahan adaptasi orisinal KERJAKU dan jelaskan alasan strateginya.",
