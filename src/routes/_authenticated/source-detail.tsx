@@ -373,7 +373,7 @@ function SourceDetailPage() {
 
           <Button
             onClick={() => process.mutate()}
-            disabled={process.isPending || !source?.video_path}
+            disabled={process.isPending || isRunning || !source?.video_path}
           >
             {process.isPending ? (
               <Loader2 className="size-4 animate-spin" />
@@ -389,6 +389,19 @@ function SourceDetailPage() {
         {progress ? (
           <div className="surface-panel flex items-center gap-2 p-4 text-sm text-primary">
             <Loader2 className="size-4 animate-spin" /> {progress}
+          </div>
+        ) : stageMessage ? (
+          <div
+            className={`surface-panel flex items-center gap-2 p-4 text-sm ${
+              stageFailed ? "text-destructive" : "text-primary"
+            }`}
+          >
+            {stageFailed ? (
+              <ShieldAlert className="size-4" />
+            ) : (
+              <Loader2 className="size-4 animate-spin" />
+            )}
+            {stageMessage}
           </div>
         ) : null}
 
