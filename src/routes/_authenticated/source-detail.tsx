@@ -21,12 +21,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { evaluateExtractionGate } from "@/lib/extraction-gate";
-import { extractAudioChunks, extractFrames } from "@/lib/video-media";
+import { extractAudioChunks, extractFrames, probeVideoAsset } from "@/lib/video-media";
 import {
   getSourceDetail,
+  markVideoUnavailable,
   runSourceExtraction,
   setSourceProcessing,
+  STAGE_MESSAGE,
   type ExtractionStatus,
+  type PipelineStage,
   type ReportEvidence,
   type ReportField,
   type ReportItem,
@@ -187,6 +190,7 @@ function SourceDetailPage() {
   const fetchDetail = useServerFn(getSourceDetail);
   const runExtraction = useServerFn(runSourceExtraction);
   const markProcessing = useServerFn(setSourceProcessing);
+  const markUnavailable = useServerFn(markVideoUnavailable);
 
   const detail = useQuery({
     queryKey: ["source-detail", id],
