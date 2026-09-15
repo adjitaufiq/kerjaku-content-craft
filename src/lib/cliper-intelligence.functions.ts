@@ -110,12 +110,46 @@ function evidenceKey(item: DnaEvidence) {
   return `${item.source_type}|${item.timestamp.trim()}|${item.quote.trim().toLowerCase()}`;
 }
 
+const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, " ").trim();
+
+/** Bahan bukti mentah: transcript, teks layar, snapshot, dan analisis visual. */
+type RawMaterial = {
+  transcript?: Array<{ timestamp: string; text: string }> | null;
+  on_screen_text?: Array<{ timestamp: string; text: string }> | null;
+  snapshot_data?: Array<{ timestamp: string; reason: string }> | null;
+  visual_analysis?: Array<{ timestamp: string; scene: string; description: string }> | null;
+};
+
+function rawEvidenceIndex(material: RawMaterial) {
+  const index = new Map<string, string>();
+  const add = (type: DnaEvidence["source_type"], timestamp: string, text: string) => {
+    const key = `${type}|${timestamp.trim()}`;
+    index.set(key, `${index.get(key) ?? ""} ${normalize(text)}`.trim());
+  };
+  (material.transcript ?? []).forEach((row) => add("transcript", row.timestamp, row.text));
+  (material.on_screen_text ?? []).forEach((row) => add("on_screen_text", row.timestamp, row.text));
+  (material.snapshot_data ?? []).forEach((row) => add("visual", row.timestamp, row.reason));
+  (material.visual_analysis ?? []).forEach((row) =>
+    add("visual", row.timestamp, `${row.scene} ${row.description}`),
+  );
+  return index;
+}
+
 function lockDnaEvidence<T extends {
   evidence: DnaEvidence[];
   story_beats: Array<{ evidence: DnaEvidence[] }>;
-}>(result: T, report: SourceReportData): T {
+}>(result: T, report: SourceReportData, material: RawMaterial = {}): T {
   const allowed = new Set(collectVerifiedEvidence(report).map(evidenceKey));
-  const keep = (items: DnaEvidence[]) => items.filter((item) => allowed.has(evidenceKey(item)));
+  const raw = rawEvidenceIndex(material);
+  const supported = (item: DnaEvidence) => {
+    if (allowed.has(evidenceKey(item))) return true;
+    const text = raw.get(`${item.source_type}|${item.timestamp.trim()}`);
+    if (!text) return false;
+    const quote = normalize(item.quote);
+    if (!quote) return false;
+    return text.includes(quote) || quote.includes(text);
+  };
+  const keep = (items: DnaEvidence[]) => items.filter(supported);
   return {
     ...result,
     evidence: keep(result.evidence ?? []),
