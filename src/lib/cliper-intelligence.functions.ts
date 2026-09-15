@@ -210,11 +210,12 @@ export const runViralDnaAnalysis = createServerFn({ method: "POST" })
 
     const { analyzeViralDna } = await import("@/lib/cliper-intelligence.server");
     const rawMaterial: RawMaterial = {
-      transcript: (typedExtraction.transcript ?? []) as RawMaterial["transcript"],
-      on_screen_text: (typedExtraction.on_screen_text ?? []) as RawMaterial["on_screen_text"],
-      snapshot_data: (typedExtraction.snapshot_data ?? []) as RawMaterial["snapshot_data"],
-      visual_analysis: (typedExtraction.visual_analysis ?? []) as RawMaterial["visual_analysis"],
+      transcript: (typedExtraction.transcript ?? []) as NonNullable<RawMaterial["transcript"]>,
+      on_screen_text: (typedExtraction.on_screen_text ?? []) as NonNullable<RawMaterial["on_screen_text"]>,
+      snapshot_data: (typedExtraction.snapshot_data ?? []) as NonNullable<RawMaterial["snapshot_data"]>,
+      visual_analysis: (typedExtraction.visual_analysis ?? []) as NonNullable<RawMaterial["visual_analysis"]>,
     };
+
     const generated = await analyzeViralDna({
       source_report: typedExtraction.source_report,
       transcript: rawMaterial.transcript ?? [],
