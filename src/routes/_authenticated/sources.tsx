@@ -7,6 +7,8 @@ import { Clock, Film, Loader2, Sparkles, Trash2, UploadCloud, Video } from "luci
 
 import { AppShell } from "@/components/AppShell";
 import { CliperWorkspaceSteps } from "@/components/CliperWorkspaceSteps";
+import { DeleteSourceDialog } from "@/components/DeleteSourceDialog";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
