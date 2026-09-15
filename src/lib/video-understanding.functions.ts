@@ -159,12 +159,86 @@ export const getSourceDetail = createServerFn({ method: "GET" })
       ]);
       if (source.error) throw new Error(source.error.message);
       if (extraction.error) throw new Error(extraction.error.message);
+
+      let row = (extraction.data ?? null) as SourceExtraction | null;
+
+      // Auto-clean: proses yang berhenti tanpa detak tidak boleh menggantung selamanya.
+      if (row && row.verification_status === "processing") {
+        const idleMs = Date.now() - new Date(row.updated_at).getTime();
+        const stage: PipelineStage | null =
+          idleMs > ANALYSIS_TIMEOUT_MS
+            ? "ANALYSIS_TIMEOUT"
+            : idleMs > ANALYSIS_HEARTBEAT_STALE_MS
+              ? "PROCESS_INTERRUPTED"
+              : null;
+        if (stage) {
+          const patch = {
+            verification_status: "failed" as const,
+            pipeline_stage: stage,
+            failed_stage: row.pipeline_stage || null,
+            error_message: STAGE_MESSAGE[stage],
+          };
+          await context.supabase
+            .from("source_extractions")
+            .update(patch)
+            .eq("source_id", data.sourceId);
+          await context.supabase
+            .from("viral_sources")
+            .update({ status: "failed" })
+            .eq("id", data.sourceId);
+          row = { ...row, ...patch } as SourceExtraction;
+          if (source.data) source.data.status = "failed";
+        }
+      }
+
       return {
         source: (source.data ?? null) as ViralSource | null,
-        extraction: (extraction.data ?? null) as SourceExtraction | null,
+        extraction: row,
       };
     },
   );
+
+/** Detak proses agar analisis yang masih berjalan tidak dianggap terputus. */
+export const heartbeatExtraction = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { sourceId: string }) => input)
+  .handler(async ({ data, context }) => {
+    await context.supabase
+      .from("source_extractions")
+      .update({ error_message: null })
+      .eq("source_id", data.sourceId)
+      .eq("verification_status", "processing");
+    return { ok: true };
+  });
+
+/** Reset analisis: hapus hasil & file sementara, video sumber tetap dipertahankan. */
+export const resetSourceExtraction = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { sourceId: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { data: row } = await context.supabase
+      .from("source_extractions")
+      .select("snapshot_data")
+      .eq("source_id", data.sourceId)
+      .maybeSingle();
+
+    const paths = Array.isArray(row?.snapshot_data)
+      ? (row.snapshot_data as Array<{ path?: string }>)
+          .map((s) => s?.path)
+          .filter((p): p is string => typeof p === "string")
+      : [];
+    if (paths.length) {
+      await context.supabase.storage.from("viral-sources").remove(paths);
+    }
+
+    await context.supabase.from("source_extractions").delete().eq("source_id", data.sourceId);
+    await context.supabase
+      .from("viral_sources")
+      .update({ status: "draft" })
+      .eq("id", data.sourceId);
+    return { ok: true };
+  });
+
 
 export const runSourceExtraction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
