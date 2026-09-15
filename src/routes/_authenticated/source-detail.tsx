@@ -268,6 +268,19 @@ function SourceDetailPage() {
       const uid = auth.user?.id;
       if (!uid) throw new Error("Sesi berakhir, silakan masuk kembali.");
 
+      setProgress(STAGE_MESSAGE.RESOLVING_VIDEO_ASSET);
+      const probe = await probeVideoAsset(videoUrl);
+      const videoMetadata = {
+        asset_type: "UPLOAD" as const,
+        video_reference: source.video_path,
+        resolved_at: new Date().toISOString(),
+        ...probe,
+      };
+      if (!probe.is_playable) {
+        await markUnavailable({ data: { sourceId: id, videoMetadata } });
+        throw new Error(STAGE_MESSAGE.VIDEO_NOT_AVAILABLE);
+      }
+
       await markProcessing({ data: { sourceId: id } });
       void queryClient.invalidateQueries({ queryKey: ["viral-sources"] });
 
@@ -304,7 +317,12 @@ function SourceDetailPage() {
 
       setProgress("AI sedang memahami video…");
       return runExtraction({
-        data: { sourceId: id, audioChunks: uploadedChunks, snapshots: uploadedSnapshots },
+        data: {
+          sourceId: id,
+          audioChunks: uploadedChunks,
+          snapshots: uploadedSnapshots,
+          videoMetadata,
+        },
       });
     },
     onSuccess: (result) => {
