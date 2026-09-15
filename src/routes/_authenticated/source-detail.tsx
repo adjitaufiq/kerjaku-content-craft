@@ -336,7 +336,7 @@ function SourceDetailPage() {
       }
 
       setProgress("Memisahkan audio untuk transkrip…");
-      const chunks = await extractAudioChunks(videoUrl).catch(() => []);
+      const chunks = await extractAudioChunks(playbackUrl).catch(() => []);
       const uploadedChunks: Array<{ path: string; timestamp: string }> = [];
       for (const [index, chunk] of chunks.entries()) {
         setProgress(`Mengunggah audio ${index + 1}/${chunks.length}…`);
