@@ -213,6 +213,14 @@ function SourceDetailPage() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
 
+  const stage = (extraction?.pipeline_stage ?? "") as PipelineStage | "";
+  const isRunning = extraction?.verification_status === "processing";
+  const stageFailed = stage === "ANALYSIS_FAILED" || stage === "VIDEO_NOT_AVAILABLE";
+  const stageMessage =
+    stage && stage !== "COMPLETED" && stage !== "READY_FOR_ANALYSIS" && (isRunning || stageFailed)
+      ? STAGE_MESSAGE[stage]
+      : null;
+
   useEffect(() => {
     let active = true;
     if (!source?.video_path) {
