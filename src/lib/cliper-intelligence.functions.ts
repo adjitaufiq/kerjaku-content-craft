@@ -209,8 +209,22 @@ export const runViralDnaAnalysis = createServerFn({ method: "POST" })
     if (!gate.allowed || !typedExtraction) throw new Error(gate.reason);
 
     const { analyzeViralDna } = await import("@/lib/cliper-intelligence.server");
-    const generated = await analyzeViralDna(typedExtraction.source_report);
-    const result = lockDnaEvidence(generated.result, typedExtraction.source_report);
+    const rawMaterial: RawMaterial = {
+      transcript: (typedExtraction.transcript ?? []) as NonNullable<RawMaterial["transcript"]>,
+      on_screen_text: (typedExtraction.on_screen_text ?? []) as NonNullable<RawMaterial["on_screen_text"]>,
+      snapshot_data: (typedExtraction.snapshot_data ?? []) as NonNullable<RawMaterial["snapshot_data"]>,
+      visual_analysis: (typedExtraction.visual_analysis ?? []) as NonNullable<RawMaterial["visual_analysis"]>,
+    };
+
+    const generated = await analyzeViralDna({
+      source_report: typedExtraction.source_report,
+      transcript: rawMaterial.transcript ?? [],
+      on_screen_text: rawMaterial.on_screen_text ?? [],
+      snapshots: rawMaterial.snapshot_data ?? [],
+      visual_analysis: rawMaterial.visual_analysis ?? [],
+    });
+    const result = lockDnaEvidence(generated.result, typedExtraction.source_report, rawMaterial);
+
     const { error: saveError } = await context.supabase.from("viral_intelligence").upsert(
       {
         source_id: data.sourceId,
