@@ -168,6 +168,7 @@ const ATM_SCHEMA = {
       required: [
         "strategic_premise", "target_audience_relevance", "storytelling_direction",
         "brand_voice_direction", "product_connection", "originality_safeguards",
+        "source_formula", "target_audience", "angle_ideas", "example_hooks", "recommended_format",
       ],
       properties: {
         strategic_premise: { type: "string" },
@@ -176,6 +177,11 @@ const ATM_SCHEMA = {
         brand_voice_direction: { type: "string" },
         product_connection: { type: "string" },
         originality_safeguards: { type: "array", items: { type: "string" } },
+        source_formula: { type: "array", items: { type: "string" } },
+        target_audience: { type: "string" },
+        angle_ideas: { type: "array", items: { type: "string" } },
+        example_hooks: { type: "array", items: { type: "string" } },
+        recommended_format: { type: "string" },
       },
     },
     reason: { type: "string" },
