@@ -288,12 +288,42 @@ async function streamStructured<T>(input: {
   }
 }
 
-export async function analyzeViralDna(sourceReport: unknown): Promise<{ result: ViralDnaResult; model: string }> {
+export type DnaSourceMaterial = {
+  source_report: unknown;
+  transcript: Array<{ timestamp: string; text: string }>;
+  on_screen_text: Array<{ timestamp: string; text: string }>;
+  snapshots: Array<{ timestamp: string; reason: string }>;
+  visual_analysis: Array<{ timestamp: string; scene: string; description: string }>;
+};
+
+export async function analyzeViralDna(
+  material: DnaSourceMaterial,
+): Promise<{ result: ViralDnaResult; model: string }> {
   const result = await streamStructured<ViralDnaResult>({
     name: "viral_dna_analysis",
     schema: DNA_SCHEMA,
-    instructions: `Kamu adalah reverse-engineering analyst untuk konten viral. Analisis mengapa struktur sumber bekerja, bukan membuat ide atau menyalin konten. Gunakan HANYA Source Content Report yang diberikan. Setiap klaim harus didukung evidence terverifikasi yang sudah ada; salin source_type, timestamp, dan quote persis dari evidence sumber. Jangan menambah fakta, produk, klaim, atau timestamp baru. Tentukan juga save_trigger (alasan konten layak disimpan), share_trigger (alasan layak dibagikan), dan comment_trigger (pemicu komentar) berdasarkan mekanisme yang teramati di sumber. Pilih hook_category, structure_category, dan trigger_category dari enum yang tersedia agar pola bisa dipakai ulang. Jawab ringkas dalam Bahasa Indonesia.`,
-    prompt: `Analisis Viral DNA dari Source Content Report berikut. Abaikan semua evidence dengan verified=false.\n\n${JSON.stringify(sourceReport)}`,
+    instructions: [
+      "Kamu adalah analis pembedah video. Tugasmu HANYA membedah video sumber yang datanya diberikan.",
+      "DILARANG KERAS membuat hook baru, script, caption, konsep konten, arah ATM, atau saran strategi marketing. Jangan memberi rekomendasi produksi.",
+      "Setiap field teks wajib memakai dua lapis dalam satu paragraf: (1) OBSERVASI fakta yang benar-benar terdengar/terlihat beserta timestamp, lalu (2) ANALISIS singkat mengapa elemen itu bekerja.",
+      'Format wajib: "Pada 00:00 terdengar/terlihat \\"kutipan atau kejadian nyata\\". Ini bekerja karena ...".',
+      "Dilarang menulis kalimat teori umum tanpa timestamp, misalnya \"creator memakai teknik curiosity\" atau \"visual menarik\".",
+      "pattern_interrupt dan bagian visual wajib merujuk perpindahan visual yang tercatat pada snapshot/visual analysis, bukan tebakan.",
+      "story_beats harus memakai urutan asli video (pembuka, masalah, penjelasan, contoh, penutup/CTA) sesuai yang teramati, satu beat per bagian nyata.",
+      "engagement_factor dipecah lebih jelas ke save_trigger, share_trigger, comment_trigger. Jika CTA terlihat eksplisit, kutip kalimat CTA-nya dahulu lalu jelaskan mekanismenya.",
+      "power_words hanya kata yang benar-benar diucapkan atau muncul di layar.",
+      "Evidence wajib disalin persis dari transcript, on_screen_text, snapshot, atau visual analysis: source_type, timestamp, dan quote apa adanya. Jangan mengarang timestamp atau kutipan.",
+      "Jika sebuah elemen tidak teramati di sumber, tulis apa adanya bahwa elemen itu tidak teramati. Jangan mengisinya dengan asumsi.",
+      "Pilih hook_category, structure_category, dan trigger_category dari enum yang tersedia. Jawab ringkas dalam Bahasa Indonesia yang mudah dipahami creator.",
+    ].join(" "),
+    prompt: [
+      "Bedah video berikut berdasarkan bukti asli. Abaikan evidence dengan verified=false pada laporan.",
+      `Transcript bertimestamp: ${JSON.stringify(material.transcript)}`,
+      `Teks pada layar (OCR): ${JSON.stringify(material.on_screen_text)}`,
+      `Snapshot frame: ${JSON.stringify(material.snapshots)}`,
+      `Analisis visual per scene: ${JSON.stringify(material.visual_analysis)}`,
+      `Source Content Report: ${JSON.stringify(material.source_report)}`,
+    ].join("\n\n"),
   });
   return { result, model: MODEL };
 }
