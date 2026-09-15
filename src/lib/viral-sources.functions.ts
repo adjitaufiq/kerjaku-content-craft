@@ -167,6 +167,7 @@ export const updateViralSource = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Hapus source beserta seluruh hasil analisis, Viral DNA, ATM, dan file terkait. */
 export const deleteViralSource = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { id: string }) => input)
@@ -177,11 +178,30 @@ export const deleteViralSource = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
 
+    const { data: extraction } = await context.supabase
+      .from("source_extractions")
+      .select("snapshot_data")
+      .eq("source_id", data.id)
+      .maybeSingle();
+
+    // Hentikan proses berjalan: hasil sementara & antrean analisis dibuang lebih dulu.
+    await context.supabase.from("source_extractions").delete().eq("source_id", data.id);
+    await context.supabase.from("viral_intelligence").delete().eq("source_id", data.id);
+    await context.supabase.from("kerjaku_versions").delete().eq("source_id", data.id);
+
     const { error } = await context.supabase.from("viral_sources").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
 
-    if (row?.video_path) {
-      await context.supabase.storage.from("viral-sources").remove([row.video_path]);
+    const paths: string[] = [];
+    if (row?.video_path) paths.push(row.video_path);
+    if (Array.isArray(extraction?.snapshot_data)) {
+      for (const snap of extraction.snapshot_data as Array<{ path?: string }>) {
+        if (typeof snap?.path === "string") paths.push(snap.path);
+      }
+    }
+    if (paths.length) {
+      await context.supabase.storage.from("viral-sources").remove(paths);
     }
     return { ok: true };
+
   });
