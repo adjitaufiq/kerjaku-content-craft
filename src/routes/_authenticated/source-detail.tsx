@@ -191,18 +191,23 @@ function ItemsBlock({ label, items }: { label: string; items?: ReportItem[] | un
 
 function SourceDetailPage() {
   const { id } = Route.useSearch();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fetchDetail = useServerFn(getSourceDetail);
   const runExtraction = useServerFn(runSourceExtraction);
   const markProcessing = useServerFn(setSourceProcessing);
   const markUnavailable = useServerFn(markVideoUnavailable);
   const acquireVideo = useServerFn(acquireAnalysisVideo);
-
+  const sendHeartbeat = useServerFn(heartbeatExtraction);
+  const resetExtraction = useServerFn(resetSourceExtraction);
+  const removeSource = useServerFn(deleteViralSource);
 
   const detail = useQuery({
     queryKey: ["source-detail", id],
     queryFn: () => fetchDetail({ data: { sourceId: id } }),
     enabled: Boolean(id),
+    refetchInterval: (query) =>
+      query.state.data?.extraction?.verification_status === "processing" ? 15_000 : false,
   });
 
   const source = detail.data?.source ?? null;
@@ -222,11 +227,17 @@ function SourceDetailPage() {
 
   const stage = (extraction?.pipeline_stage ?? "") as PipelineStage | "";
   const isRunning = extraction?.verification_status === "processing";
-  const stageFailed = stage === "ANALYSIS_FAILED" || stage === "VIDEO_NOT_AVAILABLE";
+  const stageFailed =
+    stage === "ANALYSIS_FAILED" ||
+    stage === "VIDEO_NOT_AVAILABLE" ||
+    stage === "ANALYSIS_TIMEOUT" ||
+    stage === "PROCESS_INTERRUPTED";
+  const canRetry = Boolean(extraction) && !isRunning && stageFailed;
   const stageMessage =
     stage && stage !== "COMPLETED" && stage !== "READY_FOR_ANALYSIS" && (isRunning || stageFailed)
       ? STAGE_MESSAGE[stage]
       : null;
+
 
   useEffect(() => {
     let active = true;
