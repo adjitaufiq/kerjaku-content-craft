@@ -196,6 +196,8 @@ function SourceDetailPage() {
   const runExtraction = useServerFn(runSourceExtraction);
   const markProcessing = useServerFn(setSourceProcessing);
   const markUnavailable = useServerFn(markVideoUnavailable);
+  const acquireVideo = useServerFn(acquireAnalysisVideo);
+
 
   const detail = useQuery({
     queryKey: ["source-detail", id],
