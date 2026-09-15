@@ -269,18 +269,41 @@ function SourceDetailPage() {
 
   const process = useMutation({
     mutationFn: async () => {
-      if (!source?.video_path) throw new Error("Sumber ini belum memiliki video untuk diproses.");
-      if (!videoUrl) throw new Error("URL video belum siap, coba sesaat lagi.");
-
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user?.id;
       if (!uid) throw new Error("Sesi berakhir, silakan masuk kembali.");
 
       setProgress(STAGE_MESSAGE.RESOLVING_VIDEO_ASSET);
-      const probe = await probeVideoAsset(videoUrl);
+      const asset = await acquireVideo({ data: { sourceId: id } });
+      if (asset.status !== "ANALYSIS_VIDEO_ASSET_READY" || !asset.video_reference) {
+        const message = asset.safe_error_message ?? ACQUISITION_FAILED_MESSAGE;
+        await markUnavailable({
+          data: {
+            sourceId: id,
+            videoMetadata: {
+              video_reference: source?.source_url ?? "",
+              resolved_at: new Date().toISOString(),
+              is_playable: false,
+            },
+          },
+        });
+        throw new Error(message);
+      }
+
+      const videoPath = asset.video_reference;
+      let playbackUrl = source?.video_path === videoPath ? videoUrl : null;
+      if (!playbackUrl) {
+        const { data: signed } = await supabase.storage
+          .from("viral-sources")
+          .createSignedUrl(videoPath, 60 * 60);
+        playbackUrl = signed?.signedUrl ?? null;
+      }
+      if (!playbackUrl) throw new Error("URL video belum siap, coba sesaat lagi.");
+
+      const probe = await probeVideoAsset(playbackUrl);
       const videoMetadata = {
-        asset_type: "UPLOAD" as const,
-        video_reference: source.video_path,
+        asset_type: asset.is_temporary ? ("DIRECT_VIDEO" as const) : ("UPLOAD" as const),
+        video_reference: videoPath,
         resolved_at: new Date().toISOString(),
         ...probe,
       };
@@ -291,11 +314,13 @@ function SourceDetailPage() {
 
       await markProcessing({ data: { sourceId: id } });
       void queryClient.invalidateQueries({ queryKey: ["viral-sources"] });
+      void queryClient.invalidateQueries({ queryKey: ["source-detail", id] });
 
       setProgress("Mengambil snapshot dari video…");
-      const { frames } = await extractFrames(videoUrl, (done, total) =>
+      const { frames } = await extractFrames(playbackUrl, (done, total) =>
         setProgress(`Mengambil snapshot ${done}/${total}…`),
       );
+
       if (!frames.length) throw new Error("Tidak ada frame yang bisa diambil dari video ini.");
 
       const prefix = `${uid}/extractions/${id}`;
