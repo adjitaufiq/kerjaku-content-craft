@@ -54,17 +54,21 @@ export const Route = createFileRoute("/_authenticated/sources")({
 });
 
 const STATUS_LABEL: Record<SourceStatus, string> = {
-  draft: "Draft",
+  draft: "Uploaded",
   processing: "Processing",
-  understanding: "Understanding",
-  source_extracted: "Source Extracted",
-  analysis_complete: "Analysis Complete",
+  understanding: "Extracting Evidence",
+  source_extracted: "Ready",
+  analysis_complete: "Analyzing Scene",
   ready_for_prompt_generation: "Siap Tahap Prompt",
   production: "Production",
   approved: "Approved",
   published: "Published",
   failed: "Failed",
 };
+
+/** Status yang berarti proses analisis sedang berjalan. */
+const RUNNING_STATUSES: SourceStatus[] = ["processing", "understanding"];
+
 
 function statusTone(status: SourceStatus) {
   if (status === "failed") return "border-destructive/40 bg-destructive/15 text-destructive";
