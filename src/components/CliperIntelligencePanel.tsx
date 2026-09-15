@@ -116,8 +116,12 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
               <Button type="button" variant={mode === "creative" ? "default" : "outline"} onClick={() => setMode("creative")}>Creative</Button>
             </div>
             <p className="text-xs text-muted-foreground">{mode === "conservative" ? "Mempertahankan formula dan urutan persuasi utama, dengan konteks KERJAKU yang orisinal." : "Mengambil prinsip viral, lalu mengubah angle dan arah storytelling lebih jauh."}</p>
-            <div className="space-y-2"><Label htmlFor="atm-angle">Angle pilihan</Label><Textarea id="atm-angle" value={angle} onChange={(e) => setAngle(e.target.value)} placeholder="Contoh: Kesalahan kecil saat interview yang membuat kandidat terlihat tidak siap" /></div>
-            <Button className="w-full" onClick={() => atmMutation.mutate()} disabled={atmMutation.isPending || !angle.trim()}>{atmMutation.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}Buat Arah ATM</Button>
+            <div className="space-y-2">
+              <Label htmlFor="atm-angle">Tambahan arahan (opsional)</Label>
+              <Textarea id="atm-angle" value={angle} onChange={(e) => setAngle(e.target.value)} placeholder="Contoh: fokuskan untuk konten edukasi UMKM, desain, atau AI" />
+              <p className="text-xs text-muted-foreground">Kosongkan jika ingin AI menentukan arah berdasarkan Viral DNA.</p>
+            </div>
+            <Button className="w-full" onClick={() => atmMutation.mutate()} disabled={atmMutation.isPending}>{atmMutation.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}Buat Arah ATM</Button>
             <p className="text-[11px] text-muted-foreground">Comparison Matrix tersimpan pada formula dipertahankan, elemen diubah, dan originality safeguards.</p>
           </div>
         </div>
