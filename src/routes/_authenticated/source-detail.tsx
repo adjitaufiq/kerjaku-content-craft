@@ -23,6 +23,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { evaluateExtractionGate } from "@/lib/extraction-gate";
 import { extractAudioChunks, extractFrames, probeVideoAsset } from "@/lib/video-media";
 import {
+  ACQUISITION_FAILED_MESSAGE,
+  acquireAnalysisVideo,
+} from "@/lib/video-acquisition.functions";
+
+import {
   getSourceDetail,
   markVideoUnavailable,
   runSourceExtraction,
