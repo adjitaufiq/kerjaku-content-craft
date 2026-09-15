@@ -12,3 +12,4 @@
 - [x] Quality Gate, Content Library, Performance Insight (halaman, metrik, baseline, navigasi)
 - [x] Hook Matrix 5 kandidat, pemilihan hook, dan status siap tahap prompt
 - [x] Navigation lock: Grid, Editor, Cliper, Settings; seluruh Step 1 berada di workspace Cliper
+- [x] Runtime video analysis pipeline: validasi aset video, progres tahap tersimpan, dan pesan video tidak tersedia

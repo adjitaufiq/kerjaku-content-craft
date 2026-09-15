@@ -21,12 +21,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { evaluateExtractionGate } from "@/lib/extraction-gate";
-import { extractAudioChunks, extractFrames } from "@/lib/video-media";
+import { extractAudioChunks, extractFrames, probeVideoAsset } from "@/lib/video-media";
 import {
   getSourceDetail,
+  markVideoUnavailable,
   runSourceExtraction,
   setSourceProcessing,
+  STAGE_MESSAGE,
   type ExtractionStatus,
+  type PipelineStage,
   type ReportEvidence,
   type ReportField,
   type ReportItem,
@@ -187,6 +190,7 @@ function SourceDetailPage() {
   const fetchDetail = useServerFn(getSourceDetail);
   const runExtraction = useServerFn(runSourceExtraction);
   const markProcessing = useServerFn(setSourceProcessing);
+  const markUnavailable = useServerFn(markVideoUnavailable);
 
   const detail = useQuery({
     queryKey: ["source-detail", id],
@@ -208,6 +212,14 @@ function SourceDetailPage() {
 
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
+
+  const stage = (extraction?.pipeline_stage ?? "") as PipelineStage | "";
+  const isRunning = extraction?.verification_status === "processing";
+  const stageFailed = stage === "ANALYSIS_FAILED" || stage === "VIDEO_NOT_AVAILABLE";
+  const stageMessage =
+    stage && stage !== "COMPLETED" && stage !== "READY_FOR_ANALYSIS" && (isRunning || stageFailed)
+      ? STAGE_MESSAGE[stage]
+      : null;
 
   useEffect(() => {
     let active = true;
@@ -264,6 +276,19 @@ function SourceDetailPage() {
       const uid = auth.user?.id;
       if (!uid) throw new Error("Sesi berakhir, silakan masuk kembali.");
 
+      setProgress(STAGE_MESSAGE.RESOLVING_VIDEO_ASSET);
+      const probe = await probeVideoAsset(videoUrl);
+      const videoMetadata = {
+        asset_type: "UPLOAD" as const,
+        video_reference: source.video_path,
+        resolved_at: new Date().toISOString(),
+        ...probe,
+      };
+      if (!probe.is_playable) {
+        await markUnavailable({ data: { sourceId: id, videoMetadata } });
+        throw new Error(STAGE_MESSAGE.VIDEO_NOT_AVAILABLE);
+      }
+
       await markProcessing({ data: { sourceId: id } });
       void queryClient.invalidateQueries({ queryKey: ["viral-sources"] });
 
@@ -300,7 +325,12 @@ function SourceDetailPage() {
 
       setProgress("AI sedang memahami video…");
       return runExtraction({
-        data: { sourceId: id, audioChunks: uploadedChunks, snapshots: uploadedSnapshots },
+        data: {
+          sourceId: id,
+          audioChunks: uploadedChunks,
+          snapshots: uploadedSnapshots,
+          videoMetadata,
+        },
       });
     },
     onSuccess: (result) => {
@@ -351,7 +381,7 @@ function SourceDetailPage() {
 
           <Button
             onClick={() => process.mutate()}
-            disabled={process.isPending || !source?.video_path}
+            disabled={process.isPending || isRunning || !source?.video_path}
           >
             {process.isPending ? (
               <Loader2 className="size-4 animate-spin" />
@@ -367,6 +397,19 @@ function SourceDetailPage() {
         {progress ? (
           <div className="surface-panel flex items-center gap-2 p-4 text-sm text-primary">
             <Loader2 className="size-4 animate-spin" /> {progress}
+          </div>
+        ) : stageMessage ? (
+          <div
+            className={`surface-panel flex items-center gap-2 p-4 text-sm ${
+              stageFailed ? "text-destructive" : "text-primary"
+            }`}
+          >
+            {stageFailed ? (
+              <ShieldAlert className="size-4" />
+            ) : (
+              <Loader2 className="size-4 animate-spin" />
+            )}
+            {stageMessage}
           </div>
         ) : null}
 
