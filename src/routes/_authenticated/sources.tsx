@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Clock, Film, Loader2, Sparkles, Trash2, UploadCloud, Video } from "lucide-react";
+import { Clock, Film, Loader2, Sparkles, UploadCloud, Video } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { CliperWorkspaceSteps } from "@/components/CliperWorkspaceSteps";
