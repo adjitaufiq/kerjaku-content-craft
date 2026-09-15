@@ -413,7 +413,10 @@ function SourceDetailPage() {
 
           <Button
             onClick={() => process.mutate()}
-            disabled={process.isPending || isRunning || !source?.video_path}
+            disabled={
+              process.isPending || isRunning || !(source?.video_path || source?.source_url)
+            }
+
           >
             {process.isPending ? (
               <Loader2 className="size-4 animate-spin" />
