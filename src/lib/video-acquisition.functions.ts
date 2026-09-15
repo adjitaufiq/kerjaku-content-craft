@@ -97,7 +97,8 @@ export const acquireAnalysisVideo = createServerFn({ method: "POST" })
         reused: false,
         expires_at: null,
         error_code: "NO_SOURCE_URL",
-        safe_error_message: ACQUISITION_FAILED_MESSAGE,
+        safe_error_message: failureMessage("NO_SOURCE_URL"),
+
       };
     }
 
