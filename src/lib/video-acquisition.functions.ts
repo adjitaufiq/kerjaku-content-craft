@@ -120,7 +120,8 @@ export const acquireAnalysisVideo = createServerFn({ method: "POST" })
         reused: false,
         expires_at: null,
         error_code: asset.error_code ?? "ACQUISITION_FAILED",
-        safe_error_message: asset.safe_error_message ?? ACQUISITION_FAILED_MESSAGE,
+        safe_error_message: failureMessage(asset.error_code),
+
       };
     }
 
