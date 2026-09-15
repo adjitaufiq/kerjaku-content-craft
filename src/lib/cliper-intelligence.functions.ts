@@ -70,6 +70,11 @@ export type AtmVersion = {
     brand_voice_direction?: string;
     product_connection?: string;
     originality_safeguards?: string[];
+    source_formula?: string[];
+    target_audience?: string;
+    angle_ideas?: string[];
+    example_hooks?: string[];
+    recommended_format?: string;
   };
   reason: string;
   brand_profile_version: string;
@@ -244,10 +249,10 @@ export const runViralDnaAnalysis = createServerFn({ method: "POST" })
 
 export const generateKerjakuAtmVersion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { sourceId: string; mode: AtmMode; angle: string }) => input)
+  .inputValidator((input: { sourceId: string; mode: AtmMode; angle?: string }) => input)
   .handler(async ({ data, context }): Promise<{ id: string }> => {
-    const angle = data.angle.trim();
-    if (!angle) throw new Error("Angle wajib diisi sebelum menjalankan ATM Engine.");
+    // Angle bersifat opsional: ATM otomatis membaca Viral DNA sebagai sumber utama.
+    const angle = (data.angle ?? "").trim();
 
     const [extraction, dna, profile, products, rules, words] = await Promise.all([
       context.supabase.from("source_extractions").select("*").eq("source_id", data.sourceId).maybeSingle(),
@@ -295,7 +300,7 @@ export const generateKerjakuAtmVersion = createServerFn({ method: "POST" })
         source_id: data.sourceId,
         user_id: context.userId,
         atm_mode: data.mode,
-        angle,
+        angle: angle || "Otomatis dari Viral DNA",
         source_mapping: generated.result.source_mapping as unknown as Json,
         adaptation: generated.result.adaptation as unknown as Json,
         reason: generated.result.reason,

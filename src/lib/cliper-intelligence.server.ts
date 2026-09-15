@@ -59,6 +59,11 @@ export type AtmResult = {
     brand_voice_direction: string;
     product_connection: string;
     originality_safeguards: string[];
+    source_formula: string[];
+    target_audience: string;
+    angle_ideas: string[];
+    example_hooks: string[];
+    recommended_format: string;
   };
   reason: string;
 };
@@ -163,6 +168,7 @@ const ATM_SCHEMA = {
       required: [
         "strategic_premise", "target_audience_relevance", "storytelling_direction",
         "brand_voice_direction", "product_connection", "originality_safeguards",
+        "source_formula", "target_audience", "angle_ideas", "example_hooks", "recommended_format",
       ],
       properties: {
         strategic_premise: { type: "string" },
@@ -171,6 +177,11 @@ const ATM_SCHEMA = {
         brand_voice_direction: { type: "string" },
         product_connection: { type: "string" },
         originality_safeguards: { type: "array", items: { type: "string" } },
+        source_formula: { type: "array", items: { type: "string" } },
+        target_audience: { type: "string" },
+        angle_ideas: { type: "array", items: { type: "string" } },
+        example_hooks: { type: "array", items: { type: "string" } },
+        recommended_format: { type: "string" },
       },
     },
     reason: { type: "string" },
@@ -340,10 +351,12 @@ export async function generateAtmVersion(input: {
   const result = await streamStructured<AtmResult>({
     name: "kerjaku_atm_version",
     schema: ATM_SCHEMA,
-    instructions: `Kamu adalah KERJAKU ATM Engine. ATM berarti Amati formula, Tiru prinsip, Modifikasi eksekusi. Kamu hanya menyusun arahan strategis sebelum produksi—DILARANG membuat carousel, caption, storyboard, script, atau konten siap terbit. ${modeRule} Patuhi seluruh Brand Knowledge. Bukti harus disalin dari Viral DNA, jangan mengarang bukti baru. Jawab dalam Bahasa Indonesia.`,
+    instructions: `Kamu adalah KERJAKU ATM Engine. ATM berarti Amati formula, Tiru prinsip, Modifikasi eksekusi. Kamu bekerja OTOMATIS: sumber utama keputusanmu adalah Viral DNA (hook, pattern interrupt, psychological trigger, curiosity gap, retention, struktur, CTA, evidence) plus Brand Knowledge KERJAKU. Jika ada tambahan arahan pengguna, perlakukan sebagai constraint tambahan saja, bukan sumber utama; jika kosong, tentukan sendiri arah terbaik dari Viral DNA. Wajib mengisi source_formula (formula sumber yang ditemukan), preserved_formula (prinsip dipertahankan), changed_elements (elemen diubah), reason (alasan adaptasi untuk KERJAKU), target_audience, angle_ideas (2-4 ide angle), example_hooks (2-3 contoh hook baru orisinal), dan recommended_format (format konten yang disarankan, misal carousel edukasi atau reels talking head). Kamu hanya menyusun arahan strategis sebelum produksi—DILARANG membuat carousel jadi, caption, storyboard, atau script siap terbit. ${modeRule} Patuhi seluruh Brand Knowledge. Bukti harus disalin dari Viral DNA, jangan mengarang bukti baru. Jawab dalam Bahasa Indonesia.`,
     prompt: [
       `Mode: ${input.mode}`,
-      `Angle pilihan pengguna: ${input.angle}`,
+      input.angle.trim()
+        ? `Tambahan arahan pengguna (constraint tambahan, bukan sumber utama): ${input.angle.trim()}`
+        : "Tidak ada tambahan arahan pengguna. Tentukan arah dan angle sepenuhnya dari Viral DNA dan Brand Knowledge KERJAKU.",
       `Viral DNA: ${JSON.stringify(input.dna)}`,
       `Brand Knowledge: ${JSON.stringify(input.brand)}`,
       "Buat pemetaan formula sumber ke arahan adaptasi orisinal KERJAKU dan jelaskan alasan strateginya.",
