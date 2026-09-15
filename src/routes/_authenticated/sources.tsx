@@ -3,10 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Clock, Film, Loader2, Sparkles, Trash2, UploadCloud, Video } from "lucide-react";
+import { Clock, Film, Loader2, Sparkles, UploadCloud, Video } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { CliperWorkspaceSteps } from "@/components/CliperWorkspaceSteps";
+import { DeleteSourceDialog } from "@/components/DeleteSourceDialog";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,17 +56,21 @@ export const Route = createFileRoute("/_authenticated/sources")({
 });
 
 const STATUS_LABEL: Record<SourceStatus, string> = {
-  draft: "Draft",
+  draft: "Uploaded",
   processing: "Processing",
-  understanding: "Understanding",
-  source_extracted: "Source Extracted",
-  analysis_complete: "Analysis Complete",
+  understanding: "Extracting Evidence",
+  source_extracted: "Ready",
+  analysis_complete: "Analyzing Scene",
   ready_for_prompt_generation: "Siap Tahap Prompt",
   production: "Production",
   approved: "Approved",
   published: "Published",
   failed: "Failed",
 };
+
+/** Status yang berarti proses analisis sedang berjalan. */
+const RUNNING_STATUSES: SourceStatus[] = ["processing", "understanding"];
+
 
 function statusTone(status: SourceStatus) {
   if (status === "failed") return "border-destructive/40 bg-destructive/15 text-destructive";
@@ -449,9 +455,8 @@ function SourceCard({
             ))}
           </SelectContent>
         </Select>
-        <Button variant="ghost" size="icon" onClick={onDelete} aria-label="Hapus sumber">
-          <Trash2 className="size-4" />
-        </Button>
+        <DeleteSourceDialog running={RUNNING_STATUSES.includes(row.status)} onConfirm={onDelete} />
+
       </div>
     </article>
   );
