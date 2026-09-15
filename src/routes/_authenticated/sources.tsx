@@ -453,9 +453,8 @@ function SourceCard({
             ))}
           </SelectContent>
         </Select>
-        <Button variant="ghost" size="icon" onClick={onDelete} aria-label="Hapus sumber">
-          <Trash2 className="size-4" />
-        </Button>
+        <DeleteSourceDialog running={RUNNING_STATUSES.includes(row.status)} onConfirm={onDelete} />
+
       </div>
     </article>
   );
