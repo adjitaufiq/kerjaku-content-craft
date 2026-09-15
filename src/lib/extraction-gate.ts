@@ -90,6 +90,16 @@ export function evaluateExtractionGate(
       reason: "Mayoritas bukti gagal diverifikasi. Proses ulang video sebelum lanjut ke analisis.",
     };
   }
+
+  // Kesiapan utama ditentukan oleh isi hasil ekstraksi, bukan skor keyakinan saja.
+  if (contentReady(extraction)) {
+    return {
+      allowed: true,
+      level: "ready",
+      reason: "Source Extraction Ready. Siap untuk analisis Viral DNA.",
+    };
+  }
+
   if (status === "needs_review" || score < PARTIAL_CONFIDENCE) {
     return {
       allowed: false,
