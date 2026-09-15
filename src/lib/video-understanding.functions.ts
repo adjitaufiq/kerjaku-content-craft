@@ -227,6 +227,7 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
 
     try {
       // A. Speech to text per potongan audio (timestamp = awal potongan).
+      currentStage = "TRANSCRIBING";
       const transcript: Array<{ timestamp: string; text: string }> = [];
       for (const chunk of data.audioChunks) {
         const file = await context.supabase.storage.from("viral-sources").download(chunk.path);
@@ -238,6 +239,8 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
       const hasAudio = transcript.length > 0;
 
       // C + D. Visual understanding & OCR dari snapshot.
+      currentStage = "READING_SCREEN_TEXT";
+      await stage(currentStage);
       const frames: Array<{ timestamp: string; dataUrl: string }> = [];
       for (const snap of data.snapshots) {
         const file = await context.supabase.storage.from("viral-sources").download(snap.path);
@@ -254,9 +257,13 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
       }
       if (!frames.length) throw new Error("Snapshot tidak dapat dibaca dari penyimpanan.");
 
+      currentStage = "ANALYZING_SCENES";
+      await stage(currentStage);
       const visual = await analyzeFrames(frames);
 
       // PART 2. Source Content Report.
+      currentStage = "BUILDING_SOURCE_FACTS";
+      await stage(currentStage);
       const report = await buildSourceReport({
         transcript,
         onScreenText: visual.on_screen_text,
@@ -299,6 +306,8 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
           completeness_score: validation.scores.completeness_score,
           has_audio: hasAudio,
           error_message: null,
+          pipeline_stage: "COMPLETED",
+          failed_stage: null,
         })
         .eq("source_id", data.sourceId)
         .throwOnError();
