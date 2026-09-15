@@ -300,7 +300,7 @@ export const generateKerjakuAtmVersion = createServerFn({ method: "POST" })
         source_id: data.sourceId,
         user_id: context.userId,
         atm_mode: data.mode,
-        angle,
+        angle: angle || "Otomatis dari Viral DNA",
         source_mapping: generated.result.source_mapping as unknown as Json,
         adaptation: generated.result.adaptation as unknown as Json,
         reason: generated.result.reason,
