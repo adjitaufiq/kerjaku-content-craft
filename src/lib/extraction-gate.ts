@@ -14,12 +14,52 @@ export type ExtractionGate = {
   reason: string;
 };
 
+/** Jumlah frame minimum agar analisis visual dianggap cukup. */
+export const MIN_SNAPSHOTS = 3;
+/** Panjang transkrip minimum (karakter) agar dianggap tersedia. */
+export const MIN_TRANSCRIPT_CHARS = 50;
+
 type GateInput = {
   verification_status: ExtractionStatus;
   confidence_score: number;
   report_confidence?: number | null;
   completeness_score?: number | null;
+  transcript?: Array<{ text?: string | null }> | null;
+  snapshot_data?: unknown[] | null;
+  on_screen_text?: Array<{ text?: string | null }> | null;
+  source_report?:
+    | {
+        topic?: { value?: string | null } | null;
+        main_information?: unknown[] | null;
+        steps_framework?: unknown[] | null;
+      }
+    | null;
 };
+
+/**
+ * Kesiapan berbasis isi: transkrip (atau teks layar) memadai, frame cukup,
+ * dan Source Facts punya topik serta poin utama.
+ */
+function contentReady(extraction: GateInput): boolean {
+  const transcriptChars = (extraction.transcript ?? [])
+    .map((chunk) => (chunk?.text ?? "").trim())
+    .join(" ").length;
+  const screenChars = (extraction.on_screen_text ?? [])
+    .map((chunk) => (chunk?.text ?? "").trim())
+    .join(" ").length;
+  const snapshots = (extraction.snapshot_data ?? []).length;
+  const report = extraction.source_report ?? {};
+  const topic = (report.topic?.value ?? "").trim();
+  const keyPoints =
+    (report.main_information ?? []).length + (report.steps_framework ?? []).length;
+
+  return (
+    Math.max(transcriptChars, screenChars) > MIN_TRANSCRIPT_CHARS &&
+    snapshots >= MIN_SNAPSHOTS &&
+    topic.length > 0 &&
+    keyPoints > 0
+  );
+}
 
 /**
  * Gerbang mutu ekstraksi: hasil hanya boleh menjadi input analisis lanjutan
@@ -50,6 +90,16 @@ export function evaluateExtractionGate(
       reason: "Mayoritas bukti gagal diverifikasi. Proses ulang video sebelum lanjut ke analisis.",
     };
   }
+
+  // Kesiapan utama ditentukan oleh isi hasil ekstraksi, bukan skor keyakinan saja.
+  if (contentReady(extraction)) {
+    return {
+      allowed: true,
+      level: "ready",
+      reason: "Source Extraction Ready. Siap untuk analisis Viral DNA.",
+    };
+  }
+
   if (status === "needs_review" || score < PARTIAL_CONFIDENCE) {
     return {
       allowed: false,
