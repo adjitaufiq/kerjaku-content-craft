@@ -6,6 +6,24 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const ACQUISITION_FAILED_MESSAGE =
   "Video tidak dapat diperoleh dari sumber ini. Gunakan URL publik yang valid atau unggah file video secara manual.";
 
+const FAILURE_MESSAGE: Record<string, string> = {
+  NO_SOURCE_URL: "Sumber ini belum memiliki file video maupun tautan. Unggah file videonya dulu.",
+  NO_PUBLIC_VIDEO_FILE:
+    "Tautan ini hanya halaman platform, bukan file video. Instagram, TikTok, dan YouTube tidak membagikan file videonya secara publik, jadi unduh videonya lebih dulu lalu unggah file-nya di sini.",
+  NOT_A_VIDEO_FILE: "Tautan ini bukan berkas video (halaman web atau gambar). Unggah file video.",
+  INVALID_FILE_SIZE: "Ukuran file video tidak valid atau melebihi 200 MB.",
+  STORAGE_WRITE_FAILED: "Video gagal disimpan sementara. Coba lagi sesaat lagi.",
+  DOWNLOAD_ERROR: "Video gagal diunduh dari tautan tersebut. Coba lagi atau unggah file manual.",
+};
+
+function failureMessage(code: string | undefined): string {
+  if (code && FAILURE_MESSAGE[code]) return FAILURE_MESSAGE[code];
+  if (code?.startsWith("HTTP_"))
+    return "Tautan video menolak akses (perlu login atau sudah tidak tersedia). Unggah file videonya secara manual.";
+  return ACQUISITION_FAILED_MESSAGE;
+}
+
+
 export type AcquiredAsset = {
   status: "ANALYSIS_VIDEO_ASSET_READY" | "VIDEO_ACQUISITION_FAILED";
   asset_type: "EXISTING_UPLOAD" | "TEMPORARY_DOWNLOAD" | "";
