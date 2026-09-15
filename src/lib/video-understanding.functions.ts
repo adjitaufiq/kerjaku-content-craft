@@ -345,7 +345,9 @@ export const setSourceProcessing = createServerFn({ method: "POST" })
 /** Simpan status VIDEO_NOT_AVAILABLE saat file video asli tidak bisa diputar. */
 export const markVideoUnavailable = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { sourceId: string; videoMetadata?: VideoAssetMetadata }) => input)
+  .inputValidator(
+    (input: { sourceId: string; videoMetadata?: VideoAssetMetadata; reason?: string }) => input,
+  )
   .handler(async ({ data, context }) => {
     const { EXTRACTION_MODEL } = await import("@/lib/video-understanding.server");
     await context.supabase
@@ -358,7 +360,8 @@ export const markVideoUnavailable = createServerFn({ method: "POST" })
           verification_status: "failed" as const,
           pipeline_stage: "VIDEO_NOT_AVAILABLE",
           failed_stage: "RESOLVING_VIDEO_ASSET",
-          error_message: STAGE_MESSAGE.VIDEO_NOT_AVAILABLE,
+          error_message: data.reason?.trim() || STAGE_MESSAGE.VIDEO_NOT_AVAILABLE,
+
           video_metadata: (data.videoMetadata ?? {}) as unknown as Json,
         },
         { onConflict: "source_id" },
