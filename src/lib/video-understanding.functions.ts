@@ -341,3 +341,32 @@ export const setSourceProcessing = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Simpan status VIDEO_NOT_AVAILABLE saat file video asli tidak bisa diputar. */
+export const markVideoUnavailable = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { sourceId: string; videoMetadata?: VideoAssetMetadata }) => input)
+  .handler(async ({ data, context }) => {
+    const { EXTRACTION_MODEL } = await import("@/lib/video-understanding.server");
+    await context.supabase
+      .from("source_extractions")
+      .upsert(
+        {
+          source_id: data.sourceId,
+          user_id: context.userId,
+          model: EXTRACTION_MODEL,
+          verification_status: "failed" as const,
+          pipeline_stage: "VIDEO_NOT_AVAILABLE",
+          failed_stage: "RESOLVING_VIDEO_ASSET",
+          error_message: STAGE_MESSAGE.VIDEO_NOT_AVAILABLE,
+          video_metadata: (data.videoMetadata ?? {}) as unknown as Json,
+        },
+        { onConflict: "source_id" },
+      )
+      .throwOnError();
+    await context.supabase
+      .from("viral_sources")
+      .update({ status: "failed" })
+      .eq("id", data.sourceId);
+    return { ok: true };
+  });
