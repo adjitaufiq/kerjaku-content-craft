@@ -187,7 +187,31 @@ export const deleteViralSource = createServerFn({ method: "POST" })
     // Hentikan proses berjalan: hasil sementara & antrean analisis dibuang lebih dulu.
     await context.supabase.from("source_extractions").delete().eq("source_id", data.id);
     await context.supabase.from("viral_intelligence").delete().eq("source_id", data.id);
-    await context.supabase.from("kerjaku_versions").delete().eq("source_id", data.id);
+
+    const { data: versions } = await context.supabase
+      .from("kerjaku_versions")
+      .select("id")
+      .eq("source_id", data.id);
+    const versionIds = (versions ?? []).map((v) => v.id);
+    if (versionIds.length) {
+      const { data: libs } = await context.supabase
+        .from("content_library")
+        .select("id")
+        .in("version_id", versionIds);
+      const libIds = (libs ?? []).map((l) => l.id);
+      if (libIds.length) {
+        await context.supabase.from("content_performance").delete().in("content_id", libIds);
+        await context.supabase.from("content_library").delete().in("id", libIds);
+      }
+      await context.supabase.from("quality_scores").delete().in("version_id", versionIds);
+      await context.supabase
+        .from("content_production_results")
+        .delete()
+        .in("version_id", versionIds);
+      await context.supabase.from("video_storyboards").delete().in("version_id", versionIds);
+      await context.supabase.from("kerjaku_versions").delete().in("id", versionIds);
+    }
+
 
     const { error } = await context.supabase.from("viral_sources").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
