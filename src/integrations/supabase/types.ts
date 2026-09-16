@@ -254,6 +254,75 @@ export type Database = {
         }
         Relationships: []
       }
+      carousel_prompt_packages: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          id: string
+          model: string
+          package: Json
+          slide_count: number
+          slides: Json
+          source_id: string
+          status: string
+          text_level: string
+          updated_at: string
+          user_id: string
+          validation: Json
+          version_id: string
+          visual_style: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          model?: string
+          package?: Json
+          slide_count?: number
+          slides?: Json
+          source_id: string
+          status?: string
+          text_level?: string
+          updated_at?: string
+          user_id: string
+          validation?: Json
+          version_id: string
+          visual_style?: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          model?: string
+          package?: Json
+          slide_count?: number
+          slides?: Json
+          source_id?: string
+          status?: string
+          text_level?: string
+          updated_at?: string
+          user_id?: string
+          validation?: Json
+          version_id?: string
+          visual_style?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carousel_prompt_packages_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "viral_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "carousel_prompt_packages_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: true
+            referencedRelation: "kerjaku_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_bank: {
         Row: {
           caption: string
