@@ -956,6 +956,33 @@ export type Database = {
           },
         ]
       }
+      source_extraction_archives: {
+        Row: {
+          archived_reason: string
+          created_at: string
+          id: string
+          snapshot: Json
+          source_id: string
+          user_id: string
+        }
+        Insert: {
+          archived_reason?: string
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          source_id: string
+          user_id: string
+        }
+        Update: {
+          archived_reason?: string
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          source_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       source_extractions: {
         Row: {
           completeness_score: number
@@ -966,6 +993,7 @@ export type Database = {
           failed_stage: string | null
           has_audio: boolean
           id: string
+          last_heartbeat_at: string
           model: string
           on_screen_text: Json
           pipeline_stage: string
@@ -974,6 +1002,7 @@ export type Database = {
           source_confidence: number
           source_id: string
           source_report: Json
+          stage_changed_at: string
           transcript: Json
           updated_at: string
           user_id: string
@@ -990,6 +1019,7 @@ export type Database = {
           failed_stage?: string | null
           has_audio?: boolean
           id?: string
+          last_heartbeat_at?: string
           model?: string
           on_screen_text?: Json
           pipeline_stage?: string
@@ -998,6 +1028,7 @@ export type Database = {
           source_confidence?: number
           source_id: string
           source_report?: Json
+          stage_changed_at?: string
           transcript?: Json
           updated_at?: string
           user_id: string
@@ -1014,6 +1045,7 @@ export type Database = {
           failed_stage?: string | null
           has_audio?: boolean
           id?: string
+          last_heartbeat_at?: string
           model?: string
           on_screen_text?: Json
           pipeline_stage?: string
@@ -1022,6 +1054,7 @@ export type Database = {
           source_confidence?: number
           source_id?: string
           source_report?: Json
+          stage_changed_at?: string
           transcript?: Json
           updated_at?: string
           user_id?: string
@@ -1332,6 +1365,7 @@ export type Database = {
           category: string | null
           created_at: string
           creator_name: string | null
+          deleted_at: string | null
           expires_at: string | null
           id: string
           notes: string
@@ -1348,6 +1382,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           creator_name?: string | null
+          deleted_at?: string | null
           expires_at?: string | null
           id?: string
           notes?: string
@@ -1364,6 +1399,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           creator_name?: string | null
+          deleted_at?: string | null
           expires_at?: string | null
           id?: string
           notes?: string
