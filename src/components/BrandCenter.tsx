@@ -132,7 +132,42 @@ export function BrandCenter() {
       toast.error(error instanceof Error ? error.message : "Brand Knowledge gagal disimpan.");
     } finally {
       setSaving(false);
+  }
+
+  async function generateDraft() {
+    setDrafting(true);
+    try {
+      const draft = await makeDraft({ data: { profile: form.profile } });
+      setForm((current) => {
+        const profile = { ...current.profile };
+        (Object.keys(profile) as Array<keyof BrandProfile>).forEach((key) => {
+          const suggestion = (draft as unknown as Record<string, unknown>)[key as string];
+          if (!String(profile[key] ?? "").trim() && typeof suggestion === "string" && suggestion.trim()) {
+            profile[key] = suggestion.trim();
+          }
+        });
+        return {
+          ...current,
+          profile,
+          products: current.products.length
+            ? current.products
+            : draft.products.map((item) => ({ ...NEW_PRODUCT, ...item })),
+          rules: current.rules.length
+            ? current.rules
+            : draft.rules.map((item) => ({ ...NEW_RULE, ...item })),
+          power_words: current.power_words.length
+            ? current.power_words
+            : draft.power_words.map((item) => ({ ...NEW_WORD, ...item })),
+        };
+      });
+      toast.success("Draft AI dimuat ke form. Periksa dan edit sebelum menyimpan.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Draft brand gagal dibuat.");
+    } finally {
+      setDrafting(false);
     }
+  }
+
   }
 
   return (
