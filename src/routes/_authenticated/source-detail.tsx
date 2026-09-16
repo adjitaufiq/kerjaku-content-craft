@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -7,16 +7,22 @@ import {
   ArrowLeft,
   BadgeCheck,
   Clock,
+  Eraser,
   Film,
   Loader2,
+  RefreshCw,
+  RotateCcw,
   ScanText,
   ShieldAlert,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { CliperWorkspaceSteps } from "@/components/CliperWorkspaceSteps";
 import { CliperIntelligencePanel } from "@/components/CliperIntelligencePanel";
+import { DeleteSourceDialog } from "@/components/DeleteSourceDialog";
+import { ExtractionProgress } from "@/components/ExtractionProgress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,10 +32,14 @@ import {
   ACQUISITION_FAILED_MESSAGE,
   acquireAnalysisVideo,
 } from "@/lib/video-acquisition.functions";
+import { deleteViralSource } from "@/lib/viral-sources.functions";
 
 import {
   getSourceDetail,
+  heartbeatExtraction,
   markVideoUnavailable,
+  resetSourceExtraction,
+  retrySourceExtraction,
   runSourceExtraction,
   setSourceProcessing,
   STAGE_MESSAGE,
@@ -391,6 +401,52 @@ function SourceDetailPage() {
     },
   });
 
+  // Detak proses tiap 30 detik selama analisis berjalan.
+  useEffect(() => {
+    if (!id || !(process.isPending || isRunning)) return;
+    const timer = setInterval(() => {
+      void sendHeartbeat({ data: { sourceId: id } });
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, [id, process.isPending, isRunning, sendHeartbeat]);
+
+  const retry = useMutation({
+    mutationFn: async () => {
+      await archiveRetry({ data: { sourceId: id } });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["source-detail", id] });
+      void queryClient.invalidateQueries({ queryKey: ["viral-sources"] });
+      toast.success("Analisis berhasil direset");
+      process.mutate();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const resetOnly = useMutation({
+    mutationFn: async () => {
+      await resetExtraction({ data: { sourceId: id } });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["source-detail", id] });
+      void queryClient.invalidateQueries({ queryKey: ["viral-sources"] });
+      toast.success("Analisis berhasil direset");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const remove = useMutation({
+    mutationFn: async () => {
+      await removeSource({ data: { id } });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["viral-sources"] });
+      toast.success("Source berhasil dihapus");
+      void navigate({ to: "/sources" });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   if (!id) {
     return (
       <AppShell>
@@ -422,23 +478,74 @@ function SourceDetailPage() {
             </p>
           </div>
 
-          <Button
-            onClick={() => process.mutate()}
-            disabled={
-              process.isPending || isRunning || !(source?.video_path || source?.source_url)
-            }
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={() => process.mutate()}
+              disabled={
+                process.isPending || isRunning || !(source?.video_path || source?.source_url)
+              }
+            >
+              {process.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Sparkles className="size-4" />
+              )}
+              {extraction ? "Proses Ulang Video" : "Proses Video"}
+            </Button>
 
-          >
-            {process.isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Sparkles className="size-4" />
-            )}
-            {extraction ? "Proses Ulang Video" : "Proses Video"}
-          </Button>
+            {isRunning ? (
+              <Button
+                variant="outline"
+                onClick={() => void detail.refetch()}
+                disabled={detail.isFetching}
+              >
+                <RefreshCw className={`size-4 ${detail.isFetching ? "animate-spin" : ""}`} />
+                Refresh Status
+              </Button>
+            ) : null}
+
+            {canRetry ? (
+              <Button variant="outline" onClick={() => retry.mutate()} disabled={retry.isPending}>
+                {retry.isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="size-4" />
+                )}
+                Proses Ulang
+              </Button>
+            ) : null}
+
+            {extraction ? (
+              <Button
+                variant="outline"
+                onClick={() => resetOnly.mutate()}
+                disabled={resetOnly.isPending || isRunning}
+              >
+                {resetOnly.isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Eraser className="size-4" />
+                )}
+                Reset Analisis
+              </Button>
+            ) : null}
+
+            <DeleteSourceDialog
+              running={isRunning}
+              disabled={remove.isPending}
+              onConfirm={() => remove.mutate()}
+              trigger={
+                <Button variant="outline" className="text-destructive">
+                  <Trash2 className="size-4" /> Hapus Source
+                </Button>
+              }
+            />
+          </div>
         </div>
 
         <CliperWorkspaceSteps current={workspaceStep} />
+
+        {extraction || isRunning ? <ExtractionProgress stage={stage} running={isRunning} /> : null}
 
         {progress ? (
           <div className="surface-panel flex items-center gap-2 p-4 text-sm text-primary">
