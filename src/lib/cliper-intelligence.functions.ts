@@ -77,7 +77,14 @@ export type AtmVersion = {
     angle_ideas?: string[];
     example_hooks?: string[];
     recommended_format?: string;
+    brand_context?: {
+      brand_readiness?: string;
+      context_sources?: string[];
+      used_ai_assumption?: boolean;
+      assumed_fields?: string[];
+    };
   };
+
   reason: string;
   brand_profile_version: string;
   status: AtmStatus;
