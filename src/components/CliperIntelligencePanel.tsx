@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { Link } from "@tanstack/react-router";
+import { getBrandKnowledge } from "@/lib/brand-knowledge.functions";
 import { BadgeCheck, Brain, Loader2, ShieldAlert, Sparkles, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -29,6 +31,7 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
   const review = useServerFn(reviewKerjakuAtmVersion);
   const buildHooks = useServerFn(generateHookMatrix);
   const chooseHook = useServerFn(selectHookCandidate);
+  const loadBrand = useServerFn(getBrandKnowledge);
   const query = useQuery({
     queryKey: ["cliper-intelligence", sourceId],
     queryFn: () => load({ data: { sourceId } }),
@@ -69,6 +72,12 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
     onSuccess: async () => { await refresh(); toast.success("Hook dipilih. Sumber siap masuk tahap prompt."); },
     onError: (error: Error) => toast.error(error.message),
   });
+
+  const brandQuery = useQuery({ queryKey: ["brand-knowledge"], queryFn: () => loadBrand() });
+  const brandProfile = brandQuery.data?.profile;
+  const brandReady = Boolean(
+    brandProfile?.positioning?.trim() && brandProfile.audience?.trim() && brandProfile.tone_of_voice?.trim(),
+  );
 
   const dna = query.data?.dna ?? null;
   const versions = query.data?.versions ?? [];
@@ -121,7 +130,13 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
               <Textarea id="atm-angle" value={angle} onChange={(e) => setAngle(e.target.value)} placeholder="Contoh: fokuskan untuk konten edukasi UMKM, desain, atau AI" />
               <p className="text-xs text-muted-foreground">Kosongkan jika ingin AI menentukan arah berdasarkan Viral DNA.</p>
             </div>
-            <Button className="w-full" onClick={() => atmMutation.mutate()} disabled={atmMutation.isPending}>{atmMutation.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}Buat Arah ATM</Button>
+            {brandReady ? null : (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-400">
+                <ShieldAlert className="mt-0.5 size-4 shrink-0" />
+                <span>Lengkapi positioning, audience, dan tone of voice di <Link to="/brand" className="underline">Brand Center</Link> sebelum membuat arah ATM.</span>
+              </div>
+            )}
+            <Button className="w-full" onClick={() => atmMutation.mutate()} disabled={atmMutation.isPending || !brandReady}>{atmMutation.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}Buat Arah ATM</Button>
             <p className="text-[11px] text-muted-foreground">Comparison Matrix tersimpan pada formula dipertahankan, elemen diubah, dan originality safeguards.</p>
           </div>
         </div>
