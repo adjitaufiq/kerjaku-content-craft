@@ -54,8 +54,8 @@ export type ViralSource = {
 export const listViralSources = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ViralSource[]> => {
-    // Auto-clean: proses yang macet lebih dari 4 menit tidak boleh tampil "Processing" selamanya.
-    const cutoff = new Date(Date.now() - 4 * 60 * 1000).toISOString();
+    // Auto-clean: proses yang macet lebih dari 5 menit tidak boleh tampil "Processing" selamanya.
+    const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     await context.supabase
       .from("viral_sources")
       .update({ status: "failed" })
@@ -65,6 +65,7 @@ export const listViralSources = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("viral_sources")
       .select("*")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return (data ?? []) as ViralSource[];
