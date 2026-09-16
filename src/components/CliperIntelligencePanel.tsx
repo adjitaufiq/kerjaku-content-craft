@@ -31,6 +31,7 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
   const review = useServerFn(reviewKerjakuAtmVersion);
   const buildHooks = useServerFn(generateHookMatrix);
   const chooseHook = useServerFn(selectHookCandidate);
+  const loadBrand = useServerFn(getBrandKnowledge);
   const query = useQuery({
     queryKey: ["cliper-intelligence", sourceId],
     queryFn: () => load({ data: { sourceId } }),
