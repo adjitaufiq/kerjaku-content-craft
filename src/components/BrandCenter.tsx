@@ -135,9 +135,11 @@ export function BrandCenter() {
       toast.error(error instanceof Error ? error.message : "Brand Knowledge gagal disimpan.");
     } finally {
       setSaving(false);
+    }
   }
 
   async function generateDraft() {
+
     setDrafting(true);
     try {
       const draft = await makeDraft({ data: { profile: form.profile } });
