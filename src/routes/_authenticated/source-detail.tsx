@@ -391,6 +391,52 @@ function SourceDetailPage() {
     },
   });
 
+  // Detak proses tiap 30 detik selama analisis berjalan.
+  useEffect(() => {
+    if (!id || !(process.isPending || isRunning)) return;
+    const timer = setInterval(() => {
+      void sendHeartbeat({ data: { sourceId: id } });
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, [id, process.isPending, isRunning, sendHeartbeat]);
+
+  const retry = useMutation({
+    mutationFn: async () => {
+      await archiveRetry({ data: { sourceId: id } });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["source-detail", id] });
+      void queryClient.invalidateQueries({ queryKey: ["viral-sources"] });
+      toast.success("Analisis berhasil direset");
+      process.mutate();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const resetOnly = useMutation({
+    mutationFn: async () => {
+      await resetExtraction({ data: { sourceId: id } });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["source-detail", id] });
+      void queryClient.invalidateQueries({ queryKey: ["viral-sources"] });
+      toast.success("Analisis berhasil direset");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const remove = useMutation({
+    mutationFn: async () => {
+      await removeSource({ data: { id } });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["viral-sources"] });
+      toast.success("Source berhasil dihapus");
+      void navigate({ to: "/sources" });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   if (!id) {
     return (
       <AppShell>
