@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, BookOpen, CheckCircle2, Loader2, Plus, Save, Trash2 } from "lucide-react";
+import { BookOpen, CheckCircle2, Loader2, Plus, Save, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   evaluateReadiness,
+  generateBrandKnowledgeDraft,
   getBrandKnowledge,
   saveBrandKnowledge,
   type BrandKnowledgeInput,
@@ -19,6 +20,7 @@ import {
   type BrandProfile,
   type BrandRule,
 } from "@/lib/brand-knowledge.functions";
+
 
 const EMPTY: BrandKnowledgeInput = {
   profile: {
