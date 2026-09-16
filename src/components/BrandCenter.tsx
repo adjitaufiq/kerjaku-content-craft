@@ -173,7 +173,7 @@ export function BrandCenter() {
     }
   }
 
-  }
+
 
   return (
     <form onSubmit={submit} className="space-y-6">
