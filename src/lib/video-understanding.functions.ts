@@ -175,13 +175,17 @@ export const getSourceDetail = createServerFn({ method: "GET" })
 
       let row = (extraction.data ?? null) as SourceExtraction | null;
 
-      // Auto-clean: proses yang berhenti tanpa detak tidak boleh menggantung selamanya.
+      // Auto-clean: kombinasi detak berhenti + tahap tidak berubah 5 menit.
       if (row && row.verification_status === "processing") {
-        const idleMs = Date.now() - new Date(row.updated_at).getTime();
+        const now = Date.now();
+        const stageAt = new Date(row.stage_changed_at ?? row.updated_at).getTime();
+        const beatAt = new Date(row.last_heartbeat_at ?? row.updated_at).getTime();
+        const stageIdle = now - stageAt;
+        const beatIdle = now - beatAt;
         const stage: PipelineStage | null =
-          idleMs > ANALYSIS_TIMEOUT_MS
+          beatIdle > ANALYSIS_HEARTBEAT_STALE_MS && stageIdle > ANALYSIS_TIMEOUT_MS
             ? "ANALYSIS_TIMEOUT"
-            : idleMs > ANALYSIS_HEARTBEAT_STALE_MS
+            : beatIdle > ANALYSIS_HEARTBEAT_STALE_MS
               ? "PROCESS_INTERRUPTED"
               : null;
         if (stage) {
@@ -218,24 +222,36 @@ export const heartbeatExtraction = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await context.supabase
       .from("source_extractions")
-      .update({ error_message: null })
+      .update({ last_heartbeat_at: new Date().toISOString() })
       .eq("source_id", data.sourceId)
       .eq("verification_status", "processing");
     return { ok: true };
   });
 
-/** Reset analisis: hapus hasil & file sementara, video sumber tetap dipertahankan. */
-export const resetSourceExtraction = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: { sourceId: string }) => input)
-  .handler(async ({ data, context }) => {
-    const { data: row } = await context.supabase
-      .from("source_extractions")
-      .select("snapshot_data")
-      .eq("source_id", data.sourceId)
-      .maybeSingle();
+/**
+ * Arsipkan hasil analisis lama lalu bersihkan, video asli tetap dipertahankan.
+ * reason "retry" = proses ulang, "reset" = reset analisis (hasil AI lanjutan ikut dibuang).
+ */
+async function archiveAndClear(
+  context: { supabase: any; userId: string },
+  sourceId: string,
+  reason: "retry" | "reset",
+) {
+  const { data: row } = await context.supabase
+    .from("source_extractions")
+    .select("*")
+    .eq("source_id", sourceId)
+    .maybeSingle();
 
-    const paths = Array.isArray(row?.snapshot_data)
+  if (row) {
+    await context.supabase.from("source_extraction_archives").insert({
+      user_id: context.userId,
+      source_id: sourceId,
+      archived_reason: reason,
+      snapshot: row,
+    });
+
+    const paths = Array.isArray(row.snapshot_data)
       ? (row.snapshot_data as Array<{ path?: string }>)
           .map((s) => s?.path)
           .filter((p): p is string => typeof p === "string")
@@ -243,14 +259,28 @@ export const resetSourceExtraction = createServerFn({ method: "POST" })
     if (paths.length) {
       await context.supabase.storage.from("viral-sources").remove(paths);
     }
+    await context.supabase.from("source_extractions").delete().eq("source_id", sourceId);
+  }
 
-    await context.supabase.from("source_extractions").delete().eq("source_id", data.sourceId);
-    await context.supabase
-      .from("viral_sources")
-      .update({ status: "draft" })
-      .eq("id", data.sourceId);
-    return { ok: true };
-  });
+  if (reason === "reset") {
+    await context.supabase.from("viral_intelligence").delete().eq("source_id", sourceId);
+  }
+
+  await context.supabase.from("viral_sources").update({ status: "draft" }).eq("id", sourceId);
+  return { ok: true, archived: Boolean(row) };
+}
+
+/** Proses ulang: hasil lama diarsipkan sebagai riwayat, bukan dihapus permanen. */
+export const retrySourceExtraction = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { sourceId: string }) => input)
+  .handler(async ({ data, context }) => archiveAndClear(context, data.sourceId, "retry"));
+
+/** Reset analisis: hasil AI dibuang (diarsipkan), video asli tetap tersimpan. */
+export const resetSourceExtraction = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { sourceId: string }) => input)
+  .handler(async ({ data, context }) => archiveAndClear(context, data.sourceId, "reset"));
 
 
 export const runSourceExtraction = createServerFn({ method: "POST" })
