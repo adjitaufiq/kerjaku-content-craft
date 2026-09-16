@@ -82,9 +82,12 @@ export function BrandCenter() {
   const queryClient = useQueryClient();
   const load = useServerFn(getBrandKnowledge);
   const save = useServerFn(saveBrandKnowledge);
+  const makeDraft = useServerFn(generateBrandKnowledgeDraft);
   const query = useQuery({ queryKey: ["brand-knowledge"], queryFn: () => load({}) });
   const [form, setForm] = useState<BrandKnowledgeInput>(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+
 
   useEffect(() => {
     if (query.data) {
