@@ -221,8 +221,9 @@ function VersionReview({ version, note, onNote, onDecision, busy, onBuildHooks, 
               <p className="mt-2 text-sm font-medium">{selected.hook}</p>
               <p className="mt-2 text-xs text-muted-foreground">{selected.rationale}</p>
             </div>
+            <CarouselPromptPanel versionId={version.id} />
             <div className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
-              Output Prompt · Prompt Carousel dan Prompt Reels belum aktif pada Step 1.
+              Prompt Reels belum aktif pada tahap ini.
             </div>
           </div>
         ) : null}
