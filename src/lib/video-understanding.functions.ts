@@ -147,6 +147,8 @@ export type SourceExtraction = {
   has_audio: boolean;
   model: string;
   error_message: string | null;
+  last_heartbeat_at?: string;
+  stage_changed_at?: string;
   created_at: string;
   updated_at: string;
 };
