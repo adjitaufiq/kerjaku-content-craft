@@ -74,10 +74,20 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
   });
 
   const brandQuery = useQuery({ queryKey: ["brand-knowledge"], queryFn: () => loadBrand() });
-  const brandProfile = brandQuery.data?.profile;
-  const brandReady = Boolean(
-    brandProfile?.positioning?.trim() && brandProfile.audience?.trim() && brandProfile.tone_of_voice?.trim(),
-  );
+  const readiness = brandQuery.data?.readiness;
+  const level = readiness?.level ?? "PARTIAL";
+  const [showDefaultChoice, setShowDefaultChoice] = useState(false);
+
+  const startAtm = () => {
+    if (atmMutation.isPending) return;
+    if (level === "EMPTY" && !showDefaultChoice) {
+      setShowDefaultChoice(true);
+      return;
+    }
+    setShowDefaultChoice(false);
+    atmMutation.mutate();
+  };
+
 
   const dna = query.data?.dna ?? null;
   const versions = query.data?.versions ?? [];
