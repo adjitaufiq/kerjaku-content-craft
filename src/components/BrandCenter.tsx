@@ -185,10 +185,22 @@ export function BrandCenter() {
               Sumber fakta brand untuk ATM Engine. Setiap simpan membuat versi baru.
             </p>
           </div>
-          <Button type="submit" disabled={saving || query.isLoading}>
-            {saving ? <Loader2 className="animate-spin" /> : <Save />}
-            Simpan Brand Knowledge
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={generateDraft}
+              disabled={drafting || saving || query.isLoading}
+            >
+              {drafting ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              Generate Brand Knowledge dengan AI
+            </Button>
+            <Button type="submit" disabled={saving || query.isLoading}>
+              {saving ? <Loader2 className="animate-spin" /> : <Save />}
+              Simpan Brand Knowledge
+            </Button>
+          </div>
+
         </div>
 
         <div className="grid gap-3 sm:grid-cols-4">
