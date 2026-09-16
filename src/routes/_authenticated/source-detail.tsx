@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -7,16 +7,22 @@ import {
   ArrowLeft,
   BadgeCheck,
   Clock,
+  Eraser,
   Film,
   Loader2,
+  RefreshCw,
+  RotateCcw,
   ScanText,
   ShieldAlert,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { CliperWorkspaceSteps } from "@/components/CliperWorkspaceSteps";
 import { CliperIntelligencePanel } from "@/components/CliperIntelligencePanel";
+import { DeleteSourceDialog } from "@/components/DeleteSourceDialog";
+import { ExtractionProgress } from "@/components/ExtractionProgress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,10 +32,14 @@ import {
   ACQUISITION_FAILED_MESSAGE,
   acquireAnalysisVideo,
 } from "@/lib/video-acquisition.functions";
+import { deleteViralSource } from "@/lib/viral-sources.functions";
 
 import {
   getSourceDetail,
+  heartbeatExtraction,
   markVideoUnavailable,
+  resetSourceExtraction,
+  retrySourceExtraction,
   runSourceExtraction,
   setSourceProcessing,
   STAGE_MESSAGE,
