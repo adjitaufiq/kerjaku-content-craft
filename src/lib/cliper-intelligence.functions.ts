@@ -463,7 +463,10 @@ export const generateHookMatrix = createServerFn({ method: "POST" })
     const queryError = dna.error ?? profile.error ?? products.error ?? rules.error ?? words.error;
     if (queryError) throw new Error(queryError.message);
     if (!dna.data) throw new Error("Viral DNA tidak ditemukan untuk sumber ini.");
-    if (!profile.data?.positioning) throw new Error("Lengkapi Brand Knowledge terlebih dahulu.");
+
+    // Brand Knowledge kosong/parsial bukan error: hook tetap dibuat dari Viral DNA dan ATM.
+    const hp = (profile.data ?? {}) as Record<string, unknown>;
+    const str = (value: unknown) => String(value ?? "").trim();
 
     const { generateHookMatrix: runHookMatrix } = await import("@/lib/cliper-intelligence.server");
     const generated = await runHookMatrix({
@@ -477,18 +480,19 @@ export const generateHookMatrix = createServerFn({ method: "POST" })
       },
       brand: {
         profile: {
-          brand_name: profile.data.brand_name,
-          positioning: profile.data.positioning,
-          audience: profile.data.audience,
-          tone_of_voice: profile.data.tone_of_voice,
-          mission: profile.data.mission,
-          version: profile.data.version,
+          brand_name: str(hp["brand_name"]) || "@kerjaku.space",
+          positioning: str(hp["positioning"]),
+          audience: str(hp["audience"]),
+          tone_of_voice: str(hp["tone_of_voice"]),
+          mission: str(hp["mission"]),
+          version: str(hp["version"]) || "v0",
         },
         products: products.data ?? [],
         rules: rules.data ?? [],
         power_words: words.data ?? [],
       },
     });
+
 
     const candidates = (generated.result.candidates ?? []).slice(0, 5);
     if (candidates.length < 5) throw new Error("Hook Matrix belum lengkap. Jalankan ulang pembuatan hook.");
