@@ -327,6 +327,8 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
           confidence_score: 0,
           error_message: null,
           pipeline_stage: "TRANSCRIBING",
+          stage_changed_at: new Date().toISOString(),
+          last_heartbeat_at: new Date().toISOString(),
           failed_stage: null,
           video_metadata: (data.videoMetadata ?? {}) as unknown as Json,
         },
@@ -337,7 +339,11 @@ export const runSourceExtraction = createServerFn({ method: "POST" })
     const stage = async (value: PipelineStage) => {
       await context.supabase
         .from("source_extractions")
-        .update({ pipeline_stage: value })
+        .update({
+          pipeline_stage: value,
+          stage_changed_at: new Date().toISOString(),
+          last_heartbeat_at: new Date().toISOString(),
+        })
         .eq("source_id", data.sourceId);
     };
 
