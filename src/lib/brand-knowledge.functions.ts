@@ -46,12 +46,23 @@ export type BrandPowerWord = {
   forbidden_usage: string;
 };
 
+export type BrandReadinessLevel = "EMPTY" | "PARTIAL" | "COMPLETE";
+
 export type BrandReadiness = {
+  /** Legacy: "ready" hanya saat COMPLETE. Tidak dipakai untuk memblokir ATM. */
   status: "ready" | "incomplete";
+  level: BrandReadinessLevel;
   score: number;
+  percentage: number;
+  completed_fields: string[];
+  missing_fields: string[];
+  /** Legacy alias untuk missing_fields. */
   missing: string[];
+  can_create_atm: boolean;
+  requires_default_choice: boolean;
   sections: { profile: number; products: number; rules: number; power_words: number };
 };
+
 
 export type BrandKnowledge = {
   profile: BrandProfile;
