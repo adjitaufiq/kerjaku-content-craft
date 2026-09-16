@@ -70,6 +70,12 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const brandQuery = useQuery({ queryKey: ["brand-knowledge"], queryFn: () => loadBrand() });
+  const brandProfile = brandQuery.data?.profile;
+  const brandReady = Boolean(
+    brandProfile?.positioning?.trim() && brandProfile.audience?.trim() && brandProfile.tone_of_voice?.trim(),
+  );
+
   const dna = query.data?.dna ?? null;
   const versions = query.data?.versions ?? [];
 
