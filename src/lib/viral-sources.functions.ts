@@ -47,6 +47,7 @@ export type ViralSource = {
   video_path: string | null;
   status: SourceStatus;
   expires_at: string | null;
+  deleted_at?: string | null;
   created_at: string;
   updated_at: string;
 };
