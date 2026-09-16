@@ -347,6 +347,38 @@ export const saveBrandKnowledge = createServerFn({ method: "POST" })
     return { ok: true, version, readiness };
   });
 
+/**
+ * Draft Brand Knowledge dengan AI. Hasilnya TIDAK disimpan otomatis:
+ * client menampilkan draft pada form untuk direview, diedit, lalu disimpan user.
+ */
+export const generateBrandKnowledgeDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { profile: BrandProfile }) => input)
+  .handler(async ({ data, context }) => {
+    const empty = Object.entries(data.profile)
+      .filter(([key, value]) => key !== "version" && !String(value ?? "").trim())
+      .map(([key]) => key);
+
+    const { data: extractions } = await context.supabase
+      .from("source_extractions")
+      .select("source_report")
+      .order("created_at", { ascending: false })
+      .limit(3);
+
+    const { generateBrandDraft } = await import("@/lib/brand-setup.server");
+    const draft = await generateBrandDraft({
+      brand_name: String(data.profile.brand_name || "@kerjaku.space"),
+      existing: Object.fromEntries(
+        Object.entries(data.profile).filter(([, value]) => String(value ?? "").trim()),
+      ) as Record<string, string>,
+      empty_fields: empty,
+      source_context: (extractions ?? []).map((row) => row.source_report),
+    });
+    return draft.result;
+  });
+
+
+
 /** Official Brand Context reader for the ATM engine. */
 export const getBrandContext = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
