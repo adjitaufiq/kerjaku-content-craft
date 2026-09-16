@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, BookOpen, CheckCircle2, Loader2, Plus, Save, Trash2 } from "lucide-react";
+import { BookOpen, CheckCircle2, Loader2, Plus, Save, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   evaluateReadiness,
+  generateBrandKnowledgeDraft,
   getBrandKnowledge,
   saveBrandKnowledge,
   type BrandKnowledgeInput,
@@ -19,6 +20,7 @@ import {
   type BrandProfile,
   type BrandRule,
 } from "@/lib/brand-knowledge.functions";
+
 
 const EMPTY: BrandKnowledgeInput = {
   profile: {
@@ -80,9 +82,12 @@ export function BrandCenter() {
   const queryClient = useQueryClient();
   const load = useServerFn(getBrandKnowledge);
   const save = useServerFn(saveBrandKnowledge);
+  const makeDraft = useServerFn(generateBrandKnowledgeDraft);
   const query = useQuery({ queryKey: ["brand-knowledge"], queryFn: () => load({}) });
   const [form, setForm] = useState<BrandKnowledgeInput>(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+
 
   useEffect(() => {
     if (query.data) {
@@ -133,6 +138,43 @@ export function BrandCenter() {
     }
   }
 
+  async function generateDraft() {
+
+    setDrafting(true);
+    try {
+      const draft = await makeDraft({ data: { profile: form.profile } });
+      setForm((current) => {
+        const profile = { ...current.profile };
+        (Object.keys(profile) as Array<keyof BrandProfile>).forEach((key) => {
+          const suggestion = (draft as unknown as Record<string, unknown>)[key as string];
+          if (!String(profile[key] ?? "").trim() && typeof suggestion === "string" && suggestion.trim()) {
+            profile[key] = suggestion.trim();
+          }
+        });
+        return {
+          ...current,
+          profile,
+          products: current.products.length
+            ? current.products
+            : draft.products.map((item) => ({ ...NEW_PRODUCT, ...item })),
+          rules: current.rules.length
+            ? current.rules
+            : draft.rules.map((item) => ({ ...NEW_RULE, ...item })),
+          power_words: current.power_words.length
+            ? current.power_words
+            : draft.power_words.map((item) => ({ ...NEW_WORD, ...item })),
+        };
+      });
+      toast.success("Draft AI dimuat ke form. Periksa dan edit sebelum menyimpan.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Draft brand gagal dibuat.");
+    } finally {
+      setDrafting(false);
+    }
+  }
+
+
+
   return (
     <form onSubmit={submit} className="space-y-6">
       <div className="surface-panel space-y-4 p-6">
@@ -145,10 +187,22 @@ export function BrandCenter() {
               Sumber fakta brand untuk ATM Engine. Setiap simpan membuat versi baru.
             </p>
           </div>
-          <Button type="submit" disabled={saving || query.isLoading}>
-            {saving ? <Loader2 className="animate-spin" /> : <Save />}
-            Simpan Brand Knowledge
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={generateDraft}
+              disabled={drafting || saving || query.isLoading}
+            >
+              {drafting ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              Generate Brand Knowledge dengan AI
+            </Button>
+            <Button type="submit" disabled={saving || query.isLoading}>
+              {saving ? <Loader2 className="animate-spin" /> : <Save />}
+              Simpan Brand Knowledge
+            </Button>
+          </div>
+
         </div>
 
         <div className="grid gap-3 sm:grid-cols-4">
