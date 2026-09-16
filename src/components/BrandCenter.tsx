@@ -158,35 +158,34 @@ export function BrandCenter() {
           <ScoreCard label="Power Words" value={readiness.sections.power_words} />
         </div>
 
-        <div
-          className={`rounded-xl border p-4 text-sm ${
-            readiness.status === "ready"
-              ? "border-primary/40 bg-primary/10 text-primary"
-              : "border-destructive/40 bg-destructive/10 text-destructive"
-          }`}
-        >
+        <div className="rounded-xl border border-border/60 bg-secondary/30 p-4 text-sm">
           <p className="flex items-center gap-2 font-medium">
-            {readiness.status === "ready" ? (
-              <CheckCircle2 className="size-4" />
+            {readiness.level === "COMPLETE" ? (
+              <CheckCircle2 className="size-4 text-primary" />
             ) : (
-              <AlertTriangle className="size-4" />
+              <BookOpen className="size-4 text-muted-foreground" />
             )}
-            Brand Readiness: {readiness.score}% —{" "}
-            {readiness.status === "ready" ? "Ready" : "Incomplete"}
+            Brand Readiness: {readiness.percentage}% —{" "}
+            {readiness.level === "COMPLETE"
+              ? "Brand Ready"
+              : readiness.level === "EMPTY"
+                ? "Empty"
+                : "Partial"}
           </p>
-          {readiness.status === "ready" ? null : (
-            <>
-              <p className="mt-1 text-xs">
-                Creative ATM tidak tersedia karena Brand Knowledge belum lengkap.
-              </p>
-              <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs">
-                {readiness.missing.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </>
-          )}
+          <p className="mt-1 text-xs text-muted-foreground">
+            {readiness.level === "COMPLETE"
+              ? "Brand Center dipakai sebagai konteks utama ATM."
+              : "ATM tetap dapat dibuat. Bagian yang kosong akan dilengkapi konteks source dan asumsi AI."}
+          </p>
+          {readiness.missing_fields.length ? (
+            <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
+              {readiness.missing_fields.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : null}
         </div>
+
       </div>
 
       <Tabs defaultValue="profile" className="surface-panel p-6">
