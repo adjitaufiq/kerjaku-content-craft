@@ -210,6 +210,7 @@ function SourceDetailPage() {
   const acquireVideo = useServerFn(acquireAnalysisVideo);
   const sendHeartbeat = useServerFn(heartbeatExtraction);
   const resetExtraction = useServerFn(resetSourceExtraction);
+  const archiveRetry = useServerFn(retrySourceExtraction);
   const removeSource = useServerFn(deleteViralSource);
 
   const detail = useQuery({
