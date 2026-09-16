@@ -74,10 +74,20 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
   });
 
   const brandQuery = useQuery({ queryKey: ["brand-knowledge"], queryFn: () => loadBrand() });
-  const brandProfile = brandQuery.data?.profile;
-  const brandReady = Boolean(
-    brandProfile?.positioning?.trim() && brandProfile.audience?.trim() && brandProfile.tone_of_voice?.trim(),
-  );
+  const readiness = brandQuery.data?.readiness;
+  const level = readiness?.level ?? "PARTIAL";
+  const [showDefaultChoice, setShowDefaultChoice] = useState(false);
+
+  const startAtm = () => {
+    if (atmMutation.isPending) return;
+    if (level === "EMPTY" && !showDefaultChoice) {
+      setShowDefaultChoice(true);
+      return;
+    }
+    setShowDefaultChoice(false);
+    atmMutation.mutate();
+  };
+
 
   const dna = query.data?.dna ?? null;
   const versions = query.data?.versions ?? [];
@@ -130,13 +140,26 @@ export function CliperIntelligencePanel({ sourceId, gateAllowed }: { sourceId: s
               <Textarea id="atm-angle" value={angle} onChange={(e) => setAngle(e.target.value)} placeholder="Contoh: fokuskan untuk konten edukasi UMKM, desain, atau AI" />
               <p className="text-xs text-muted-foreground">Kosongkan jika ingin AI menentukan arah berdasarkan Viral DNA.</p>
             </div>
-            {brandReady ? null : (
-              <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-400">
-                <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-                <span>Lengkapi positioning, audience, dan tone of voice di <Link to="/brand" className="underline">Brand Center</Link> sebelum membuat arah ATM.</span>
+            <p className="text-xs text-muted-foreground">
+              {level === "COMPLETE"
+                ? "Brand Ready"
+                : level === "EMPTY"
+                  ? "ATM dapat dibuat menggunakan konteks source dan AI Default."
+                  : "Beberapa elemen brand akan dilengkapi menggunakan konteks source dan asumsi AI."}
+            </p>
+            {showDefaultChoice && level === "EMPTY" ? (
+              <div className="grid gap-2 rounded-lg border border-border bg-secondary/30 p-3 sm:grid-cols-2">
+                <Button type="button" onClick={startAtm} disabled={atmMutation.isPending}>
+                  {atmMutation.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}Buat ATM dengan AI Default
+                </Button>
+                <Button type="button" variant="outline" asChild>
+                  <Link to="/brand">Lengkapi Brand Center</Link>
+                </Button>
               </div>
+            ) : (
+              <Button className="w-full" onClick={startAtm} disabled={atmMutation.isPending}>{atmMutation.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}Buat Arah ATM</Button>
             )}
-            <Button className="w-full" onClick={() => atmMutation.mutate()} disabled={atmMutation.isPending || !brandReady}>{atmMutation.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}Buat Arah ATM</Button>
+
             <p className="text-[11px] text-muted-foreground">Comparison Matrix tersimpan pada formula dipertahankan, elemen diubah, dan originality safeguards.</p>
           </div>
         </div>

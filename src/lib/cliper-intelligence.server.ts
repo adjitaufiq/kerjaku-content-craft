@@ -344,26 +344,49 @@ export async function generateAtmVersion(input: {
   angle: string;
   dna: ViralDnaResult;
   brand: BrandKnowledgeInput;
+  readiness_level?: "EMPTY" | "PARTIAL" | "COMPLETE";
+  assumed_fields?: string[];
+  source_context?: {
+    source_report?: unknown;
+    transcript?: unknown;
+    on_screen_text?: unknown;
+  };
 }): Promise<{ result: AtmResult; model: string }> {
   const modeRule = input.mode === "conservative"
     ? "Pertahankan formula, urutan persuasi, dan mekanisme retensi utama. Ubah konteks, contoh, angle, dan bahasa agar asli serta sesuai brand."
     : "Ambil prinsip psikologis dan mekanisme viralnya, lalu ubah angle dan storytelling direction secara lebih jauh. Jangan mempertahankan urutan atau ekspresi sumber bila tidak perlu.";
+  const fallbackRule = [
+    "Brand Knowledge boleh kosong atau hanya terisi sebagian — itu BUKAN error dan bukan alasan menolak tugas.",
+    "Urutan prioritas konteks: (1) field Brand Knowledge yang benar-benar diisi user, (2) Source Content Report, (3) transcript dan teks layar, (4) Viral DNA, (5) asumsi AI sebagai jalan terakhir.",
+    "DILARANG menimpa atau mengubah nilai brand yang sudah diisi user.",
+    "Untuk bagian brand yang kosong, susun asumsi kerja yang hati-hati dan tandai secara eksplisit dengan awalan \"Asumsi:\".",
+    "DILARANG mengarang nama produk, harga, promo, testimoni, angka performa, benefit spesifik, atau data bisnis yang tidak ada pada Brand Knowledge maupun sumber.",
+    "Jika tidak ada produk terdaftar, isi product_connection sebagai arahan umum tanpa menyebut nama produk apa pun.",
+  ].join(" ");
   const result = await streamStructured<AtmResult>({
     name: "kerjaku_atm_version",
     schema: ATM_SCHEMA,
-    instructions: `Kamu adalah KERJAKU ATM Engine. ATM berarti Amati formula, Tiru prinsip, Modifikasi eksekusi. Kamu bekerja OTOMATIS: sumber utama keputusanmu adalah Viral DNA (hook, pattern interrupt, psychological trigger, curiosity gap, retention, struktur, CTA, evidence) plus Brand Knowledge KERJAKU. Jika ada tambahan arahan pengguna, perlakukan sebagai constraint tambahan saja, bukan sumber utama; jika kosong, tentukan sendiri arah terbaik dari Viral DNA. Wajib mengisi source_formula (formula sumber yang ditemukan), preserved_formula (prinsip dipertahankan), changed_elements (elemen diubah), reason (alasan adaptasi untuk KERJAKU), target_audience, angle_ideas (2-4 ide angle), example_hooks (2-3 contoh hook baru orisinal), dan recommended_format (format konten yang disarankan, misal carousel edukasi atau reels talking head). Kamu hanya menyusun arahan strategis sebelum produksi—DILARANG membuat carousel jadi, caption, storyboard, atau script siap terbit. ${modeRule} Patuhi seluruh Brand Knowledge. Bukti harus disalin dari Viral DNA, jangan mengarang bukti baru. Jawab dalam Bahasa Indonesia.`,
+    instructions: `Kamu adalah KERJAKU ATM Engine. ATM berarti Amati formula, Tiru prinsip, Modifikasi eksekusi. Kamu bekerja OTOMATIS: sumber utama keputusanmu adalah Viral DNA (hook, pattern interrupt, psychological trigger, curiosity gap, retention, struktur, CTA, evidence) plus Brand Knowledge KERJAKU yang tersedia. Jika ada tambahan arahan pengguna, perlakukan sebagai constraint tambahan saja, bukan sumber utama; jika kosong, tentukan sendiri arah terbaik dari Viral DNA. ${fallbackRule} Wajib mengisi source_formula (formula sumber yang ditemukan), preserved_formula (prinsip dipertahankan), changed_elements (elemen diubah), reason (alasan adaptasi untuk KERJAKU), target_audience, angle_ideas (2-4 ide angle), example_hooks (2-3 contoh hook baru orisinal), dan recommended_format (format konten yang disarankan, misal carousel edukasi atau reels talking head). Kamu hanya menyusun arahan strategis sebelum produksi—DILARANG membuat carousel jadi, caption, storyboard, atau script siap terbit. ${modeRule} Patuhi seluruh aturan brand yang tersedia. Bukti harus disalin dari Viral DNA, jangan mengarang bukti baru. Jawab dalam Bahasa Indonesia.`,
     prompt: [
       `Mode: ${input.mode}`,
       input.angle.trim()
         ? `Tambahan arahan pengguna (constraint tambahan, bukan sumber utama): ${input.angle.trim()}`
-        : "Tidak ada tambahan arahan pengguna. Tentukan arah dan angle sepenuhnya dari Viral DNA dan Brand Knowledge KERJAKU.",
+        : "Tidak ada tambahan arahan pengguna. Tentukan arah dan angle sepenuhnya dari Viral DNA dan konteks yang tersedia.",
+      `Kelengkapan Brand Knowledge: ${input.readiness_level ?? "PARTIAL"}`,
+      input.assumed_fields?.length
+        ? `Field brand yang kosong dan boleh diisi asumsi hati-hati: ${input.assumed_fields.join(", ")}`
+        : "Seluruh field brand inti tersedia. Jangan memakai asumsi.",
       `Viral DNA: ${JSON.stringify(input.dna)}`,
-      `Brand Knowledge: ${JSON.stringify(input.brand)}`,
+      `Brand Knowledge (hanya field terisi yang valid): ${JSON.stringify(input.brand)}`,
+      input.source_context
+        ? `Konteks sumber (fallback saat brand kosong): ${JSON.stringify(input.source_context).slice(0, 12000)}`
+        : "Konteks sumber tambahan tidak tersedia.",
       "Buat pemetaan formula sumber ke arahan adaptasi orisinal KERJAKU dan jelaskan alasan strateginya.",
     ].join("\n\n"),
   });
   return { result, model: MODEL };
 }
+
 
 export async function generateHookMatrix(input: {
   mode: "conservative" | "creative";

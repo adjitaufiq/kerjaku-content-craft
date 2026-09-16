@@ -98,40 +98,58 @@ const CORE_PROFILE_FIELDS: Array<[keyof BrandProfile, string]> = [
   ["writing_style", "Writing style"],
 ];
 
+const filled = (value: unknown) => String(value ?? "").trim().length > 0;
+
+/**
+ * Evaluator tunggal Brand Readiness (dipakai frontend dan backend).
+ * Kelengkapan brand TIDAK PERNAH memblokir pembuatan ATM.
+ */
 export function evaluateReadiness(
   profile: BrandProfile,
   products: BrandProduct[],
   rules: BrandRule[],
   powerWords: BrandPowerWord[],
 ): BrandReadiness {
-  const missing: string[] = [];
-  const filledCore = CORE_PROFILE_FIELDS.filter(([key, label]) => {
-    const ok = String(profile[key] ?? "").trim().length > 0;
-    if (!ok) missing.push(`Profil: ${label} belum diisi`);
-    return ok;
-  }).length;
+  const completed_fields: string[] = [];
+  const missing_fields: string[] = [];
+  CORE_PROFILE_FIELDS.forEach(([key, label]) => {
+    if (filled(profile[key])) completed_fields.push(label);
+    else missing_fields.push(label);
+  });
 
-  const activeProducts = products.filter((p) => p.status === "active" && p.name.trim());
-  if (!activeProducts.length) missing.push("Minimal 1 produk aktif");
+  const activeProducts = products.filter((p) => p.status === "active" && filled(p.name));
+  const usableRules = rules.filter((r) => filled(r.rule));
+  const words = powerWords.filter((w) => filled(w.word));
 
-  const forbidden = rules.filter((r) => r.rule_category === "forbidden" && r.rule.trim());
-  if (!forbidden.length) missing.push("Minimal 1 aturan forbidden");
-
-  const words = powerWords.filter((w) => w.word.trim());
-  if (words.length < 3) missing.push("Minimal 3 power words");
+  const percentage = Math.round((completed_fields.length / CORE_PROFILE_FIELDS.length) * 100);
+  const level: BrandReadinessLevel =
+    completed_fields.length === 0
+      ? "EMPTY"
+      : completed_fields.length === CORE_PROFILE_FIELDS.length
+        ? "COMPLETE"
+        : "PARTIAL";
 
   const sections = {
-    profile: Math.round((filledCore / CORE_PROFILE_FIELDS.length) * 100),
+    profile: percentage,
     products: activeProducts.length ? 100 : 0,
-    rules: forbidden.length ? 100 : 0,
+    rules: usableRules.length ? 100 : 0,
     power_words: Math.min(100, Math.round((words.length / 3) * 100)),
   };
-  const score = Math.round(
-    (sections.profile + sections.products + sections.rules + sections.power_words) / 4,
-  );
 
-  return { status: missing.length ? "incomplete" : "ready", score, missing, sections };
+  return {
+    status: level === "COMPLETE" ? "ready" : "incomplete",
+    level,
+    score: percentage,
+    percentage,
+    completed_fields,
+    missing_fields,
+    missing: missing_fields,
+    can_create_atm: true,
+    requires_default_choice: level === "EMPTY",
+    sections,
+  };
 }
+
 
 const asArray = (value: unknown): string[] =>
   Array.isArray(value) ? value.map((v) => String(v)).filter((v) => v.trim()) : [];
@@ -328,6 +346,38 @@ export const saveBrandKnowledge = createServerFn({ method: "POST" })
 
     return { ok: true, version, readiness };
   });
+
+/**
+ * Draft Brand Knowledge dengan AI. Hasilnya TIDAK disimpan otomatis:
+ * client menampilkan draft pada form untuk direview, diedit, lalu disimpan user.
+ */
+export const generateBrandKnowledgeDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { profile: BrandProfile }) => input)
+  .handler(async ({ data, context }) => {
+    const empty = Object.entries(data.profile)
+      .filter(([key, value]) => key !== "version" && !String(value ?? "").trim())
+      .map(([key]) => key);
+
+    const { data: extractions } = await context.supabase
+      .from("source_extractions")
+      .select("source_report")
+      .order("created_at", { ascending: false })
+      .limit(3);
+
+    const { generateBrandDraft } = await import("@/lib/brand-setup.server");
+    const draft = await generateBrandDraft({
+      brand_name: String(data.profile.brand_name || "@kerjaku.space"),
+      existing: Object.fromEntries(
+        Object.entries(data.profile).filter(([, value]) => String(value ?? "").trim()),
+      ) as Record<string, string>,
+      empty_fields: empty,
+      source_context: (extractions ?? []).map((row) => row.source_report),
+    });
+    return draft.result;
+  });
+
+
 
 /** Official Brand Context reader for the ATM engine. */
 export const getBrandContext = createServerFn({ method: "GET" })
