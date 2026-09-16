@@ -258,9 +258,9 @@ export const generateKerjakuAtmVersion = createServerFn({ method: "POST" })
       context.supabase.from("source_extractions").select("*").eq("source_id", data.sourceId).maybeSingle(),
       context.supabase.from("viral_intelligence").select("*").eq("source_id", data.sourceId).maybeSingle(),
       context.supabase.from("brand_profile").select("*").maybeSingle(),
-      context.supabase.from("brand_products").select("name,description,benefit").order("created_at"),
-      context.supabase.from("brand_rules").select("rule,rule_type").order("created_at"),
-      context.supabase.from("brand_power_words").select("word,context").order("created_at"),
+      context.supabase.from("brand_products").select("*").order("created_at"),
+      context.supabase.from("brand_rules").select("*").order("created_at"),
+      context.supabase.from("brand_power_words").select("*").order("created_at"),
     ]);
     const queryError =
       extraction.error ?? dna.error ?? profile.error ?? products.error ?? rules.error ?? words.error;
@@ -268,32 +268,110 @@ export const generateKerjakuAtmVersion = createServerFn({ method: "POST" })
 
     // Single source of truth: ATM hanya menerima sumber dari pipeline baru yang
     // laporan sumbernya lolos gerbang mutu ekstraksi.
-    const gate = evaluateExtractionGate(extraction.data as SourceExtraction | null);
+    const typedExtraction = extraction.data as SourceExtraction | null;
+    const gate = evaluateExtractionGate(typedExtraction);
     if (!gate.allowed) throw new Error(gate.reason);
     if (!dna.data) throw new Error("Jalankan Viral DNA Analysis terlebih dahulu.");
-    if (!profile.data?.positioning || !profile.data.audience || !profile.data.tone_of_voice) {
-      throw new Error("Lengkapi positioning, audience, dan tone of voice di Brand Knowledge terlebih dahulu.");
-    }
+
+    // Brand Center BUKAN hard blocker: field kosong diisi konteks source lalu AI default.
+    const text = (value: unknown) => String(value ?? "").trim();
+    const p = (profile.data ?? {}) as Record<string, unknown>;
+    const brandProfile = {
+      brand_name: text(p["brand_name"]) || "@kerjaku.space",
+      positioning: text(p["positioning"]),
+      description: text(p["description"]),
+      audience: text(p["audience"]),
+      customer_problem: text(p["customer_problem"]),
+      customer_desire: text(p["customer_desire"]),
+      tone_of_voice: text(p["tone_of_voice"]),
+      personality: text(p["personality"]),
+      writing_style: text(p["writing_style"]),
+      mission: text(p["mission"]),
+      visual_direction: text(p["visual_direction"]),
+      preferred_style: text(p["preferred_style"]),
+      forbidden_style: text(p["forbidden_style"]),
+      version: text(p["version"]) || "v0",
+    };
+    const brandProducts = (products.data ?? []).map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        name: text(r["name"]),
+        description: text(r["description"]),
+        benefit: text(r["benefit"]),
+        status: r["status"] === "inactive" ? ("inactive" as const) : ("active" as const),
+        category: text(r["category"]),
+        features: [] as string[],
+        target_user: "",
+        allowed_claims: [] as string[],
+        forbidden_claims: [] as string[],
+      };
+    });
+    const brandRules = (rules.data ?? []).map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        rule: text(r["rule"]),
+        rule_type: r["rule_type"] === "dont" ? ("dont" as const) : ("do" as const),
+        rule_category:
+          r["rule_category"] === "forbidden"
+            ? ("forbidden" as const)
+            : r["rule_category"] === "claim_control"
+              ? ("claim_control" as const)
+              : ("allow" as const),
+        severity: r["severity"] === "hard_fail" ? ("hard_fail" as const) : ("warning" as const),
+      };
+    });
+    const brandWords = (words.data ?? []).map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        word: text(r["word"]),
+        context: text(r["context"]),
+        category: text(r["category"]),
+        usage_example: text(r["usage_example"]),
+        forbidden_usage: text(r["forbidden_usage"]),
+      };
+    });
+
+    const readiness = evaluateReadiness(brandProfile, brandProducts, brandRules, brandWords);
 
     const { generateAtmVersion } = await import("@/lib/cliper-intelligence.server");
     const generated = await generateAtmVersion({
       mode: data.mode,
       angle,
       dna: dna.data as unknown as Parameters<typeof generateAtmVersion>[0]["dna"],
+      readiness_level: readiness.level,
+      assumed_fields: readiness.missing_fields,
+      source_context: {
+        source_report: typedExtraction?.source_report ?? null,
+        transcript: (typedExtraction?.transcript ?? []) as unknown,
+        on_screen_text: (typedExtraction?.on_screen_text ?? []) as unknown,
+      },
       brand: {
         profile: {
-          brand_name: profile.data.brand_name,
-          positioning: profile.data.positioning,
-          audience: profile.data.audience,
-          tone_of_voice: profile.data.tone_of_voice,
-          mission: profile.data.mission,
-          version: profile.data.version,
+          brand_name: brandProfile.brand_name,
+          positioning: brandProfile.positioning,
+          audience: brandProfile.audience,
+          tone_of_voice: brandProfile.tone_of_voice,
+          mission: brandProfile.mission,
+          version: brandProfile.version,
         },
-        products: products.data ?? [],
-        rules: rules.data ?? [],
-        power_words: words.data ?? [],
+        products: brandProducts.map((item) => ({
+          name: item.name,
+          description: item.description,
+          benefit: item.benefit,
+        })),
+        rules: brandRules.map((item) => ({ rule: item.rule, rule_type: item.rule_type })),
+        power_words: brandWords.map((item) => ({ word: item.word, context: item.context })),
       },
     });
+
+    const context_sources = [
+      ...(readiness.level === "EMPTY" ? [] : ["BRAND_CENTER"]),
+      "SOURCE",
+      "TRANSCRIPT",
+      "VIRAL_DNA",
+      ...(readiness.level === "COMPLETE" ? [] : ["AI_DEFAULT"]),
+    ];
+
     const { data: saved, error: saveError } = await context.supabase
       .from("kerjaku_versions")
       .insert({
@@ -302,9 +380,17 @@ export const generateKerjakuAtmVersion = createServerFn({ method: "POST" })
         atm_mode: data.mode,
         angle: angle || "Otomatis dari Viral DNA",
         source_mapping: generated.result.source_mapping as unknown as Json,
-        adaptation: generated.result.adaptation as unknown as Json,
+        adaptation: {
+          ...generated.result.adaptation,
+          brand_context: {
+            brand_readiness: readiness.level,
+            context_sources,
+            used_ai_assumption: readiness.level !== "COMPLETE",
+            assumed_fields: readiness.missing_fields,
+          },
+        } as unknown as Json,
         reason: generated.result.reason,
-        brand_profile_version: profile.data.version,
+        brand_profile_version: brandProfile.version,
         status: "pending_approval",
         model: generated.model,
       })
@@ -313,6 +399,7 @@ export const generateKerjakuAtmVersion = createServerFn({ method: "POST" })
     if (saveError) throw new Error(saveError.message);
     return { id: saved.id };
   });
+
 
 export const reviewKerjakuAtmVersion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
