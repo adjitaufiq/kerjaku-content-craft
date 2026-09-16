@@ -72,10 +72,21 @@ export const PIPELINE_STAGES = [
 ] as const;
 export type PipelineStage = (typeof PIPELINE_STAGES)[number];
 
-/** Batas waktu tanpa kemajuan sebelum proses dianggap timeout. */
-export const ANALYSIS_TIMEOUT_MS = 4 * 60 * 1000;
+/** Tahap tidak berubah selama 5 menit → proses dianggap timeout. */
+export const ANALYSIS_TIMEOUT_MS = 5 * 60 * 1000;
 /** Batas waktu tanpa detak proses (browser ditutup) sebelum dianggap terputus. */
 export const ANALYSIS_HEARTBEAT_STALE_MS = 90 * 1000;
+
+/** Urutan progres yang ditampilkan ke pengguna. */
+export const PROGRESS_STEPS = [
+  { key: "VIDEO", label: "Video", stages: ["RESOLVING_VIDEO_ASSET", "EXTRACTING_METADATA"] },
+  { key: "AUDIO", label: "Audio", stages: ["EXTRACTING_AUDIO"] },
+  { key: "TRANSCRIPT", label: "Transcript", stages: ["TRANSCRIBING"] },
+  { key: "OCR", label: "OCR", stages: ["READING_SCREEN_TEXT"] },
+  { key: "SNAPSHOT", label: "Snapshot", stages: ["EXTRACTING_FRAMES"] },
+  { key: "SCENE", label: "Scene", stages: ["ANALYZING_SCENES", "BUILDING_SOURCE_FACTS"] },
+  { key: "DNA", label: "Viral DNA", stages: ["COMPLETED"] },
+] as const;
 
 export const STAGE_MESSAGE: Record<PipelineStage, string> = {
   READY_FOR_ANALYSIS: "Siap dianalisis.",
