@@ -2,7 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
+import { evaluateReadiness } from "@/lib/brand-knowledge.functions";
 import { evaluateExtractionGate } from "@/lib/extraction-gate";
+
 import type { SourceExtraction, SourceReportData } from "@/lib/video-understanding.functions";
 
 export type AtmMode = "conservative" | "creative";
