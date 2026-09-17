@@ -284,11 +284,11 @@ export const saveCarouselPromptDraft = createServerFn({ method: "POST" })
       await loadDnaFallback(context.supabase as never, version.source_id as string),
     );
     const validation = validateCarouselPackage(pkg, {
-      hook: normalized.hook,
-      pattern_interrupt: normalized.pattern_interrupt,
-      psychological_trigger: normalized.psychological_trigger,
-      curiosity_gap: normalized.curiosity_gap,
-      power_words: normalized.power_words,
+      hook: concept.hook,
+      pattern_interrupt: concept.pattern_interrupt ?? "",
+      psychological_trigger: concept.psychological_trigger ?? "",
+      curiosity_gap: concept.curiosity_gap ?? "",
+      power_words: concept.power_words ?? [],
     });
 
     const { data: saved, error: saveError } = await context.supabase
