@@ -8,6 +8,8 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { CarouselPromptPanel } from "@/components/CarouselPromptPanel";
+import { PhotoToVideoPanel } from "@/components/PhotoToVideoPanel";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -223,9 +225,11 @@ function VersionReview({ version, note, onNote, onDecision, busy, onBuildHooks, 
               <p className="mt-2 text-xs text-muted-foreground">{selected.rationale}</p>
             </div>
             <CarouselPromptPanel versionId={version.id} />
+            <PhotoToVideoPanel versionId={version.id} />
             <div className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
               Prompt Reels belum aktif pada tahap ini.
             </div>
+
           </div>
         ) : null}
       </div>
