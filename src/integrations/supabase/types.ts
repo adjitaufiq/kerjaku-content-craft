@@ -939,6 +939,57 @@ export type Database = {
         }
         Relationships: []
       }
+      photo_to_video_packages: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          default_duration: number
+          id: string
+          model: string
+          package: Json
+          scene_count: number
+          scenes: Json
+          source_id: string
+          status: string
+          updated_at: string
+          user_id: string
+          validation: Json
+          version_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          default_duration?: number
+          id?: string
+          model?: string
+          package?: Json
+          scene_count?: number
+          scenes?: Json
+          source_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          validation?: Json
+          version_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          default_duration?: number
+          id?: string
+          model?: string
+          package?: Json
+          scene_count?: number
+          scenes?: Json
+          source_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          validation?: Json
+          version_id?: string
+        }
+        Relationships: []
+      }
       quality_scores: {
         Row: {
           atm_mode: Database["public"]["Enums"]["atm_mode"]
