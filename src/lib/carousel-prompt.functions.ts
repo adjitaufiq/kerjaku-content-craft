@@ -173,7 +173,7 @@ export const generateCarouselPrompt = createServerFn({ method: "POST" })
       ]);
 
       const { generateCarouselPromptPackage } = await import("@/lib/carousel-prompt.server");
-      const normalized = normalizeConcept(concept);
+      const normalized = normalizeConcept(concept, (dna.data ?? null) as DnaFallback);
       const generated = await generateCarouselPromptPackage({
         slideCount: data.slideCount,
         visualStyle: data.visualStyle,
