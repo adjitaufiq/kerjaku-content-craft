@@ -15,3 +15,4 @@
 - [x] Runtime video analysis pipeline: validasi aset video, progres tahap tersimpan, dan pesan video tidak tersedia
 - [x] Timeout, recovery, arsip retry, reset analisis, dan soft delete source
 - [x] Source acquisition: video URL publik diunduh sementara, aset dipakai ulang, dan aset kedaluwarsa dibersihkan
+- [ ] Polish Prompt Carousel: story arc, transformation payoff, visual continuity, CTA, copy actions, dan runtime acceptance

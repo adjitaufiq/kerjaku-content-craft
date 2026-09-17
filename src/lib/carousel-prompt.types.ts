@@ -176,11 +176,34 @@ export function validateCarouselPackage(
     if (!norm(slide.image_prompt)) add("IMAGE_PROMPT_MISSING", "Image prompt kosong.", slide.slide_number);
     if (!norm(slide.text_safe_area)) add("TEXT_SAFE_AREA_MISSING", "Text safe area kosong.", slide.slide_number);
     if (!norm(slide.headline)) add("HEADLINE_MISSING", "Headline kosong.", slide.slide_number);
+    if (!norm(slide.negative_prompt).includes("no text"))
+      add("NEGATIVE_PROMPT_TEXT_MISSING", "Negative prompt belum melarang teks di dalam gambar.", slide.slide_number);
+    if (!norm(slide.continuity_instruction))
+      add("CONTINUITY_MISSING", "Instruksi continuity visual kosong.", slide.slide_number);
   });
 
   const roles = norm(slides.map((s) => s.narrative_function).join(" "));
   if (slides.length && !roles.includes("cta"))
     add("CTA_SLIDE_MISSING", "Slide CTA tidak ditemukan pada struktur carousel.");
+
+  const payoffSlide =
+    slides.find((slide) => /payoff|transformation|transformasi|clarity/.test(norm(slide.narrative_function))) ??
+    (slides.length >= 2 ? slides[slides.length - 2] : undefined);
+  if (payoffSlide) {
+    const payoffContent = norm(
+      `${payoffSlide.headline} ${payoffSlide.supporting_text} ${payoffSlide.key_message} ${payoffSlide.visual_concept} ${payoffSlide.image_prompt}`,
+    );
+    const transformationSignals = [
+      "before", "after", "from", "into", "transform", "sebelum", "setelah", "menjadi", "berubah", "awalnya", "kini", "chaos", "clarity", "scattered", "organized", "terstruktur",
+    ];
+    const showsTransformation = transformationSignals.filter((signal) => payoffContent.includes(signal)).length >= 2;
+    if (!showsTransformation) {
+      payoffSlide.validation_status = "NEEDS_REVISION: Payoff belum menunjukkan transformation.";
+      add("PAYOFF_CHECK", "Payoff belum menunjukkan transformation.", payoffSlide.slide_number);
+    } else if (norm(payoffSlide.validation_status).startsWith("needs_revision")) {
+      payoffSlide.validation_status = "ok";
+    }
+  }
 
   return { passed: issues.length === 0, issues, checked_at: new Date().toISOString() };
 }
