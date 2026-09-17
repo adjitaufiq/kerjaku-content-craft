@@ -278,11 +278,17 @@ export const saveCarouselPromptDraft = createServerFn({ method: "POST" })
     if (current.status === "APPROVED_PROMPT") throw new Error("Prompt Carousel sudah disetujui dan terkunci.");
 
     const slides = data.slides.map((slide, index) => ({ ...slide, slide_number: index + 1 }));
-    const pkg: CarouselPromptPackage = { ...current.package, slides, slide_count: slides.length };
     const normalized = normalizeConcept(
       concept,
       await loadDnaFallback(context.supabase as never, version.source_id as string),
     );
+    const pkg: CarouselPromptPackage = {
+      ...current.package,
+      power_word: current.package.power_word?.trim() || normalized.power_words[0] || "",
+      pattern_interrupt: current.package.pattern_interrupt?.trim() || normalized.pattern_interrupt,
+      slides,
+      slide_count: slides.length,
+    };
     const validation = validateCarouselPackage(pkg, {
       hook: concept.hook,
       pattern_interrupt: concept.pattern_interrupt ?? "",
