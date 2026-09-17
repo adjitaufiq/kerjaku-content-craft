@@ -278,7 +278,10 @@ export const saveCarouselPromptDraft = createServerFn({ method: "POST" })
 
     const slides = data.slides.map((slide, index) => ({ ...slide, slide_number: index + 1 }));
     const pkg: CarouselPromptPackage = { ...current.package, slides, slide_count: slides.length };
-    const normalized = normalizeConcept(concept);
+    const normalized = normalizeConcept(
+      concept,
+      await loadDnaFallback(context.supabase as never, version.source_id as string),
+    );
     const validation = validateCarouselPackage(pkg, {
       hook: normalized.hook,
       pattern_interrupt: normalized.pattern_interrupt,
