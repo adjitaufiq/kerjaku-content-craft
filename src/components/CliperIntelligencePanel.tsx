@@ -7,6 +7,7 @@ import { BadgeCheck, Brain, Loader2, ShieldAlert, Sparkles, XCircle } from "luci
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
+import { CarouselPromptPanel } from "@/components/CarouselPromptPanel";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
