@@ -221,12 +221,13 @@ export const generateCarouselPrompt = createServerFn({ method: "POST" })
         resolution: "1080x1350",
       };
 
+      // Validator hanya mengunci atribut yang memang tersimpan di Selected Concept.
       const validation = validateCarouselPackage(pkg, {
-        hook: normalized.hook,
-        pattern_interrupt: normalized.pattern_interrupt,
-        psychological_trigger: normalized.psychological_trigger,
-        curiosity_gap: normalized.curiosity_gap,
-        power_words: normalized.power_words,
+        hook: concept.hook,
+        pattern_interrupt: concept.pattern_interrupt ?? "",
+        psychological_trigger: concept.psychological_trigger ?? "",
+        curiosity_gap: concept.curiosity_gap ?? "",
+        power_words: concept.power_words ?? [],
       });
 
       const { data: saved, error: saveError } = await context.supabase
