@@ -205,6 +205,11 @@ export const generateCarouselPrompt = createServerFn({ method: "POST" })
 
       const pkg: CarouselPromptPackage = {
         ...generated.result,
+        pattern_interrupt: generated.result.pattern_interrupt?.trim() || normalized.pattern_interrupt,
+        psychological_trigger: generated.result.psychological_trigger?.trim() || normalized.psychological_trigger,
+        curiosity_gap: generated.result.curiosity_gap?.trim() || normalized.curiosity_gap,
+        power_word: generated.result.power_word?.trim() || normalized.power_words[0] || "",
+        selected_hook: generated.result.selected_hook?.trim() || normalized.hook,
         slides,
         source_id: version.source_id as string,
         selected_concept_id: concept.id ?? version.id,
