@@ -41,6 +41,26 @@ async function copyText(value: string, label: string) {
   }
 }
 
+function formatSlideText(slide: CarouselPromptSlide) {
+  return [
+    `SLIDE ${slide.slide_number} — ${slide.narrative_function}`,
+    `Headline: ${slide.headline}`,
+    `Supporting text: ${slide.supporting_text}`,
+    `Key message: ${slide.key_message}`,
+  ].join("\n");
+}
+
+function formatImagePrompt(slide: CarouselPromptSlide) {
+  return [
+    `SLIDE ${slide.slide_number} — IMAGE PROMPT`,
+    slide.image_prompt,
+    `Negative prompt: ${slide.negative_prompt}`,
+    `Text safe area: ${slide.text_safe_area}`,
+    `Layout: ${slide.layout_direction}`,
+    `Continuity: ${slide.continuity_instruction}`,
+  ].join("\n");
+}
+
 export function CarouselPromptPanel({ versionId }: { versionId: string }) {
   const queryClient = useQueryClient();
   const load = useServerFn(getCarouselPrompt);
@@ -126,8 +146,26 @@ export function CarouselPromptPanel({ versionId }: { versionId: string }) {
     setSlides((current) => current.map((slide, i) => (i === index ? { ...slide, ...patch } : slide)));
 
   const allPromptsText = slides
-    .map((slide) => `Slide ${slide.slide_number}\n${slide.image_prompt}\nNegative: ${slide.negative_prompt}`)
+    .map(formatImagePrompt)
     .join("\n\n");
+  const fullPackageText = pkg
+    ? [
+        `CAROUSEL — ${pkg.carousel_title}`,
+        `Hook final: ${pkg.selected_hook}`,
+        `Pattern interrupt: ${pkg.pattern_interrupt}`,
+        `Psychological trigger: ${pkg.psychological_trigger}`,
+        `Curiosity gap: ${pkg.curiosity_gap}`,
+        `Power word: ${pkg.power_word}`,
+        `Problem: ${pkg.main_problem}`,
+        `Solution: ${pkg.main_solution}`,
+        `Payoff: ${pkg.payoff}`,
+        `CTA: ${pkg.CTA}`,
+        `Format: ${pkg.aspect_ratio} · ${pkg.resolution}`,
+        `Visual continuity: ${pkg.character_lock}`,
+        "",
+        ...slides.map((slide) => `${formatSlideText(slide)}\n${formatImagePrompt(slide)}`),
+      ].join("\n\n")
+    : "";
 
   return (
     <div className="space-y-4 rounded-xl border border-border bg-secondary/20 p-4">
@@ -237,8 +275,11 @@ export function CarouselPromptPanel({ versionId }: { versionId: string }) {
       {slides.length ? (
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => copyText(allPromptsText, "Semua prompt")}>
-              <Copy /> Salin semua prompt
+            <Button size="sm" variant="outline" onClick={() => copyText(fullPackageText, "Paket carousel lengkap")}>
+              <Copy /> Copy Full Carousel Package
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => copyText(allPromptsText, "Semua image prompt")}>
+              <Copy /> Copy All Image Prompts
             </Button>
             <Button size="sm" variant="outline" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || locked}>
               {saveMutation.isPending ? <Loader2 className="animate-spin" /> : <Save />} Simpan Draft
@@ -254,9 +295,14 @@ export function CarouselPromptPanel({ versionId }: { versionId: string }) {
                 <p className="text-xs font-semibold uppercase text-primary">
                   Slide {slide.slide_number} · {slide.narrative_function}
                 </p>
-                <Button size="sm" variant="ghost" onClick={() => copyText(slide.image_prompt, `Prompt slide ${slide.slide_number}`)}>
-                  <Copy /> Salin prompt
-                </Button>
+                <div className="flex flex-wrap gap-1">
+                  <Button size="sm" variant="ghost" onClick={() => copyText(formatSlideText(slide), `Teks slide ${slide.slide_number}`)}>
+                    <Copy /> Copy Slide Text
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => copyText(formatImagePrompt(slide), `Image prompt slide ${slide.slide_number}`)}>
+                    <Copy /> Copy Image Prompt
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-xs">Headline</Label>
