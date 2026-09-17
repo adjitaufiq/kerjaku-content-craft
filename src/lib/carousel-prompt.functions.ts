@@ -221,12 +221,13 @@ export const generateCarouselPrompt = createServerFn({ method: "POST" })
         resolution: "1080x1350",
       };
 
+      // Validator hanya mengunci atribut yang memang tersimpan di Selected Concept.
       const validation = validateCarouselPackage(pkg, {
-        hook: normalized.hook,
-        pattern_interrupt: normalized.pattern_interrupt,
-        psychological_trigger: normalized.psychological_trigger,
-        curiosity_gap: normalized.curiosity_gap,
-        power_words: normalized.power_words,
+        hook: concept.hook,
+        pattern_interrupt: concept.pattern_interrupt ?? "",
+        psychological_trigger: concept.psychological_trigger ?? "",
+        curiosity_gap: concept.curiosity_gap ?? "",
+        power_words: concept.power_words ?? [],
       });
 
       const { data: saved, error: saveError } = await context.supabase
@@ -277,17 +278,23 @@ export const saveCarouselPromptDraft = createServerFn({ method: "POST" })
     if (current.status === "APPROVED_PROMPT") throw new Error("Prompt Carousel sudah disetujui dan terkunci.");
 
     const slides = data.slides.map((slide, index) => ({ ...slide, slide_number: index + 1 }));
-    const pkg: CarouselPromptPackage = { ...current.package, slides, slide_count: slides.length };
     const normalized = normalizeConcept(
       concept,
       await loadDnaFallback(context.supabase as never, version.source_id as string),
     );
+    const pkg: CarouselPromptPackage = {
+      ...current.package,
+      power_word: current.package.power_word?.trim() || normalized.power_words[0] || "",
+      pattern_interrupt: current.package.pattern_interrupt?.trim() || normalized.pattern_interrupt,
+      slides,
+      slide_count: slides.length,
+    };
     const validation = validateCarouselPackage(pkg, {
-      hook: normalized.hook,
-      pattern_interrupt: normalized.pattern_interrupt,
-      psychological_trigger: normalized.psychological_trigger,
-      curiosity_gap: normalized.curiosity_gap,
-      power_words: normalized.power_words,
+      hook: concept.hook,
+      pattern_interrupt: concept.pattern_interrupt ?? "",
+      psychological_trigger: concept.psychological_trigger ?? "",
+      curiosity_gap: concept.curiosity_gap ?? "",
+      power_words: concept.power_words ?? [],
     });
 
     const { data: saved, error: saveError } = await context.supabase
