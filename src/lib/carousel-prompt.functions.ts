@@ -262,7 +262,7 @@ export const saveCarouselPromptDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { versionId: string; slides: CarouselPromptSlide[] }) => input)
   .handler(async ({ data, context }): Promise<CarouselPromptState> => {
-    const { concept } = await loadVersion(context.supabase as never, data.versionId);
+    const { version, concept } = await loadVersion(context.supabase as never, data.versionId);
     if (!concept) {
       return { status: "SELECTED_CONCEPT_REQUIRED", message: SELECTED_CONCEPT_REQUIRED_MESSAGE, record: null };
     }
