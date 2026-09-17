@@ -65,16 +65,38 @@ async function loadVersion(
   return { version: data, concept: concept && concept.hook ? concept : null };
 }
 
-function normalizeConcept(concept: SelectedHook) {
+type DnaFallback = {
+  pattern_interrupt?: string | null;
+  psychological_trigger?: string | null;
+  curiosity_gap?: string | null;
+  power_words?: string[] | null;
+} | null;
+
+function normalizeConcept(concept: SelectedHook, dna?: DnaFallback) {
+  const pick = (value: string | undefined, fallback: string | null | undefined) =>
+    (value && value.trim()) || (fallback ?? "").trim();
   return {
     hook: concept.hook,
     hook_type: concept.hook_type ?? "",
     rationale: concept.rationale ?? "",
-    psychological_trigger: concept.psychological_trigger ?? "",
-    curiosity_gap: concept.curiosity_gap ?? "",
-    pattern_interrupt: concept.pattern_interrupt ?? "",
-    power_words: concept.power_words ?? [],
+    psychological_trigger: pick(concept.psychological_trigger, dna?.psychological_trigger),
+    curiosity_gap: pick(concept.curiosity_gap, dna?.curiosity_gap),
+    pattern_interrupt: pick(concept.pattern_interrupt, dna?.pattern_interrupt),
+    power_words: concept.power_words?.length ? concept.power_words : (dna?.power_words ?? []),
   };
+}
+
+/** Selected Concept lama tidak menyimpan semua atribut viral; ambil dari Viral DNA source yang sama. */
+async function loadDnaFallback(
+  supabase: { from: (table: string) => any },
+  sourceId: string,
+): Promise<DnaFallback> {
+  const { data } = await supabase
+    .from("viral_intelligence")
+    .select("pattern_interrupt,psychological_trigger,curiosity_gap,power_words")
+    .eq("source_id", sourceId)
+    .maybeSingle();
+  return (data ?? null) as DnaFallback;
 }
 
 export const getCarouselPrompt = createServerFn({ method: "GET" })
@@ -151,7 +173,7 @@ export const generateCarouselPrompt = createServerFn({ method: "POST" })
       ]);
 
       const { generateCarouselPromptPackage } = await import("@/lib/carousel-prompt.server");
-      const normalized = normalizeConcept(concept);
+      const normalized = normalizeConcept(concept, (dna.data ?? null) as DnaFallback);
       const generated = await generateCarouselPromptPackage({
         slideCount: data.slideCount,
         visualStyle: data.visualStyle,
@@ -183,6 +205,11 @@ export const generateCarouselPrompt = createServerFn({ method: "POST" })
 
       const pkg: CarouselPromptPackage = {
         ...generated.result,
+        pattern_interrupt: generated.result.pattern_interrupt?.trim() || normalized.pattern_interrupt,
+        psychological_trigger: generated.result.psychological_trigger?.trim() || normalized.psychological_trigger,
+        curiosity_gap: generated.result.curiosity_gap?.trim() || normalized.curiosity_gap,
+        power_word: generated.result.power_word?.trim() || normalized.power_words[0] || "",
+        selected_hook: generated.result.selected_hook?.trim() || normalized.hook,
         slides,
         source_id: version.source_id as string,
         selected_concept_id: concept.id ?? version.id,
@@ -235,7 +262,7 @@ export const saveCarouselPromptDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { versionId: string; slides: CarouselPromptSlide[] }) => input)
   .handler(async ({ data, context }): Promise<CarouselPromptState> => {
-    const { concept } = await loadVersion(context.supabase as never, data.versionId);
+    const { version, concept } = await loadVersion(context.supabase as never, data.versionId);
     if (!concept) {
       return { status: "SELECTED_CONCEPT_REQUIRED", message: SELECTED_CONCEPT_REQUIRED_MESSAGE, record: null };
     }
@@ -251,7 +278,10 @@ export const saveCarouselPromptDraft = createServerFn({ method: "POST" })
 
     const slides = data.slides.map((slide, index) => ({ ...slide, slide_number: index + 1 }));
     const pkg: CarouselPromptPackage = { ...current.package, slides, slide_count: slides.length };
-    const normalized = normalizeConcept(concept);
+    const normalized = normalizeConcept(
+      concept,
+      await loadDnaFallback(context.supabase as never, version.source_id as string),
+    );
     const validation = validateCarouselPackage(pkg, {
       hook: normalized.hook,
       pattern_interrupt: normalized.pattern_interrupt,

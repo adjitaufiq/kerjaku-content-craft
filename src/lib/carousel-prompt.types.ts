@@ -160,8 +160,17 @@ export function validateCarouselPackage(
 
   const first = slides[0];
   if (!first) add("SLIDE_1_MISSING", "Slide 1 tidak ada.", 1);
-  else if (!same(`${first.headline} ${first.key_message}`, concept.hook))
-    add("SLIDE_1_HOOK_MISMATCH", "Slide 1 tidak memakai hook final.", 1);
+  else {
+    // Slide 1 tidak harus menyalin hook kata per kata; cukup memuat inti hook.
+    const hookWords = norm(concept.hook)
+      .split(" ")
+      .filter((word) => word.length > 3);
+    const slideText = norm(`${first.headline} ${first.supporting_text} ${first.key_message} ${first.visual_concept}`);
+    const overlap = hookWords.filter((word) => slideText.includes(word)).length;
+    const ratio = hookWords.length ? overlap / hookWords.length : 1;
+    if (hookWords.length >= 3 && overlap < 2 && ratio < 0.3)
+      add("SLIDE_1_HOOK_MISMATCH", "Slide 1 tidak memakai hook final.", 1);
+  }
 
   slides.forEach((slide) => {
     if (!norm(slide.image_prompt)) add("IMAGE_PROMPT_MISSING", "Image prompt kosong.", slide.slide_number);
