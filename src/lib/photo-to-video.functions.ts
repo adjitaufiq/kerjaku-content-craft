@@ -196,9 +196,18 @@ export const generatePhotoToVideo = createServerFn({ method: "POST" })
       const record = toRecord(saved as unknown as Record<string, unknown>);
       return { status: record.status, message: "", record };
     } catch (error) {
+      const reason =
+        error instanceof Error ? error.message : "Gagal membuat Photo-to-Video Prompt.";
       await context.supabase
         .from("photo_to_video_packages")
-        .update({ status: "GENERATION_FAILED" })
+        .update({
+          status: "GENERATION_FAILED",
+          validation: {
+            passed: false,
+            issues: [{ failed_rule: "GENERATION_FAILED", affected_scene: null, reason }],
+            checked_at: new Date().toISOString(),
+          } as unknown as Json,
+        })
         .eq("version_id", data.versionId);
       throw error instanceof Error ? error : new Error("Gagal membuat Photo-to-Video Prompt.");
     }
