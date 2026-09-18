@@ -1,49 +1,24 @@
-# Cliper: Timeout, Pemulihan, dan Hapus Source yang Aman
+# Terapkan SOP Photo-to-Video pada generator existing
 
-Tujuan: proses analisis video tidak pernah "menggantung". Setiap proses punya batas waktu, bisa diulang, dan setiap source bisa dihapus dengan konfirmasi yang jelas.
+## Hasil yang dibangun
+- Pertahankan alur existing: Selected Concept → Prompt Carousel → Photo-to-Video Prompt.
+- Setiap slide tetap menghasilkan tepat satu prompt video siap tempel, tanpa membuat gambar, video, storyboard, atau konsep baru.
+- Gunakan data slide existing sebagai sumber terkunci:
+  - visual/image prompt sebagai acuan gambar awal dan prompt gambar asli,
+  - headline, supporting text, dan key message sebagai konteks VO,
+  - narrative function sebagai posisi cerita,
+  - durasi pilihan user sebagai durasi video.
+- Susun prompt final berbahasa Inggris dengan urutan: camera movement, subject movement, environment movement, VO synchronization, ending frame, preservation rules, motion style, dan negative prompt.
+- Sinkronkan gerakan dengan fase cerita: problem, solution, result/payoff, atau CTA tanpa mengubah makna carousel.
+- Perketat validator agar prompt menjaga identitas, komposisi, objek, warna, lighting, realisme, durasi, rasio 9:16, ending frame, serta larangan perubahan visual.
+- Aksi salin per scene menghasilkan hanya prompt final siap tempel, sesuai SOP “output only”. Aksi paket lengkap tetap tersedia untuk menyalin semua scene sekaligus.
 
-## 1. Batas waktu analisis
+## Batasan
+- Tidak menambah workflow, halaman, navigasi, generator media, atau integrasi video.
+- Tidak mengubah Selected Concept, hook, problem, solution, payoff, CTA, atau struktur carousel.
+- Karena aplikasi saat ini menyimpan prompt visual carousel, bukan file gambar hasil render atau naskah VO terpisah, generator memakai visual slide dan teks slide existing sebagai sumber paling dekat tanpa mengarang input baru.
 
-- Selama analisis berjalan, aplikasi mengirim tanda "masih hidup" setiap 30 detik.
-- Jika tidak ada kemajuan selama 4 menit, status otomatis berubah jadi **Timeout** dengan pesan:
-  "Proses analisis berhenti karena melewati batas waktu. Silakan coba proses ulang atau hapus source dan upload kembali."
-- Jika tanda hidup berhenti tanpa batas waktu terlampaui (mis. browser ditutup) dan halaman dibuka lagi, status jadi **Interrupted** dengan pilihan Proses Ulang atau Hapus Source.
-- Pengecekan ini berjalan otomatis saat data source dimuat, jadi status tidak pernah tertinggal di "Processing" selamanya.
-
-## 2. Tombol Proses Ulang Video
-
-Muncul saat status Failed, Timeout, atau Interrupted:
-- menghapus hasil analisis lama (transkrip, teks layar, snapshot, scene, skor) beserta file sementara snapshot/audio,
-- mengembalikan source ke status Uploaded,
-- menjalankan ekstraksi dari awal,
-- file video asli tetap dipertahankan.
-Toast: "Analisis berhasil direset".
-
-## 3. Hapus source dengan konfirmasi
-
-- Tombol Hapus di daftar source dan di halaman analisis.
-- Memakai dialog milik aplikasi (bukan pop-up bawaan browser).
-  - Judul: "Hapus Source Video?"
-  - Isi: peringatan bahwa transcript, OCR, snapshot, scene analysis, Viral DNA, dan hasil ATM ikut terhapus.
-  - Tombol: Batal / Ya, Hapus Source.
-- Jika source sedang diproses, dialog menambahkan peringatan:
-  "Source sedang diproses. Menghapus akan membatalkan proses analisis berjalan."
-- Penghapusan membatalkan proses yang berjalan, lalu menghapus hasil analisis, Viral DNA, hasil ATM, file video dan file sementara, dan terakhir baris source.
-- Toast: "Source berhasil dihapus", daftar langsung menyegarkan sendiri.
-
-## 4. Label status baru
-
-Uploaded · Processing · Extracting Evidence · Analyzing Scene · Ready · Failed · Timeout · Interrupted.
-Label "Understanding" dihilangkan dari tampilan (data lama tetap terbaca dan dipetakan ke label baru).
-
-## 5. Penyegaran otomatis
-
-Setelah hapus, proses ulang, atau pemulihan timeout, daftar dan halaman analisis memuat ulang datanya sendiri tanpa reload manual. Selama proses berjalan, halaman analisis memantau status berkala agar perubahan langsung terlihat.
-
-## Catatan teknis
-
-- `src/lib/video-understanding.functions.ts`: tambah stage `ANALYSIS_TIMEOUT` dan `PROCESS_INTERRUPTED`, fungsi `heartbeatExtraction`, `recoverStalledExtraction` (dipanggil di dalam `getSourceDetail` dan daftar source), serta `resetSourceExtraction`.
-- `src/lib/viral-sources.functions.ts`: `deleteViralSource` diperluas menjadi cascade — hapus `source_extractions`, `viral_intelligence`, `kerjaku_versions`, objek storage `viral-sources` (video + folder extraction), lalu baris source. Tambah pemetaan status tampilan baru.
-- `src/routes/_authenticated/source-detail.tsx`: heartbeat 30 detik saat mutation berjalan, polling detail saat status processing, banner Timeout/Interrupted, tombol Proses Ulang + Hapus Source dengan `AlertDialog`.
-- `src/routes/_authenticated/sources.tsx`: tombol hapus memakai `AlertDialog` (bukan `confirm()`), label status baru, invalidate query setelah aksi.
-- Tanpa migration: kolom status bertipe teks tanpa constraint, `updated_at` sudah dikelola trigger.
+## Verifikasi
+- Pastikan build berhasil.
+- Uji validator dan format salin secara lokal tanpa memakai kredit AI.
+- Uji panggilan AI nyata hanya bila kredit workspace tersedia; bila tetap tidak tersedia, tampilkan penyebabnya secara jelas seperti perilaku existing.
