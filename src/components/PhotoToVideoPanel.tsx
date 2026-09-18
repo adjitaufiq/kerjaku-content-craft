@@ -245,6 +245,7 @@ export function PhotoToVideoPanel({ versionId }: { versionId: string }) {
                 Gerak utama: {scene.primary_subject_motion} · Kamera: {scene.camera_motion} · Lingkungan:{" "}
                 {scene.environment_motion}
               </p>
+              <p className="text-[11px] text-muted-foreground">Sinkronisasi VO: {scene.vo_synchronization}</p>
               <p className="text-[11px] text-muted-foreground">Ending frame: {scene.ending_frame}</p>
 
               <Label className="text-xs">Video prompt (English)</Label>

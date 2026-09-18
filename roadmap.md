@@ -17,3 +17,4 @@
 - [x] Source acquisition: video URL publik diunduh sementara, aset dipakai ulang, dan aset kedaluwarsa dibersihkan
 - [x] Polish Prompt Carousel: story arc, transformation payoff, visual continuity, CTA, copy actions, dan runtime acceptance
 - [x] Photo-to-Video Prompt Generator dari visual carousel (scene per slide, durasi 4/6/8/10, motion, negative prompt, copy, validator)
+- [x] SOP Photo-to-Video: camera, subject, environment, VO sync, ending frame, continuity, dan prompt final siap tempel

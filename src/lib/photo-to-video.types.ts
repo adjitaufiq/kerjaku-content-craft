@@ -14,7 +14,7 @@ export type VideoDuration = 4 | 6 | 8 | 10;
 export const VIDEO_DURATIONS: VideoDuration[] = [4, 6, 8, 10];
 
 export const VIDEO_NEGATIVE_PROMPT =
-  "No text, no subtitles, no watermark, no logo, no face change, no identity change, no clothing change, no product deformation, no extra fingers, no distorted hands, no unrealistic movement, no changing environment, no camera shake, no visual style change, no artificial looking motion.";
+  "No new objects. No new characters. No text generation. No subtitles. No logo. No watermark. No brand replacement. No face change. No identity change. No clothing change. No background change. No object transformation. No product deformation. No unrealistic animation. No AI morphing. No cartoon style. No fantasy effects. No excessive camera shake. No distorted hands. No extra fingers. No unnatural body movement. No visual style change.";
 
 export type PhotoToVideoScene = {
   scene_number: number;
@@ -29,6 +29,7 @@ export type PhotoToVideoScene = {
   secondary_motion: string;
   camera_motion: string;
   environment_motion: string;
+  vo_synchronization: string;
 
   ending_frame: string;
   photo_to_video_prompt: string;
@@ -140,12 +141,29 @@ export function validatePhotoToVideoPackage(
     if (!norm(scene.camera_motion)) add("CAMERA_MOTION_MISSING", "Camera movement kosong.", n);
     if (!norm(scene.environment_motion))
       add("ENVIRONMENT_MOTION_MISSING", "Environment movement kosong.", n);
+    if (!norm(scene.vo_synchronization))
+      add("VO_SYNC_MISSING", "Sinkronisasi gerakan dengan pesan slide/VO kosong.", n);
     if (!norm(scene.ending_frame)) add("ENDING_FRAME_MISSING", "Ending frame kosong.", n);
     const prompt = norm(scene.photo_to_video_prompt);
     if (!prompt) add("VIDEO_PROMPT_MISSING", "Photo-to-video prompt kosong.", n);
-    else if (!prompt.includes("9:16")) add("VERTICAL_MISSING", "Prompt belum menyebut video vertikal 9:16.", n);
-    if (!norm(scene.video_negative_prompt).includes("no text"))
-      add("NEGATIVE_PROMPT_INVALID", "Video negative prompt belum melarang teks.", n);
+    else {
+      if (!prompt.includes("9:16")) add("VERTICAL_MISSING", "Prompt belum menyebut video vertikal 9:16.", n);
+      if (!prompt.includes("camera movement")) add("CAMERA_SECTION_MISSING", "Bagian camera movement belum ada.", n);
+      if (!prompt.includes("subject movement")) add("SUBJECT_SECTION_MISSING", "Bagian subject movement belum ada.", n);
+      if (!prompt.includes("environment movement"))
+        add("ENVIRONMENT_SECTION_MISSING", "Bagian environment movement belum ada.", n);
+      if (!prompt.includes("vo synchronization"))
+        add("VO_SECTION_MISSING", "Bagian VO synchronization belum ada.", n);
+      if (!prompt.includes("ending frame")) add("ENDING_SECTION_MISSING", "Bagian ending frame belum ada.", n);
+      if (!prompt.includes("same composition"))
+        add("COMPOSITION_LOCK_MISSING", "Prompt belum mengunci komposisi gambar asli.", n);
+      if (!prompt.includes("premium editorial video"))
+        add("MOTION_STYLE_MISSING", "Prompt belum mengunci gaya premium editorial.", n);
+      if (!prompt.includes("no new objects"))
+        add("NEGATIVE_SECTION_MISSING", "Larangan perubahan visual belum masuk ke prompt final.", n);
+    }
+    if (norm(scene.video_negative_prompt) !== norm(VIDEO_NEGATIVE_PROMPT))
+      add("NEGATIVE_PROMPT_INVALID", "Video negative prompt tidak sesuai SOP.", n);
   });
 
   return { passed: issues.length === 0, issues, checked_at: new Date().toISOString() };
@@ -153,26 +171,7 @@ export function validatePhotoToVideoPackage(
 
 /** Prompt siap tempel untuk satu scene. */
 export function formatScenePrompt(scene: PhotoToVideoScene) {
-  return [
-    "KERJAKU PHOTO TO VIDEO",
-    "",
-    "Scene:",
-    String(scene.scene_number),
-    "",
-    "Source:",
-    `Carousel Slide ${scene.source_carousel_slide}`,
-    "",
-    "Duration:",
-    `${scene.duration_seconds} seconds`,
-    "",
-    "Video Prompt:",
-    "",
-    scene.photo_to_video_prompt,
-    "",
-    "Negative Prompt:",
-    "",
-    scene.video_negative_prompt,
-  ].join("\n");
+  return scene.photo_to_video_prompt.trim();
 }
 
 export function formatVideoPackage(pkg: PhotoToVideoPackage, scenes: PhotoToVideoScene[]) {
