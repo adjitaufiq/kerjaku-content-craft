@@ -1,7 +1,21 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BadgeCheck, Copy, Film, Loader2, Save, Sparkles, TriangleAlert } from "lucide-react";
+import {
+  AudioLines,
+  BadgeCheck,
+  Camera,
+  Clock3,
+  Copy,
+  Film,
+  Loader2,
+  Move3d,
+  Save,
+  ShieldX,
+  Sparkles,
+  TriangleAlert,
+  Wind,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +121,7 @@ export function PhotoToVideoPanel({ versionId }: { versionId: string }) {
   const locked = status === "APPROVED_VIDEO_PROMPT";
   const issues = record?.validation?.issues ?? [];
   const pkg = record?.package ?? null;
+  const totalDuration = scenes.reduce((total, scene) => total + scene.duration_seconds, 0);
 
   const updateScene = (index: number, patch: Partial<PhotoToVideoScene>) =>
     setScenes((current) => current.map((scene, i) => (i === index ? { ...scene, ...patch } : scene)));
@@ -190,6 +205,56 @@ export function PhotoToVideoPanel({ versionId }: { versionId: string }) {
 
       {scenes.length ? (
         <div className="space-y-3">
+          <section className="overflow-hidden rounded-lg border border-border bg-background/40" aria-label="Preview video">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-3">
+              <div>
+                <p className="flex items-center gap-2 font-display text-sm font-semibold">
+                  <Film className="size-4 text-primary" /> Preview Video
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Ringkasan gerakan dari seluruh slide carousel.</p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <Badge variant="secondary"><Clock3 className="mr-1 size-3" />{totalDuration} detik</Badge>
+                <Badge variant="outline">{scenes.length} scene</Badge>
+                <Badge variant="outline">9:16 · 1080x1920</Badge>
+              </div>
+            </div>
+
+            <ol className="divide-y divide-border">
+              {scenes.map((scene) => (
+                <li key={`preview-${scene.scene_number}`} className="space-y-3 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                        {scene.scene_number}
+                      </span>
+                      <div>
+                        <p className="text-xs font-semibold">Scene {scene.scene_number}</p>
+                        <p className="text-[11px] text-muted-foreground">Slide {scene.source_carousel_slide} · {scene.narrative_function}</p>
+                      </div>
+                    </div>
+                    <Badge><Clock3 className="mr-1 size-3" />{scene.duration_seconds} detik</Badge>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <PreviewDetail icon={Move3d} label="Gerakan subjek" value={scene.primary_subject_motion} />
+                    <PreviewDetail icon={Camera} label="Gerakan kamera" value={scene.camera_motion} />
+                    <PreviewDetail icon={Wind} label="Gerakan lingkungan" value={scene.environment_motion} />
+                    <PreviewDetail icon={AudioLines} label="Sinkronisasi VO" value={scene.vo_synchronization} />
+                  </div>
+
+                  <div className="flex items-start gap-2 rounded-md border border-destructive/25 bg-destructive/5 p-2.5">
+                    <ShieldX className="mt-0.5 size-4 shrink-0 text-destructive" />
+                    <div>
+                      <p className="text-[11px] font-semibold text-destructive">Negative prompt</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{scene.video_negative_prompt}</p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
@@ -241,12 +306,13 @@ export function PhotoToVideoPanel({ versionId }: { versionId: string }) {
                 ))}
               </div>
 
-              <p className="text-[11px] text-muted-foreground">
-                Gerak utama: {scene.primary_subject_motion} · Kamera: {scene.camera_motion} · Lingkungan:{" "}
-                {scene.environment_motion}
-              </p>
-              <p className="text-[11px] text-muted-foreground">Sinkronisasi VO: {scene.vo_synchronization}</p>
-              <p className="text-[11px] text-muted-foreground">Ending frame: {scene.ending_frame}</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <PreviewDetail icon={Move3d} label="Gerakan utama" value={scene.primary_subject_motion} />
+                <PreviewDetail icon={Camera} label="Kamera" value={scene.camera_motion} />
+                <PreviewDetail icon={Wind} label="Lingkungan" value={scene.environment_motion} />
+                <PreviewDetail icon={AudioLines} label="Sinkronisasi VO" value={scene.vo_synchronization} />
+              </div>
+              <p className="text-[11px] leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">Ending frame:</span> {scene.ending_frame}</p>
 
               <Label className="text-xs">Video prompt (English)</Label>
               <Textarea
@@ -256,11 +322,37 @@ export function PhotoToVideoPanel({ versionId }: { versionId: string }) {
                 onChange={(event) => updateScene(index, { photo_to_video_prompt: event.target.value })}
                 disabled={locked}
               />
-              <p className="text-[11px] text-muted-foreground">Negative prompt: {scene.video_negative_prompt}</p>
+              <div className="flex items-start gap-2 rounded-md border border-destructive/25 bg-destructive/5 p-2.5">
+                <ShieldX className="mt-0.5 size-4 shrink-0 text-destructive" />
+                <div>
+                  <p className="text-[11px] font-semibold text-destructive">Negative prompt</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{scene.video_negative_prompt}</p>
+                </div>
+              </div>
             </article>
           ))}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function PreviewDetail({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Move3d;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <Icon className="mt-0.5 size-3.5 shrink-0 text-primary" />
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase text-muted-foreground">{label}</p>
+        <p className="mt-0.5 text-xs leading-relaxed">{value || "—"}</p>
+      </div>
     </div>
   );
 }
