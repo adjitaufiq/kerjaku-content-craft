@@ -152,7 +152,15 @@ export function PhotoToVideoPanel({ versionId }: { versionId: string }) {
         {record ? "Buat Ulang Photo-to-Video" : "Generate Photo-to-Video"}
       </Button>
 
-      {issues.length ? (
+      {status === "GENERATION_FAILED" && issues.length ? (
+        <div className="space-y-1 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+          <p className="flex items-center gap-2 font-semibold">
+            <TriangleAlert className="size-4" /> Pembuatan prompt gagal
+          </p>
+          <p>{issues[0]?.reason}</p>
+          <p className="text-destructive/80">Perbaiki penyebabnya, lalu tekan Buat Ulang Photo-to-Video.</p>
+        </div>
+      ) : issues.length ? (
         <div className="space-y-1 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-400">
           <p className="flex items-center gap-2 font-semibold">
             <TriangleAlert className="size-4" /> Validator menemukan {issues.length} catatan
