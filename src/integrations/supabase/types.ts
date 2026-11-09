@@ -942,6 +942,7 @@ export type Database = {
       photo_to_video_packages: {
         Row: {
           approved_at: string | null
+          canva_notes: Json
           created_at: string
           default_duration: number
           id: string
@@ -958,6 +959,7 @@ export type Database = {
         }
         Insert: {
           approved_at?: string | null
+          canva_notes?: Json
           created_at?: string
           default_duration?: number
           id?: string
@@ -974,6 +976,7 @@ export type Database = {
         }
         Update: {
           approved_at?: string | null
+          canva_notes?: Json
           created_at?: string
           default_duration?: number
           id?: string

@@ -1,0 +1,1 @@
+ALTER TABLE public.photo_to_video_packages ADD COLUMN IF NOT EXISTS canva_notes jsonb NOT NULL DEFAULT '{}'::jsonb;

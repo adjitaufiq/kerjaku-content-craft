@@ -22,6 +22,7 @@ export type PhotoToVideoState = {
   message: string;
   record: PhotoToVideoRecord | null;
   slideCount?: number;
+  canvaNotes?: Record<number, string>;
 };
 
 function toRecord(row: Record<string, unknown>): PhotoToVideoRecord {
@@ -80,7 +81,8 @@ export const getPhotoToVideo = createServerFn({ method: "GET" })
     const slideCount = carousel.slides.length;
     if (!row) return { status: "NOT_GENERATED", message: "", record: null, slideCount };
     const record = toRecord(row as unknown as Record<string, unknown>);
-    return { status: record.status, message: "", record, slideCount };
+    const canvaNotes = ((row as { canva_notes?: unknown }).canva_notes ?? {}) as Record<number, string>;
+    return { status: record.status, message: "", record, slideCount, canvaNotes };
   });
 
 export const generatePhotoToVideo = createServerFn({ method: "POST" })
@@ -115,6 +117,7 @@ export const generatePhotoToVideo = createServerFn({ method: "POST" })
       source_id: carousel.source_id,
       user_id: context.userId,
       default_duration: data.defaultDuration,
+      canva_notes: data.canvaNotes as unknown as Json,
     };
 
     await context.supabase.from("photo_to_video_packages").upsert(
