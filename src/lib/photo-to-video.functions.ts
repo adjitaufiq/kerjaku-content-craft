@@ -21,6 +21,7 @@ export type PhotoToVideoState = {
   status: PhotoToVideoStatus | "CAROUSEL_PROMPT_REQUIRED";
   message: string;
   record: PhotoToVideoRecord | null;
+  slideCount?: number;
 };
 
 function toRecord(row: Record<string, unknown>): PhotoToVideoRecord {
@@ -76,14 +77,22 @@ export const getPhotoToVideo = createServerFn({ method: "GET" })
       .eq("version_id", data.versionId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!row) return { status: "NOT_GENERATED", message: "", record: null };
+    const slideCount = carousel.slides.length;
+    if (!row) return { status: "NOT_GENERATED", message: "", record: null, slideCount };
     const record = toRecord(row as unknown as Record<string, unknown>);
-    return { status: record.status, message: "", record };
+    return { status: record.status, message: "", record, slideCount };
   });
 
 export const generatePhotoToVideo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { versionId: string; defaultDuration: VideoDuration }) => input)
+  .inputValidator(
+    (input: { versionId: string; defaultDuration: VideoDuration; canvaNotes?: Record<number, string> }) => ({
+      ...input,
+      canvaNotes: Object.fromEntries(
+        Object.entries(input.canvaNotes ?? {}).map(([k, v]) => [Number(k), String(v ?? "").slice(0, 2000)]),
+      ),
+    }),
+  )
   .handler(async ({ data, context }): Promise<PhotoToVideoState> => {
     const carousel = await loadCarousel(context.supabase as never, data.versionId);
     if (!carousel) {
@@ -134,6 +143,7 @@ export const generatePhotoToVideo = createServerFn({ method: "POST" })
         carousel: carousel.package,
         slides: carousel.slides,
         concept: (version as { selected_hook?: unknown } | null)?.selected_hook ?? null,
+        canvaNotes: data.canvaNotes,
       });
 
       const scenes: PhotoToVideoScene[] = generated.result.scenes.map((scene, index) => ({

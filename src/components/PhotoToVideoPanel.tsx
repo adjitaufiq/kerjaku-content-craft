@@ -70,6 +70,8 @@ export function PhotoToVideoPanel({ versionId }: { versionId: string }) {
 
   const [defaultDuration, setDefaultDuration] = useState<VideoDuration>(8);
   const [scenes, setScenes] = useState<PhotoToVideoScene[]>([]);
+  const [canvaNotes, setCanvaNotes] = useState<Record<number, string>>({});
+  const slideCount = query.data?.slideCount ?? 0;
 
   const record = query.data?.record ?? null;
   const status = query.data?.status ?? "NOT_GENERATED";
@@ -84,7 +86,7 @@ export function PhotoToVideoPanel({ versionId }: { versionId: string }) {
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["photo-to-video", versionId] });
 
   const generateMutation = useMutation({
-    mutationFn: () => generate({ data: { versionId, defaultDuration } }),
+    mutationFn: () => generate({ data: { versionId, defaultDuration, canvaNotes } }),
     onSuccess: async () => {
       await refresh();
       toast.success("Photo-to-Video Prompt selesai dibuat.");
@@ -157,6 +159,29 @@ export function PhotoToVideoPanel({ versionId }: { versionId: string }) {
           ))}
         </div>
       </div>
+
+      {!locked && slideCount > 0 ? (
+        <details className="rounded-lg border border-border bg-background/40 p-3 text-xs">
+          <summary className="cursor-pointer font-semibold">Visual final Canva per slide (opsional)</summary>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Tulis singkat apa yang tampak di foto Canva Anda (orang, pose, objek, latar, posisi teks). Prompt video akan mengikuti gambar ini.
+          </p>
+          <div className="mt-2 space-y-2">
+            {Array.from({ length: slideCount }, (_, i) => i + 1).map((n) => (
+              <div key={n} className="space-y-1">
+                <Label className="text-[11px]">Slide {n}</Label>
+                <Textarea
+                  rows={2}
+                  className="text-xs"
+                  placeholder="Contoh: wanita berhijab krem duduk di meja kayu, laptop terbuka, judul putih di atas"
+                  value={canvaNotes[n] ?? ""}
+                  onChange={(e) => setCanvaNotes((c) => ({ ...c, [n]: e.target.value }))}
+                />
+              </div>
+            ))}
+          </div>
+        </details>
+      ) : null}
 
       <Button
         className="w-full"

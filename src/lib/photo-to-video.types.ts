@@ -186,7 +186,10 @@ export function formatVideoPackage(pkg: PhotoToVideoPackage, scenes: PhotoToVide
     `Product lock: ${pkg.product_lock}`,
     `Environment lock: ${pkg.environment_lock}`,
     `Format: ${pkg.aspect_ratio} · ${pkg.resolution}`,
-    "",
-    ...scenes.map(formatScenePrompt),
+    `Total: ${scenes.length} scene · ${scenes.reduce((t, s) => t + s.duration_seconds, 0)} detik`,
+    ...scenes.map(
+      (scene) =>
+        `==================== SCENE ${scene.scene_number} (Slide ${scene.source_carousel_slide}) · ${scene.duration_seconds}s · ${scene.narrative_function} ====================\n\n${formatScenePrompt(scene)}`,
+    ),
   ].join("\n\n");
 }
