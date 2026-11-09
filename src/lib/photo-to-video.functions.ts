@@ -22,6 +22,7 @@ export type PhotoToVideoState = {
   message: string;
   record: PhotoToVideoRecord | null;
   slideCount?: number;
+  canvaNotes?: Record<number, string>;
 };
 
 function toRecord(row: Record<string, unknown>): PhotoToVideoRecord {
