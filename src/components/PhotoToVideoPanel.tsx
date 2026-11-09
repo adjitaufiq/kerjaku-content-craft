@@ -81,7 +81,9 @@ export function PhotoToVideoPanel({ versionId }: { versionId: string }) {
       setScenes(record.scenes ?? []);
       setDefaultDuration(record.default_duration ?? 8);
     }
-  }, [record]);
+    const saved = query.data?.canvaNotes;
+    if (saved && Object.keys(saved).length) setCanvaNotes(saved);
+  }, [record, query.data?.canvaNotes]);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["photo-to-video", versionId] });
 
