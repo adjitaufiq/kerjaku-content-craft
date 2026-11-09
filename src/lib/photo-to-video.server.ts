@@ -140,6 +140,7 @@ export async function generatePhotoToVideoPackage(input: {
   carousel: CarouselPromptPackage;
   slides: CarouselPromptSlide[];
   concept: unknown;
+  canvaNotes?: Record<number, string>;
 }): Promise<{ result: GeneratedVideoPackage; model: string }> {
   const result = await streamStructured<GeneratedVideoPackage>({
     name: "kerjaku_photo_to_video_package",
@@ -157,6 +158,7 @@ export async function generatePhotoToVideoPackage(input: {
       "Dilarang gerakan berlebihan, cinematic action yang tidak sesuai, perpindahan lokasi, atau perubahan karakter.",
       "character_lock, product_lock, dan environment_lock wajib menjaga identitas karakter, wajah, pakaian, lingkungan, objek, color palette, lighting style, dan komposisi asli tetap sama. Gambar harus terlihat hidup secara alami, bukan didesain ulang.",
       "Motion style wajib premium editorial video, modern brand storytelling, professional social media content, cinematic realistic movement, intensitas subtle to medium, dan realism over effects.",
+      "Bila final_canva_visual terisi, itu adalah deskripsi gambar FINAL yang user buat di Canva dan WAJIB menjadi acuan utama visual (mengalahkan image_prompt): gerakan kamera, subjek, dan lingkungan harus sesuai elemen yang benar-benar ada di gambar Canva tersebut. Jangan menganimasikan teks/grafis Canva menjadi bentuk lain; teks dan layout tetap diam dan terbaca.",
       "original_carousel_visual merangkum visual carousel slide asal (dari image_prompt dan visual_concept). visual_concept mengikuti slide yang sama.",
       "vo_synchronization WAJIB menjelaskan gerak yang mendukung makna VO tanpa mengubah konsep. ending_frame mempertahankan komposisi asli, elemen penting terlihat, dan menyiapkan transisi lembut ke scene berikutnya.",
       "photo_to_video_prompt WAJIB hanya berisi prompt final berbahasa Inggris yang siap ditempel ke Google Flow, Runway, Kling, Luma, atau generator video lain. Gunakan format persis berikut:",
@@ -219,6 +221,7 @@ export async function generatePhotoToVideoPackage(input: {
           environment_direction: slide.environment,
           color_direction: slide.color_direction,
           continuity_instruction: slide.continuity_instruction,
+          final_canva_visual: input.canvaNotes?.[slide.slide_number]?.trim() || null,
         })),
       )}`,
       "Hasilkan paket photo-to-video lengkap sesuai schema.",

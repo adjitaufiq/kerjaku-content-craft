@@ -83,7 +83,14 @@ export const getPhotoToVideo = createServerFn({ method: "GET" })
 
 export const generatePhotoToVideo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { versionId: string; defaultDuration: VideoDuration }) => input)
+  .inputValidator(
+    (input: { versionId: string; defaultDuration: VideoDuration; canvaNotes?: Record<number, string> }) => ({
+      ...input,
+      canvaNotes: Object.fromEntries(
+        Object.entries(input.canvaNotes ?? {}).map(([k, v]) => [Number(k), String(v ?? "").slice(0, 2000)]),
+      ),
+    }),
+  )
   .handler(async ({ data, context }): Promise<PhotoToVideoState> => {
     const carousel = await loadCarousel(context.supabase as never, data.versionId);
     if (!carousel) {
@@ -134,6 +141,7 @@ export const generatePhotoToVideo = createServerFn({ method: "POST" })
         carousel: carousel.package,
         slides: carousel.slides,
         concept: (version as { selected_hook?: unknown } | null)?.selected_hook ?? null,
+        canvaNotes: data.canvaNotes,
       });
 
       const scenes: PhotoToVideoScene[] = generated.result.scenes.map((scene, index) => ({
