@@ -21,6 +21,7 @@ export type PhotoToVideoState = {
   status: PhotoToVideoStatus | "CAROUSEL_PROMPT_REQUIRED";
   message: string;
   record: PhotoToVideoRecord | null;
+  slideCount?: number;
 };
 
 function toRecord(row: Record<string, unknown>): PhotoToVideoRecord {
@@ -76,9 +77,10 @@ export const getPhotoToVideo = createServerFn({ method: "GET" })
       .eq("version_id", data.versionId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!row) return { status: "NOT_GENERATED", message: "", record: null };
+    const slideCount = carousel.slides.length;
+    if (!row) return { status: "NOT_GENERATED", message: "", record: null, slideCount };
     const record = toRecord(row as unknown as Record<string, unknown>);
-    return { status: record.status, message: "", record };
+    return { status: record.status, message: "", record, slideCount };
   });
 
 export const generatePhotoToVideo = createServerFn({ method: "POST" })
