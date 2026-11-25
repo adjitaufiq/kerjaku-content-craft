@@ -72,7 +72,7 @@ export async function transcribeChunk(bytes: Uint8Array, filename: string): Prom
     model: "google/gemini-3.5-transcribe",
     file: new File([bytes.slice().buffer], filename, { type: "audio/wav" }),
   }, { signal: AbortSignal.timeout(90_000) });
-  return response.text.trim();
+  return (typeof response === "string" ? response : response.text).trim();
 }
 
 /* ------------------------------------------------------------------ */

@@ -239,7 +239,9 @@ function ViralPage() {
   async function handleUpload(file: File) {
     setUploading(true);
     try {
-      const path = `viral/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Sesi berakhir, silakan masuk kembali.");
+      const path = `${auth.user.id}/viral/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
       const { error } = await supabase.storage.from("content-research").upload(path, file);
       if (error) throw new Error(error.message);
       setUploadedFile(path);

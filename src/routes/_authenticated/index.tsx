@@ -20,6 +20,8 @@ export const Route = createFileRoute("/_authenticated/")({
         property: "og:description",
         content: "Kelola bank konten, jadwal, dan publikasi Instagram KERJAKU dari satu dashboard.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: GridPage,

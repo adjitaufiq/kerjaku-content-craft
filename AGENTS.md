@@ -8,3 +8,13 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Content Factory execution boundaries
+- Keep internal RPC in authenticated `*.functions.ts` and media/provider implementations in server-only modules; authorization must precede privileged access.
+- Route language-model jobs through the capability AI router and the typed Gateway SDK; ambiguous inference failures must never be automatically replayed.
+- Keep pending migration types separate from integration-managed generated types until the database migration is applied.
+- Use durable publishing jobs with lease-checked writes and persist platform submission state before the external request; unknown submissions require reconciliation, never blind retry.
+- Keep browser scheduling as a gated transition only until the server callback is verified and explicitly enabled; unknown scheduler state must fail closed.
+- Keep reviewed legacy ownership in server-only manifests and new asset paths owner-prefixed; private bucket delivery uses freshly generated per-asset signatures.
+- Keep Phase 0 SQL under `docs/phase0/migrations` while live preflight is blocked; apply unchanged through the migration tool only after backup and ownership evidence pass.
+- Run native rendering and local audio tools in an external worker, not in the edge application runtime; media provider interfaces define the boundary.

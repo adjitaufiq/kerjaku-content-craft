@@ -1,118 +1,75 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCraftAdmin } from "./authorization";
+import { phase0Client } from "./phase0-db";
 
-type PublishInput = {
-  imageUrls: string[];
-  caption: string;
-};
-
-const GRAPH = "https://graph.facebook.com/v19.0";
 export const MAX_CAROUSEL = 10;
+const publishInput = z.object({
+  contentLogId: z.string().uuid(),
+  imageUrls: z.array(z.string().max(4000)).min(1).max(MAX_CAROUSEL),
+  caption: z.string().max(2200),
+});
 
-function validate(input: PublishInput): PublishInput {
-  const urls = (input.imageUrls ?? []).filter((u) => typeof u === "string" && u.trim());
-  if (!urls.length) throw new Error("Foto belum diunggah.");
-  if (urls.length > MAX_CAROUSEL)
-    throw new Error(`Instagram hanya mengizinkan maksimal ${MAX_CAROUSEL} foto per postingan.`);
-  return { imageUrls: urls, caption: input.caption ?? "" };
-}
-
-function humanize(message: string) {
-  if (/whitelist/i.test(message)) {
-    return "Meta menolak permintaan (User must be on whitelist). Ini terjadi bila memakai penjadwalan bawaan Meta (scheduled_publish_time) yang hanya untuk Facebook Page ter-whitelist. Penjadwalan kini ditangani aplikasi, jadi coba ulangi; jika tetap muncul, pastikan token punya izin instagram_content_publish dan akun IG Business terhubung ke Page.";
-  }
-  return message;
-}
-
-async function graphPost(url: string, body: Record<string, string>) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(body).toString(),
-  });
-  const json = (await res.json().catch(() => ({}))) as {
-    id?: string;
-    error?: { message?: string; error_user_msg?: string; code?: number; error_subcode?: number };
-  };
-  if (!res.ok || json.error) {
-    const code = json.error?.code;
-    const subcode = json.error?.error_subcode;
-    if (code === 190 || subcode === 463 || subcode === 467) {
-      // OAuth token invalid/expired — surface the canonical message.
-      throw new Error("Instagram access token expired. Please update the Meta access token.");
-    }
-    const msg =
-      json.error?.error_user_msg ?? json.error?.message ?? `Meta API error (${res.status})`;
-    throw new Error(humanize(msg));
-  }
-  if (!json.id) throw new Error("Meta API tidak mengembalikan ID.");
-  return json.id;
-}
-
-/**
- * Builds the media container for a single photo or a carousel (2-10 photos)
- * and returns the creation id ready for `media_publish`.
- */
-export async function createMediaContainer(opts: {
-  igAccountId: string;
-  token: string;
-  imageUrls: string[];
-  caption: string;
-}) {
-  const { igAccountId, token, imageUrls, caption } = opts;
-  if (imageUrls.length === 1) {
-    return graphPost(`${GRAPH}/${igAccountId}/media`, {
-      image_url: imageUrls[0]!,
-      caption,
-      access_token: token,
-    });
-  }
-  const children: string[] = [];
-  for (const url of imageUrls) {
-    children.push(
-      await graphPost(`${GRAPH}/${igAccountId}/media`, {
-        image_url: url,
-        is_carousel_item: "true",
-        access_token: token,
-      }),
-    );
-  }
-  return graphPost(`${GRAPH}/${igAccountId}/media`, {
-    media_type: "CAROUSEL",
-    children: children.join(","),
-    caption,
-    access_token: token,
-  });
-}
-
-export async function publishMedia(igAccountId: string, token: string, creationId: string) {
-  return graphPost(`${GRAPH}/${igAccountId}/media_publish`, {
-    creation_id: creationId,
-    access_token: token,
-  });
-}
-
-/**
- * Publishes immediately using the Instagram Content Publishing flow —
- * single photo or carousel (2-10 photos).
- *
- * Credentials come from server-side secrets only (META_ACCESS_TOKEN /
- * META_IG_ACCOUNT_ID) and are shared by Instant Publish and the scheduler.
- *
- * Meta's `scheduled_publish_time` / `published=false` is intentionally NOT used:
- * it is a Facebook Page-only, whitelist-gated feature.
- */
+/** Manual publish and scheduled publish share the same durable server executor. */
 export const publishToInstagram = createServerFn({ method: "POST" })
-  .inputValidator((input: PublishInput) => validate(input))
-  .handler(async ({ data }) => {
-    const { requirePublishCredentials } = await import("@/lib/meta-token.server");
-    const { token, igAccountId } = await requirePublishCredentials();
-
-    const creationId = await createMediaContainer({
-      igAccountId,
-      token,
-      imageUrls: data.imageUrls,
-      caption: data.caption ?? "",
-    });
-    const postId = await publishMedia(igAccountId, token, creationId);
-    return { mode: "published" as const, creationId, postId };
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: z.infer<typeof publishInput>) => publishInput.parse(input))
+  .handler(async ({ data, context }) => {
+    await requireCraftAdmin(context.supabase, context.userId);
+    const { data: content, error } = await context.supabase
+      .from("content_logs")
+      .select("*")
+      .eq("id", data.contentLogId)
+      .single();
+    if (error || !content || (content as unknown as { user_id: string }).user_id !== context.userId)
+      throw new Error("Konten tidak ditemukan atau akses ditolak.");
+    const { refreshAssetUrls } = await import("./asset-delivery.server");
+    // Caller-owned signatures prove access before privileged queue/executor work.
+    await refreshAssetUrls(context.supabase, data.imageUrls);
+    const { data: existingJob, error: jobCheckError } = await phase0Client(context.supabase)
+      .from("publishing_jobs")
+      .select("id")
+      .eq("content_log_id", content.id)
+      .maybeSingle();
+    if (jobCheckError) throw new Error("Status antrean belum dapat diperiksa.");
+    if (!existingJob) {
+      const { error: updateError } = await context.supabase
+        .from("content_logs")
+        .update({
+          image_urls: data.imageUrls,
+          image_url: data.imageUrls[0] ?? null,
+          caption: data.caption,
+        })
+        .eq("id", content.id);
+      if (updateError) throw new Error("Perubahan konten tidak dapat disimpan.");
+    }
+    const { data: jobId, error: queueError } = await phase0Client(context.supabase).rpc(
+      "enqueue_publish_job",
+      { log_id: content.id },
+    );
+    if (queueError || !jobId)
+      throw new Error("Antrean publikasi belum tersedia; konten tidak diposting.");
+    const { runPublishingQueue } = await import("./publishing-queue.server");
+    await runPublishingQueue(jobId);
+    const { data: job, error: readError } = await phase0Client(context.supabase)
+      .from("publishing_jobs")
+      .select("state,creation_id,platform_post_id")
+      .eq("id", jobId)
+      .single();
+    if (readError || !job)
+      throw new Error(
+        "Status publikasi belum dapat dipastikan. Jangan buat posting baru; periksa antrean.",
+      );
+    if (job.state !== "succeeded" || !job.platform_post_id || !job.creation_id)
+      throw new Error(
+        job.state === "reconciliation_required"
+          ? "Publikasi perlu rekonsiliasi; tidak diulang otomatis."
+          : "Publikasi masih tertunda atau gagal; periksa status konten.",
+      );
+    return {
+      mode: "published" as const,
+      creationId: job.creation_id,
+      postId: job.platform_post_id,
+    };
   });

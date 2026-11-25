@@ -62,6 +62,8 @@ export const Route = createFileRoute("/_authenticated/editor")({
         property: "og:description",
         content: "Split-screen preview feed 4:5 dengan publish instan dan scheduling Meta.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: EditorPage,
@@ -93,11 +95,13 @@ function EditorPage() {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const publishLogId = useRef<string | null>(null);
 
   useEffect(() => {
     setCaption(existing?.caption || row?.caption || "");
     setImageUrls(existing ? imagesOf(existing) : []);
     setActiveImage(0);
+    publishLogId.current = existing?.status === "draft" || existing?.status === "failed" ? existing.id : null;
   }, [selectedNo, row?.caption, existing?.caption, existing?.image_url, existing?.image_urls]);
 
   async function handleFiles(files: File[]) {
@@ -223,36 +227,23 @@ function EditorPage() {
         return;
       }
 
-      const result = await publish({
-        data: { imageUrls, caption },
-      });
-
-      await supabase.from("content_logs").insert({
-        content_number: selectedNo,
-        title: row?.title ?? "",
-        image_url: imageUrls[0]!,
-        image_urls: imageUrls,
-        caption,
-        status: result.mode,
-        ig_creation_id: result.creationId,
-        ig_post_id: result.postId,
-        scheduled_at: null,
-      });
+      if (!publishLogId.current) {
+        const { data: log, error: createError } = await supabase.from("content_logs").insert({
+          content_number: selectedNo, title: row?.title ?? "", image_url: imageUrls[0] ?? null,
+          image_urls: imageUrls, caption, status: "draft", scheduled_at: null,
+        }).select("id").single();
+        if (createError || !log) throw new Error("Konten belum dapat disimpan; tidak diposting.");
+        publishLogId.current = log.id;
+      }
+      await publish({ data: { contentLogId: publishLogId.current, imageUrls, caption } });
 
       toast.success("Konten berhasil tayang di Instagram.");
       await queryClient.invalidateQueries({ queryKey: ["logs"] });
 
     } catch (error) {
       const message = error instanceof Error ? error.message : "Gagal memproses ke Meta.";
-      await supabase.from("content_logs").insert({
-        content_number: selectedNo,
-        title: row?.title ?? "",
-        image_url: imageUrls[0]!,
-        image_urls: imageUrls,
-        caption,
-        status: "failed",
-        error_message: message,
-      });
+      // The durable server job owns the outcome. Never create a replacement failed log
+      // after an ambiguous platform response: that would allow duplicate submission.
       await queryClient.invalidateQueries({ queryKey: ["logs"] });
       toast.error(message);
     } finally {

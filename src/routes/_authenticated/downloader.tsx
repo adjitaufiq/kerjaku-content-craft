@@ -352,7 +352,9 @@ function DetailPanel({
   async function uploadVideo(file: File) {
     setUploading(true);
     try {
-      const path = `${row.id}/video.mp4`;
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Sesi berakhir, silakan masuk kembali.");
+      const path = `${auth.user.id}/${row.id}/video.mp4`;
       const { error } = await supabase.storage
         .from("content-research")
         .upload(path, file, { upsert: true, contentType: file.type || "video/mp4" });

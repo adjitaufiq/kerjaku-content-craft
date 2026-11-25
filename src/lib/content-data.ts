@@ -63,7 +63,7 @@ export async function fetchLogs(): Promise<ContentLog[]> {
   return Promise.all((data ?? []).map(async (row) => {
     const urls = await Promise.all(imagesOf(row).map(async (reference) => {
       try {
-        const path = parseAssetReference(reference, import.meta.env.VITE_SUPABASE_URL, "instagram-media");
+        const path = parseAssetReference(reference, import.meta.env['VITE_SUPABASE_URL'], "instagram-media");
         const { data: signed, error: signError } = await supabase.storage.from("instagram-media").createSignedUrl(path, 3600);
         if (signError || !signed) return "";
         return signed.signedUrl;

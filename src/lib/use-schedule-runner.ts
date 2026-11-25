@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { publishToInstagram } from "@/lib/instagram.functions";
 import { imagesOf } from "@/lib/content-data";
 import { getMetaTokenStatus } from "@/lib/meta-token.functions";
+import { getSchedulerReadiness } from "./system-health.functions";
 
 export const TOKEN_EXPIRED_MESSAGE =
   "Instagram access token expired. Please update the Meta access token.";
@@ -27,6 +28,8 @@ export function useMetaTokenStatus() {
  */
 export function useScheduleRunner() {
   const status = useMetaTokenStatus();
+  const checkScheduler = useServerFn(getSchedulerReadiness);
+  const scheduler = useQuery({ queryKey: ["scheduler-readiness"], queryFn: () => checkScheduler(), refetchInterval: 60_000, retry: false });
   const publish = useServerFn(publishToInstagram);
   const queryClient = useQueryClient();
   const running = useRef(false);
@@ -35,7 +38,8 @@ export function useScheduleRunner() {
   const ready = state === "active" || state === "expiring_soon";
 
   useEffect(() => {
-    if (!ready) return;
+    // Retain transition mechanism until the server callback is verified. Unknown status fails closed.
+    if (!ready || !scheduler.data?.checked || scheduler.data.ready) return;
 
     async function tick() {
       if (running.current) return;
@@ -63,7 +67,7 @@ export function useScheduleRunner() {
           if (!claimed?.length) continue;
           try {
             const result = await publish({
-              data: { imageUrls: images, caption: job.caption ?? "" },
+              data: { contentLogId: job.id, imageUrls: images, caption: job.caption ?? "" },
             });
             await supabase
               .from("content_logs")
@@ -99,5 +103,5 @@ export function useScheduleRunner() {
     void tick();
     const id = window.setInterval(() => void tick(), 60_000);
     return () => window.clearInterval(id);
-  }, [ready, publish, queryClient]);
+  }, [ready, publish, queryClient, scheduler.data?.ready, scheduler.data?.checked]);
 }

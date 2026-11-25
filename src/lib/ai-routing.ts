@@ -1,9 +1,21 @@
 export const AI_CAPABILITIES = [
-  "CONTENT_STRATEGY", "VIRAL_ANALYSIS", "VIDEO_UNDERSTANDING", "SCRIPT_GENERATION",
-  "STORYBOARD", "IMAGE_PROMPT", "CAROUSEL", "QUALITY_JUDGE", "CONTENT_REMIX", "BRAND_KNOWLEDGE",
+  "CONTENT_STRATEGY",
+  "VIRAL_ANALYSIS",
+  "VIDEO_UNDERSTANDING",
+  "SCRIPT_GENERATION",
+  "STORYBOARD",
+  "IMAGE_PROMPT",
+  "CAROUSEL",
+  "QUALITY_JUDGE",
+  "CONTENT_REMIX",
+  "BRAND_KNOWLEDGE",
 ] as const;
 export type AiCapability = (typeof AI_CAPABILITIES)[number];
-export const ROUTER_MODELS = ["openai/gpt-6-astra", "openai/gpt-5.4-mini", "anthropic/claude-haiku-4-5"] as const;
+export const ROUTER_MODELS = [
+  "openai/gpt-6-astra",
+  "openai/gpt-5.4-mini",
+  "anthropic/claude-haiku-4-5",
+] as const;
 export type RouterModel = (typeof ROUTER_MODELS)[number];
 export const DEFAULT_ROUTES: Record<AiCapability, RouterModel> = {
   CONTENT_STRATEGY: "openai/gpt-6-astra",
@@ -26,6 +38,23 @@ export function selectModel(capability: AiCapability, override?: string): Router
 export type AiFailure = { code: string; outcome: string; httpStatus?: number };
 export function mayFallback(error: AiFailure): boolean {
   // Never replay ambiguous/billed operations, denials, rate limits, or credit failures.
-  return error.outcome === "not_started" && error.code === "request_rejected" &&
-    (error.httpStatus === 404 || error.httpStatus === 503);
+  return (
+    error.outcome === "not_started" &&
+    error.code === "request_rejected" &&
+    (error.httpStatus === 404 || error.httpStatus === 503)
+  );
+}
+export async function runWithSafeFallback<T>(
+  primary: RouterModel,
+  fallback: RouterModel,
+  run: (model: RouterModel) => Promise<T>,
+  classify: (error: unknown) => AiFailure | null,
+) {
+  try {
+    return await run(primary);
+  } catch (error) {
+    const failure = classify(error);
+    if (failure && mayFallback(failure) && primary !== fallback) return run(fallback);
+    throw error;
+  }
 }
