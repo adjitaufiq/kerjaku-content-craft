@@ -8,31 +8,19 @@ export type AccessContext = {
   isAdmin: boolean;
 };
 
-/**
- * Returns the caller's access context. Bootstrap rule: if no admin exists yet,
- * the first authenticated account is promoted to admin.
- */
+/** Read roles only; sign-in must never grant administrative privileges. */
 export const getAccessContext = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<AccessContext> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const email = (context.claims['email'] as string | undefined) ?? null;
-
-    const { data: admins } = await supabaseAdmin
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "admin");
-
-    if (!admins?.length) {
-      await supabaseAdmin
-        .from("user_roles")
-        .upsert({ user_id: context.userId, role: "admin" }, { onConflict: "user_id,role" });
-      return { userId: context.userId, email, isAdmin: true };
-    }
+    const { data: isAdmin, error } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId, _role: "admin",
+    });
+    if (error) throw new Error("Hak akses belum dapat diverifikasi.");
 
     return {
       userId: context.userId,
       email,
-      isAdmin: admins.some((r) => r.user_id === context.userId),
+      isAdmin: isAdmin === true,
     };
   });

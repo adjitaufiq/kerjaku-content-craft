@@ -123,7 +123,9 @@ export async function extractPublicMetadata(url: string, contentType: string): P
 
 /** Stores a remote asset in the private research bucket. Returns the object path. */
 export async function storeRemoteAsset(
+  client: import("@supabase/supabase-js").SupabaseClient<import("@/integrations/supabase/types").Database>,
   remoteUrl: string,
+  userId: string,
   folder: string,
   name: string,
 ): Promise<{ path: string; bytes: number } | null> {
@@ -133,9 +135,9 @@ export async function storeRemoteAsset(
     const buffer = new Uint8Array(await res.arrayBuffer());
     if (!buffer.byteLength) return null;
     const contentType = res.headers.get("content-type") ?? "application/octet-stream";
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const path = `${folder}/${name}`;
-    const { error } = await supabaseAdmin.storage
+    const { ownedAssetPath } = await import("./asset-reference");
+    const path = ownedAssetPath(userId, folder, name);
+    const { error } = await client.storage
       .from("content-research")
       .upload(path, buffer, { contentType, upsert: true });
     if (error) return null;

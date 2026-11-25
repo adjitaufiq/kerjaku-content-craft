@@ -1,3 +1,4 @@
+import { routeStructured } from "./ai-router.server";
 export type RemixSlide = { slide_number: number; purpose: string; text: string };
 export type RemixCaption = { style: string; text: string };
 export type RemixCta = { type: string; text: string };
@@ -119,10 +120,6 @@ export async function generateContentRemix(input: {
   preferredType?: string | null;
   notes?: string | null;
 }): Promise<{ result: ContentRemixResult; model: string }> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new Error("LOVABLE_API_KEY belum tersedia di server.");
-
-  const model = "openai/gpt-6-astra";
   const analysisLines = Object.entries(input.analysis)
     .filter(([, v]) => typeof v === "string" && v.trim())
     .map(([k, v]) => `- ${k}: ${v}`)
@@ -143,78 +140,10 @@ export async function generateContentRemix(input: {
     .filter(Boolean)
     .join("\n");
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": apiKey,
-      "X-Lovable-AIG-SDK": "fetch",
-    },
-    body: JSON.stringify({
-      model,
-      instructions: SYSTEM_PROMPT,
-      input: prompt,
-      stream: true,
-      reasoning: { effort: "low", summary: "auto" },
-      text: {
-        format: {
-          type: "json_schema",
-          name: "kerjaku_content_remix",
-          strict: true,
-          schema: SCHEMA,
-        },
-      },
-    }),
+  const { result: parsed, model } = await routeStructured<ContentRemixResult>({
+    capability: "CONTENT_REMIX", instructions: SYSTEM_PROMPT, prompt,
+    name: "content_remix", schema: SCHEMA,
   });
-
-  if (!res.ok || !res.body) {
-    const detail = await res.text().catch(() => "");
-    if (res.status === 429) throw new Error("AI sedang sibuk. Coba lagi sebentar lagi.");
-    if (res.status === 402)
-      throw new Error("Kredit AI workspace habis. Tambahkan kredit untuk melanjutkan.");
-    throw new Error(`Generate konten gagal (${res.status}). ${detail.slice(0, 300)}`);
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let text = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      if (!line.startsWith("data:")) continue;
-      const payload = line.slice(5).trim();
-      if (!payload || payload === "[DONE]") continue;
-      try {
-        const evt = JSON.parse(payload) as {
-          type?: string;
-          delta?: string;
-          response?: { output_text?: string };
-        };
-        if (evt.type === "response.output_text.delta" && typeof evt.delta === "string") {
-          text += evt.delta;
-        } else if (evt.type === "response.completed" && evt.response?.output_text && !text) {
-          text = evt.response.output_text;
-        }
-      } catch {
-        // ignore partial frames
-      }
-    }
-  }
-
-  if (!text.trim()) throw new Error("AI tidak mengembalikan hasil. Coba ulangi.");
-
-  let parsed: ContentRemixResult;
-  try {
-    parsed = JSON.parse(text) as ContentRemixResult;
-  } catch {
-    throw new Error("Format hasil generate tidak valid. Coba ulangi.");
-  }
 
   const result: ContentRemixResult = {
     content_angle: parsed.content_angle ?? "",

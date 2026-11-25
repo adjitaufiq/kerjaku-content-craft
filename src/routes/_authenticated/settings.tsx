@@ -7,6 +7,7 @@ import { FileSpreadsheet, KeyRound, ShieldCheck } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { BrandCenter } from "@/components/BrandCenter";
+import { SystemHealthPanel } from "@/components/SystemHealthPanel";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -250,6 +251,7 @@ function SettingsPage() {
         </section>
       </div>
 
+      <SystemHealthPanel />
       <div className="mt-10 border-t border-border pt-8">
         <BrandCenter />
       </div>

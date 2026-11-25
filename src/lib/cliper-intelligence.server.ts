@@ -1,3 +1,4 @@
+import { routeStructured } from "./ai-router.server";
 export type DnaEvidence = {
   source_type: "transcript" | "on_screen_text" | "visual";
   timestamp: string;
@@ -81,7 +82,6 @@ export type HookCandidate = {
 
 export type HookMatrixResult = { candidates: HookCandidate[] };
 
-const MODEL = "openai/gpt-6-astra";
 
 const EVIDENCE_SCHEMA = {
   type: "object",
@@ -222,81 +222,8 @@ async function streamStructured<T>(input: {
   prompt: string;
   name: string;
   schema: Record<string, unknown>;
-}): Promise<T> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new Error("LOVABLE_API_KEY belum tersedia di server.");
-
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": apiKey,
-      "X-Lovable-AIG-SDK": "fetch",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      instructions: input.instructions,
-      input: input.prompt,
-      stream: true,
-      reasoning: { effort: "medium", summary: "auto" },
-      text: {
-        format: { type: "json_schema", name: input.name, strict: true, schema: input.schema },
-      },
-    }),
-  });
-
-  if (!response.ok || !response.body) {
-    const raw = await response.text().catch(() => "");
-    let message = raw;
-    try {
-      const parsed = JSON.parse(raw) as { message?: string; error?: { message?: string } };
-      message = parsed.message ?? parsed.error?.message ?? raw;
-    } catch {
-      // Keep the gateway response text.
-    }
-    if (response.status === 401) throw new Error("Konfigurasi Lovable AI tidak valid.");
-    if (response.status === 402) throw new Error(message || "Kredit AI workspace tidak mencukupi.");
-    if (response.status === 403) throw new Error(message || "Lovable AI diblokir oleh kebijakan workspace.");
-    if (response.status === 429) throw new Error(message || "Lovable AI sedang dibatasi. Coba lagi nanti.");
-    throw new Error(message || `Lovable AI gagal (${response.status}).`);
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let output = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      if (!line.startsWith("data:")) continue;
-      const payload = line.slice(5).trim();
-      if (!payload || payload === "[DONE]") continue;
-      try {
-        const event = JSON.parse(payload) as {
-          type?: string;
-          delta?: string;
-          response?: { output_text?: string };
-        };
-        if (event.type === "response.output_text.delta" && typeof event.delta === "string") {
-          output += event.delta;
-        } else if (event.type === "response.completed" && event.response?.output_text && !output) {
-          output = event.response.output_text;
-        }
-      } catch {
-        // Ignore keep-alive or incomplete SSE frames.
-      }
-    }
-  }
-  if (!output.trim()) throw new Error("Lovable AI tidak mengembalikan hasil analisis.");
-  try {
-    return JSON.parse(output) as T;
-  } catch {
-    throw new Error("Format hasil Lovable AI tidak valid. Jalankan ulang analisis.");
-  }
+}): Promise<{ result: T; model: string }> {
+  return routeStructured<T>({ ...input, capability: input.name === "kerjaku_atm" ? "CONTENT_REMIX" : input.name.includes("hook") ? "CONTENT_STRATEGY" : "VIRAL_ANALYSIS" });
 }
 
 export type DnaSourceMaterial = {
@@ -310,7 +237,7 @@ export type DnaSourceMaterial = {
 export async function analyzeViralDna(
   material: DnaSourceMaterial,
 ): Promise<{ result: ViralDnaResult; model: string }> {
-  const result = await streamStructured<ViralDnaResult>({
+  const { result, model } = await streamStructured<ViralDnaResult>({
     name: "viral_dna_analysis",
     schema: DNA_SCHEMA,
     instructions: [
@@ -336,7 +263,7 @@ export async function analyzeViralDna(
       `Source Content Report: ${JSON.stringify(material.source_report)}`,
     ].join("\n\n"),
   });
-  return { result, model: MODEL };
+  return { result, model };
 }
 
 export async function generateAtmVersion(input: {
@@ -363,7 +290,7 @@ export async function generateAtmVersion(input: {
     "DILARANG mengarang nama produk, harga, promo, testimoni, angka performa, benefit spesifik, atau data bisnis yang tidak ada pada Brand Knowledge maupun sumber.",
     "Jika tidak ada produk terdaftar, isi product_connection sebagai arahan umum tanpa menyebut nama produk apa pun.",
   ].join(" ");
-  const result = await streamStructured<AtmResult>({
+  const { result, model } = await streamStructured<AtmResult>({
     name: "kerjaku_atm_version",
     schema: ATM_SCHEMA,
     instructions: `Kamu adalah KERJAKU ATM Engine. ATM berarti Amati formula, Tiru prinsip, Modifikasi eksekusi. Kamu bekerja OTOMATIS: sumber utama keputusanmu adalah Viral DNA (hook, pattern interrupt, psychological trigger, curiosity gap, retention, struktur, CTA, evidence) plus Brand Knowledge KERJAKU yang tersedia. Jika ada tambahan arahan pengguna, perlakukan sebagai constraint tambahan saja, bukan sumber utama; jika kosong, tentukan sendiri arah terbaik dari Viral DNA. ${fallbackRule} Wajib mengisi source_formula (formula sumber yang ditemukan), preserved_formula (prinsip dipertahankan), changed_elements (elemen diubah), reason (alasan adaptasi untuk KERJAKU), target_audience, angle_ideas (2-4 ide angle), example_hooks (2-3 contoh hook baru orisinal), dan recommended_format (format konten yang disarankan, misal carousel edukasi atau reels talking head). Kamu hanya menyusun arahan strategis sebelum produksi—DILARANG membuat carousel jadi, caption, storyboard, atau script siap terbit. ${modeRule} Patuhi seluruh aturan brand yang tersedia. Bukti harus disalin dari Viral DNA, jangan mengarang bukti baru. Jawab dalam Bahasa Indonesia.`,
@@ -384,7 +311,7 @@ export async function generateAtmVersion(input: {
       "Buat pemetaan formula sumber ke arahan adaptasi orisinal KERJAKU dan jelaskan alasan strateginya.",
     ].join("\n\n"),
   });
-  return { result, model: MODEL };
+  return { result, model };
 }
 
 
@@ -395,7 +322,7 @@ export async function generateHookMatrix(input: {
   atm: AtmResult;
   brand: BrandKnowledgeInput;
 }): Promise<{ result: HookMatrixResult; model: string }> {
-  const result = await streamStructured<HookMatrixResult>({
+  const { result, model } = await streamStructured<HookMatrixResult>({
     name: "kerjaku_hook_matrix",
     schema: HOOK_MATRIX_SCHEMA,
     instructions: `Kamu adalah KERJAKU Viral Hook Matrix Engine. Buat TEPAT 5 kandidat hook pembuka yang berbeda tipe (misalnya pertanyaan, klaim berani, problem callout, cerita, kontrarian). Hook harus orisinal milik KERJAKU—dilarang menyalin kalimat sumber. Setiap hook wajib sejalan dengan angle, arahan ATM, dan Brand Knowledge, serta memakai power words brand bila relevan. id memakai format hook-1 sampai hook-5. Jangan membuat caption, carousel, script, atau storyboard. Jawab dalam Bahasa Indonesia.`,
@@ -408,5 +335,5 @@ export async function generateHookMatrix(input: {
       "Susun 5 kandidat hook dengan alasan, trigger psikologis, curiosity gap, power words, dan catatan risiko brand.",
     ].join("\n\n"),
   });
-  return { result, model: MODEL };
+  return { result, model };
 }

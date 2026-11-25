@@ -69,10 +69,10 @@ export const analyzeAndDownload = createServerFn({ method: "POST" })
       let videoPath: string | null = null;
       if (data.download) {
         if (media.thumbnailUrl) {
-          thumbnailPath = (await storeRemoteAsset(media.thumbnailUrl, id, "thumbnail.jpg"))?.path ?? null;
+          thumbnailPath = (await storeRemoteAsset(context.supabase, media.thumbnailUrl, context.userId, id, "thumbnail.jpg"))?.path ?? null;
         }
         if (media.videoUrl) {
-          videoPath = (await storeRemoteAsset(media.videoUrl, id, "video.mp4"))?.path ?? null;
+          videoPath = (await storeRemoteAsset(context.supabase, media.videoUrl, context.userId, id, "video.mp4"))?.path ?? null;
         }
       }
 
@@ -159,10 +159,13 @@ export const deleteDownload = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.storage
+    const { data: row, error: readError } = await context.supabase.from("content_downloads").select("thumbnail_path, video_path").eq("id", data.id).single();
+    if (readError || !row) throw new Error("Referensi tidak ditemukan atau akses ditolak.");
+    const paths = [row.thumbnail_path, row.video_path].filter((path): path is string => Boolean(path));
+    const { error: storageError } = await context.supabase.storage
       .from("content-research")
-      .remove([`${data.id}/thumbnail.jpg`, `${data.id}/video.mp4`]);
+      .remove(paths);
+    if (storageError) throw new Error("File tidak dapat dihapus.");
     const { error } = await context.supabase.from("content_downloads").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };

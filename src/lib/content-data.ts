@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import seed from "@/data/bank-konten.json";
+import { ownedAssetPath, parseAssetReference } from "./asset-reference";
 
 export type BankRow = {
   no: number;
@@ -49,7 +50,7 @@ export async function saveBank(rows: BankRow[]) {
   }));
   const { error } = await supabase
     .from("content_bank")
-    .upsert(payload, { onConflict: "content_number" });
+    .upsert(payload, { onConflict: "user_id,content_number" });
   if (error) throw error;
 }
 
@@ -59,7 +60,17 @@ export async function fetchLogs(): Promise<ContentLog[]> {
     .select("*")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as ContentLog[];
+  return Promise.all((data ?? []).map(async (row) => {
+    const urls = await Promise.all(imagesOf(row).map(async (reference) => {
+      try {
+        const path = parseAssetReference(reference, import.meta.env.VITE_SUPABASE_URL, "instagram-media");
+        const { data: signed, error: signError } = await supabase.storage.from("instagram-media").createSignedUrl(path, 3600);
+        if (signError || !signed) return "";
+        return signed.signedUrl;
+      } catch { return ""; }
+    }));
+    return { ...row, image_url: urls[0] ?? null, image_urls: urls.filter(Boolean) } as ContentLog;
+  }));
 }
 
 /** Latest log per content number. */
@@ -93,14 +104,16 @@ export function detectNumberFromFilename(name: string): number | null {
 
 export async function uploadImage(file: File, contentNumber: number) {
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "png";
-  const path = `content-${contentNumber}/${Date.now()}.${ext}`;
+  const { data: auth, error: authError } = await supabase.auth.getUser();
+  if (authError || !auth.user) throw new Error("Silakan masuk terlebih dahulu.");
+  const path = ownedAssetPath(auth.user.id, `content-${contentNumber}`, `${crypto.randomUUID()}.${ext}`);
   const { error } = await supabase.storage
     .from("instagram-media")
     .upload(path, file, { upsert: true, contentType: file.type || "image/png" });
   if (error) throw error;
   const { data, error: signErr } = await supabase.storage
     .from("instagram-media")
-    .createSignedUrl(path, 60 * 60 * 24 * 30);
+    .createSignedUrl(path, 3600);
   if (signErr || !data?.signedUrl) throw signErr ?? new Error("Gagal membuat URL gambar.");
   return data.signedUrl;
 }

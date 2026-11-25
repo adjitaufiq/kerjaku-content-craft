@@ -1,3 +1,4 @@
+import { routeStructured } from "./ai-router.server";
 export type ViralAnalysisResult = {
   content_summary: string;
   main_topic: string;
@@ -66,10 +67,6 @@ export async function analyzeViralReference(input: {
   hasUpload: boolean;
   notes?: string | null;
 }): Promise<{ result: ViralAnalysisResult; model: string }> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new Error("LOVABLE_API_KEY belum tersedia di server.");
-
-  const model = "openai/gpt-6-astra";
   const prompt = [
     `Judul referensi: ${input.title}`,
     `Platform: ${input.platform}`,
@@ -85,78 +82,10 @@ export async function analyzeViralReference(input: {
     .filter(Boolean)
     .join("\n");
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": apiKey,
-      "X-Lovable-AIG-SDK": "fetch",
-    },
-    body: JSON.stringify({
-      model,
-      instructions: SYSTEM_PROMPT,
-      input: prompt,
-      stream: true,
-      reasoning: { effort: "low", summary: "auto" },
-      text: {
-        format: {
-          type: "json_schema",
-          name: "viral_analysis_report",
-          strict: true,
-          schema: buildSchema(),
-        },
-      },
-    }),
+  const { result: parsed, model } = await routeStructured<ViralAnalysisResult>({
+    capability: "VIRAL_ANALYSIS", instructions: SYSTEM_PROMPT, prompt,
+    name: "viral_analysis", schema: buildSchema(),
   });
-
-  if (!res.ok || !res.body) {
-    const detail = await res.text().catch(() => "");
-    if (res.status === 429) throw new Error("AI sedang sibuk. Coba lagi sebentar lagi.");
-    if (res.status === 402)
-      throw new Error("Kredit AI workspace habis. Tambahkan kredit untuk melanjutkan analisis.");
-    throw new Error(`Analisis AI gagal (${res.status}). ${detail.slice(0, 300)}`);
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let text = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      if (!line.startsWith("data:")) continue;
-      const payload = line.slice(5).trim();
-      if (!payload || payload === "[DONE]") continue;
-      try {
-        const evt = JSON.parse(payload) as {
-          type?: string;
-          delta?: string;
-          response?: { output_text?: string };
-        };
-        if (evt.type === "response.output_text.delta" && typeof evt.delta === "string") {
-          text += evt.delta;
-        } else if (evt.type === "response.completed" && evt.response?.output_text) {
-          if (!text) text = evt.response.output_text;
-        }
-      } catch {
-        // ignore keep-alive / partial frames
-      }
-    }
-  }
-
-  if (!text.trim()) throw new Error("AI tidak mengembalikan hasil analisis. Coba ulangi.");
-
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(text) as Record<string, unknown>;
-  } catch {
-    throw new Error("Format hasil analisis tidak valid. Coba ulangi analisis.");
-  }
 
   const result = Object.fromEntries(
     FIELDS.map((f) => [f, typeof parsed[f] === "string" ? (parsed[f] as string) : ""]),

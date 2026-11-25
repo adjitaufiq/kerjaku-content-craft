@@ -1,3 +1,5 @@
+import { routeStructured } from "./ai-router.server";
+import { transcribeAudio } from "@lovable.dev/ai-gateway";
 /** Server-only engine: transcript, visual understanding, source report, source lock validation. */
 
 export type TranscriptSegment = { timestamp: string; text: string };
@@ -59,43 +61,18 @@ export type SourceReport = {
   steps_framework: ReportItem[];
 };
 
-export const EXTRACTION_MODEL = "openai/gpt-6-astra";
-
-function gatewayError(status: number, detail: string, stage: string): Error {
-  if (status === 429) return new Error(`AI sedang sibuk saat ${stage}. Coba lagi sebentar lagi.`);
-  if (status === 402)
-    return new Error("Kredit AI workspace habis. Tambahkan kredit untuk melanjutkan pemrosesan.");
-  if (status === 403)
-    return new Error("Akses Lovable AI diblokir oleh kebijakan workspace. Hubungi admin.");
-  return new Error(`Gagal ${stage} (${status}). ${detail.slice(0, 240)}`);
-}
-
-function apiKey(): string {
-  const key = process.env["LOVABLE_API_KEY"];
-  if (!key) throw new Error("LOVABLE_API_KEY belum tersedia di server.");
-  return key;
-}
+export const EXTRACTION_MODEL = "capability:VIDEO_UNDERSTANDING";
 
 /* ------------------------------------------------------------------ */
 /* A. Speech to text                                                   */
 /* ------------------------------------------------------------------ */
 
 export async function transcribeChunk(bytes: Uint8Array, filename: string): Promise<string> {
-  const form = new FormData();
-  form.append("model", "google/gemini-3.5-transcribe");
-  form.append("file", new Blob([bytes as unknown as BlobPart], { type: "audio/wav" }), filename);
-
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
-    method: "POST",
-    headers: { "Lovable-API-Key": apiKey(), "X-Lovable-AIG-SDK": "fetch" },
-    body: form,
-  });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw gatewayError(res.status, detail, "mengambil transkrip audio");
-  }
-  const json = (await res.json()) as { text?: string };
-  return (json.text ?? "").trim();
+  const response = await transcribeAudio({
+    model: "google/gemini-3.5-transcribe",
+    file: new File([bytes.slice().buffer], filename, { type: "audio/wav" }),
+  }, { signal: AbortSignal.timeout(90_000) });
+  return response.text.trim();
 }
 
 /* ------------------------------------------------------------------ */
@@ -113,72 +90,11 @@ async function structuredCall<T>(params: {
   schema: Record<string, unknown>;
   stage: string;
 }): Promise<T> {
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": apiKey(),
-      "X-Lovable-AIG-SDK": "fetch",
-    },
-    body: JSON.stringify({
-      model: EXTRACTION_MODEL,
-      instructions: params.instructions,
-      input: [{ role: "user", content: params.content }],
-      stream: true,
-      reasoning: { effort: "low", summary: "auto" },
-      text: {
-        format: {
-          type: "json_schema",
-          name: params.schemaName,
-          strict: true,
-          schema: params.schema,
-        },
-      },
-    }),
+  const { result } = await routeStructured<T>({
+    capability: "VIDEO_UNDERSTANDING", instructions: params.instructions,
+    content: params.content, name: params.schemaName, schema: params.schema,
   });
-
-  if (!res.ok || !res.body) {
-    const detail = await res.text().catch(() => "");
-    throw gatewayError(res.status, detail, params.stage);
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let text = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      if (!line.startsWith("data:")) continue;
-      const payload = line.slice(5).trim();
-      if (!payload || payload === "[DONE]") continue;
-      try {
-        const evt = JSON.parse(payload) as {
-          type?: string;
-          delta?: string;
-          response?: { output_text?: string };
-        };
-        if (evt.type === "response.output_text.delta" && typeof evt.delta === "string") {
-          text += evt.delta;
-        } else if (evt.type === "response.completed" && evt.response?.output_text && !text) {
-          text = evt.response.output_text;
-        }
-      } catch {
-        /* keep-alive frame */
-      }
-    }
-  }
-
-  if (!text.trim()) throw new Error(`AI tidak mengembalikan hasil saat ${params.stage}.`);
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    throw new Error(`Format hasil tidak valid saat ${params.stage}.`);
-  }
+  return result;
 }
 
 /* ------------------------------------------------------------------ */

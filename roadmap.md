@@ -1,5 +1,15 @@
 # Roadmap
 
+## Phase 0 — Security & fundamental hardening
+- [ ] Database preflight, ownership inventory, backup/recovery evidence (live blocked while database paused)
+- [ ] Prepare fail-closed ownership migration and secure asset delivery
+- [ ] Harden server authorization and publishing credentials
+- [ ] Durable scheduler leases, reconciliation, retry, concurrency tests; activation gated by live heartbeat
+- [ ] Capability AI router and refactor existing engines
+- [ ] Media provider contracts and dedicated worker design
+- [ ] Actual system health panel
+- [ ] Validation and Phase 0 report A–K; no deployment or Phase 1
+
 - [x] Database schema Viral DNA, ATM versions, and Brand Knowledge
 - [x] Server AI engines for Viral DNA and ATM modes
 - [x] Brand Knowledge server storage functions

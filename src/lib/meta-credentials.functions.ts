@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCraftAdmin } from "./authorization";
 import type { TokenStatus } from "@/lib/meta-token.server";
 
 export type IntegrationView = {
@@ -18,18 +19,9 @@ type UpdateInput = {
 export const getIntegrationStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<IntegrationView> => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    await requireCraftAdmin(context.supabase, context.userId);
     const { getCredentialStatus } = await import("@/lib/meta-token.server");
     const status = await getCredentialStatus();
-    if (!isAdmin) {
-      return {
-        isAdmin: false,
-        status: { ...status, tokenMask: null, tokenFingerprint: null, appId: null },
-      };
-    }
     return { isAdmin: true, status };
   });
 
