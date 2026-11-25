@@ -49,7 +49,12 @@ export async function executeFactoryWorker(
         .gt("lease_until", new Date().toISOString());
       return { completed: false, blocked: true };
     }
-    const { data: campaign } = await db.from("craft_campaigns").select("config").eq("id", task.campaign_id).eq("user_id", task.user_id).single();
+    const { data: campaign } = await db
+      .from("craft_campaigns")
+      .select("config")
+      .eq("id", task.campaign_id)
+      .eq("user_id", task.user_id)
+      .single();
     if (!campaign) throw new Error("Campaign unavailable");
     const config = campaignSchema.parse(campaign.config);
     const expected = nativeFiles(task.stage, config, task.ordinal);
@@ -88,7 +93,11 @@ export async function executeFactoryWorker(
       task_id: task.id,
       worker: input.worker,
       result: { ...output, assets: [...(output.assets ?? []), ...assets] },
-      next_stage: nextFactoryStage(task.stage, output.content?.production.format, productionFormats(config, task.ordinal)),
+      next_stage: nextFactoryStage(
+        task.stage,
+        output.content?.production.format,
+        productionFormats(config, task.ordinal),
+      ),
     });
     if (completionError || !ok) throw new Error("LEASE_LOST");
     return { completed: true };
@@ -185,7 +194,15 @@ export async function executeFactoryWorker(
         });
       }
       return {
-        task: { id: task.id, stage: task.stage, content: output.content, config, formats: productionFormats(config, task.ordinal), inputs, uploads },
+        task: {
+          id: task.id,
+          stage: task.stage,
+          content: output.content,
+          config,
+          formats: productionFormats(config, task.ordinal),
+          inputs,
+          uploads,
+        },
         idle: false,
       };
     } else if (task.stage === "quality") {
@@ -199,17 +216,44 @@ export async function executeFactoryWorker(
       result = { ...output, qc };
       const path = `${task.user_id}/factory/${task.campaign_id}/${task.id}/publication-package.json`;
       const bytes = new TextEncoder().encode(JSON.stringify(result));
-      const checksum = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))).map((n) => n.toString(16).padStart(2, "0")).join("");
-      const { error: uploadError } = await admin.storage.from("instagram-media").upload(path, bytes, { upsert: true, contentType: "application/json" });
+      const checksum = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)))
+        .map((n) => n.toString(16).padStart(2, "0"))
+        .join("");
+      const { error: uploadError } = await admin.storage
+        .from("instagram-media")
+        .upload(path, bytes, { upsert: true, contentType: "application/json" });
       if (uploadError) throw new Error("Publication package not stored");
-      const asset: FactoryAsset = { kind: "metadata", bucket: "instagram-media", path, mime: "application/json", bytes: bytes.length, checksum, duration: null };
-      const { error: libraryError } = await db.from("craft_media").upsert({ ...asset, user_id: task.user_id, task_id: task.id, campaign_id: task.campaign_id }, { onConflict: "bucket,path" });
+      const asset: FactoryAsset = {
+        kind: "metadata",
+        bucket: "instagram-media",
+        path,
+        mime: "application/json",
+        bytes: bytes.length,
+        checksum,
+        duration: null,
+      };
+      const { error: libraryError } = await db
+        .from("craft_media")
+        .upsert(
+          { ...asset, user_id: task.user_id, task_id: task.id, campaign_id: task.campaign_id },
+          { onConflict: "bucket,path" },
+        );
       if (libraryError) throw new Error("Publication package library unavailable");
       result.assets = [...(result.assets ?? []), asset];
     } else if (task.stage === "distribution") {
       if (!output.content || !output.qc?.passed) throw new Error("QC required before distribution");
-      const packages = buildDistributionPackages(config, output.content, output.assets ?? [], task.campaign_id, task.ordinal);
-      const { error: queueError } = await db.rpc("craft_enqueue_distribution", { task_id: task.id, worker: input.worker, packages });
+      const packages = buildDistributionPackages(
+        config,
+        output.content,
+        output.assets ?? [],
+        task.campaign_id,
+        task.ordinal,
+      );
+      const { error: queueError } = await db.rpc("craft_enqueue_distribution", {
+        task_id: task.id,
+        worker: input.worker,
+        packages,
+      });
       if (queueError) throw new Error("Distribution queue not stored");
       result = { ...output, distribution: packages };
     } else {
@@ -220,7 +264,11 @@ export async function executeFactoryWorker(
       task_id: task.id,
       worker: input.worker,
       result,
-      next_stage: nextFactoryStage(task.stage, result.content?.production.format, productionFormats(config, task.ordinal)),
+      next_stage: nextFactoryStage(
+        task.stage,
+        result.content?.production.format,
+        productionFormats(config, task.ordinal),
+      ),
     });
     if (completeError || !complete) throw new Error("LEASE_LOST");
     return { completed: true, taskId: task.id, stage: task.stage };
@@ -265,7 +313,27 @@ export async function executeFactoryWorker(
 
 async function readFactoryFeedback(admin: SupabaseClient<Database>, owner: string) {
   const db = factoryClient(admin);
-  const [metrics, bank] = await Promise.all([db.from("craft_metric_snapshots").select("*").eq("user_id", owner).order("measured_at", { ascending: false }).limit(100), db.from("craft_bank").select("document").eq("user_id", owner)]);
+  const [metrics, bank] = await Promise.all([
+    db
+      .from("craft_metric_snapshots")
+      .select("*")
+      .eq("user_id", owner)
+      .order("measured_at", { ascending: false })
+      .limit(100),
+    db.from("craft_bank").select("document").eq("user_id", owner),
+  ]);
   if (metrics.error || bank.error) throw new Error("Learning data unavailable");
-  return campaignFeedback((metrics.data ?? []).map((m) => ({ postId: m.platform_post_id, contentId: m.content_id, platform: m.platform, measuredAt: m.measured_at, views: m.views, likes: m.likes, comments: m.comments, shares: m.shares })), (bank.data ?? []).map((b) => contentSchema.parse(b.document)));
+  return campaignFeedback(
+    (metrics.data ?? []).map((m) => ({
+      postId: m.platform_post_id,
+      contentId: m.content_id,
+      platform: m.platform,
+      measuredAt: m.measured_at,
+      views: m.views,
+      likes: m.likes,
+      comments: m.comments,
+      shares: m.shares,
+    })),
+    (bank.data ?? []).map((b) => contentSchema.parse(b.document)),
+  );
 }

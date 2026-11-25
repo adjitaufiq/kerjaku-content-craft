@@ -1,0 +1,126 @@
+{
+  "command": "10 Konten Edukasi AI Automation untuk KERJAKU",
+  "evidence": "LOCAL_FIXTURES: research/AI responses and storage transport mocked; queue executor, SQL, native consumer and files actual",
+  "content": {
+    "id": "bc1433ae-4101-4fc3-ad6d-7c6b09219344",
+    "no": 31,
+    "tags": [
+      "uji satu proses"
+    ],
+    "title": "AI Automation: Mulai dari Satu Proses",
+    "prompt": "Ilustrasi editorial proses bisnis dan AI, objek jelas, vertikal.",
+    "status": "draft",
+    "caption": "Mulai otomatisasi dari satu pekerjaan berulang. Petakan, uji, periksa, lalu perbaiki bersama KERJAKU.",
+    "history": [],
+    "revision": 1,
+    "production": {
+      "cta": "Diskusikan kebutuhan otomatisasi bersama KERJAKU.",
+      "hook": "Ingin memakai AI untuk bisnis?",
+      "format": "Video",
+      "scenes": "[{\"heading\":\"Mulai dari satu proses\",\"narration\":\"Ingin memakai AI untuk bisnis? Mulai dari pekerjaan berulang.\",\"visual\":\"Pemilik bisnis memetakan pekerjaan di meja kerja.\"},{\"heading\":\"Petakan pekerjaan\",\"narration\":\"Tuliskan pekerjaan yang berulang, seperti merangkum pertanyaan pelanggan.\",\"visual\":\"Daftar tugas dan pesan pelanggan di komputer.\"},{\"heading\":\"Pilih satu alur\",\"narration\":\"Pilih satu alur sederhana yang datanya sudah tersedia.\",\"visual\":\"Tiga kotak proses tersambung di papan kerja.\"},{\"heading\":\"Tetap verifikasi\",\"narration\":\"Gunakan AI untuk membuat draf, bukan mengambil keputusan penting sendiri.\",\"visual\":\"Manusia meninjau draf jawaban di layar.\"},{\"heading\":\"Jaga data\",\"narration\":\"Periksa hasilnya dan lindungi informasi pribadi pelanggan.\",\"visual\":\"Data pelanggan terlindungi dalam antarmuka aplikasi.\"},{\"heading\":\"Ukur dan perbaiki\",\"narration\":\"Catat hasil uji sebelum memperluas otomatisasi ke proses berikutnya.\",\"visual\":\"Pemilik bisnis mencatat hasil pengujian proses.\"},{\"heading\":\"Diskusikan bersama KERJAKU\",\"narration\":\"Diskusikan kebutuhan otomatisasi bisnismu bersama KERJAKU.\",\"visual\":\"Tim digital studio membahas alur kerja.\"}]",
+      "script": "Ingin memakai AI untuk bisnis? Mulai dari pekerjaan berulang.\nTuliskan pekerjaan yang berulang, seperti merangkum pertanyaan pelanggan.\nPilih satu alur sederhana yang datanya sudah tersedia.\nGunakan AI untuk membuat draf, bukan mengambil keputusan penting sendiri.\nPeriksa hasilnya dan lindungi informasi pribadi pelanggan.\nCatat hasil uji sebelum memperluas otomatisasi ke proses berikutnya.\nDiskusikan kebutuhan otomatisasi bisnismu bersama KERJAKU.",
+      "audience": "Pemilik bisnis Indonesia",
+      "category": "Educational",
+      "duration": 45,
+      "hashtags": "#KERJAKU #AIAutomation #BisnisIndonesia",
+      "platform": "instagram, tiktok, facebook, youtube",
+      "voiceOver": "Ingin memakai AI untuk bisnis? Mulai dari pekerjaan berulang. Tuliskan pekerjaan yang berulang, seperti merangkum pertanyaan pelanggan. Pilih satu alur sederhana yang datanya sudah tersedia. Gunakan AI untuk membuat draf, bukan mengambil keputusan penting sendiri. Periksa hasilnya dan lindungi informasi pribadi pelanggan. Catat hasil uji sebelum memperluas otomatisasi ke proses berikutnya. Diskusikan kebutuhan otomatisasi bisnismu bersama KERJAKU.",
+      "thumbnailText": "Mulai dari satu proses",
+      "visualDirection": "Alur kerja bisnis sederhana, pemeriksaan manusia."
+    },
+    "legacyCells": [],
+    "subcategory": "Edukasi praktis tanpa klaim metrik",
+    "classification": "PERSONAL_CONTENT"
+  },
+  "stages": [
+    "research",
+    "script",
+    "image",
+    "design",
+    "voice",
+    "render",
+    "quality",
+    "distribution"
+  ],
+  "assetCount": 19,
+  "distributionCount": 12,
+  "publicPosts": 0,
+  "assets": [
+    {
+      "filename": "scene-1.png",
+      "bytes": 1718485
+    },
+    {
+      "filename": "scene-2.png",
+      "bytes": 1718485
+    },
+    {
+      "filename": "scene-3.png",
+      "bytes": 1718485
+    },
+    {
+      "filename": "poster.png",
+      "bytes": 478074
+    },
+    {
+      "filename": "poster.jpg",
+      "bytes": 190301
+    },
+    {
+      "filename": "carousel-01.png",
+      "bytes": 476672
+    },
+    {
+      "filename": "carousel-02.png",
+      "bytes": 469797
+    },
+    {
+      "filename": "carousel-03.png",
+      "bytes": 462850
+    },
+    {
+      "filename": "carousel-04.png",
+      "bytes": 471843
+    },
+    {
+      "filename": "carousel-05.png",
+      "bytes": 466397
+    },
+    {
+      "filename": "carousel-06.png",
+      "bytes": 471495
+    },
+    {
+      "filename": "carousel-07.png",
+      "bytes": 477938
+    },
+    {
+      "filename": "voice.mp3",
+      "bytes": 502431
+    },
+    {
+      "filename": "subtitles.srt",
+      "bytes": 738
+    },
+    {
+      "filename": "subtitles.vtt",
+      "bytes": 728
+    },
+    {
+      "filename": "subtitles.ass",
+      "bytes": 10190
+    },
+    {
+      "filename": "alignment.json",
+      "bytes": 4777
+    },
+    {
+      "filename": "video.mp4",
+      "bytes": 5647838
+    },
+    {
+      "filename": "publication-package.json",
+      "bytes": 9132
+    }
+  ]
+}

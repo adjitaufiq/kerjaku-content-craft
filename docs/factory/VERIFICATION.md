@@ -1,5 +1,24 @@
 # Connected factory implementation — evidence and limits
 
+## Resumed integration — 25 November 2026
+- Actual campaign executor now runs Research → Script → Content Bank → image → native typography → voice → render → QC → distribution with one carried content ID, caption and metadata. Cloned legacy storyboards normalize narration before TTS; originals are not overwritten.
+- Local acceptance creates the exact ten-item campaign command and executes only ordinal 1; nine items remain queued intentionally. The unchanged application executor, SQL and `runner.run_native` consume each preceding output. Research HTTP, structured AI response, image generation response and HTTPS/storage transport are **explicit test fixtures**, not live provider calls.
+- The existing AI artwork is reused as a fixture for three scene inputs; this does **not** prove three newly generated/distinct visuals or live AI research/script production.
+- Actual output: 1080×1350 poster PNG/JPG, seven separate 1080×1350 carousel PNGs, Indonesian Economy MP3, SRT/VTT, word-event ASS, alignment JSON and 31.30-second 1080×1920 30fps H264/AAC MP4 with motion, original synthesized BGM and audio ducking. The command requested 45 seconds; actual narration is measured at approximately 31 seconds, not claimed to meet an exact 45-second cut.
+- Local SQL library reads back 19 assets, verifying every byte count and SHA-256 against physical storage files. Distribution reads back 12 packages with original caption/hashtags; ten await authorization, two YouTube still-image packages are unsupported. Scheduler claim returns no job; publication and measured live metrics remain zero.
+- Studio shows the real generated local proof and downloadable ZIP containing 18 entries: media, subtitle/alignment, publication metadata, the exact two-sheet workbook and verification JSON. These proof assets are not represented as hosted campaign/library rows.
+- Additional tests cover five/seven/ten-slide content allocation without duplicated material, source scene→VO consistency, missing media, MP4 codec/dimension/frame rate/audio synchronization, incomplete carousel rejection, platform-specific holds and measured-snapshot deduplication.
+- Latest verification: **71/71 JavaScript/SQL tests and 8/8 native Python tests PASS**. Three connected scenarios PASS: combined poster/seven-slide carousel/video, poster-only and ten-slide carousel-only. Tampered output checksums are rejected before task completion. No fixture is connected to hosted production.
+- Browser checked desktop and 411×844 mobile: all proof imagery loads, MP4 plays as 1080×1920 with ~31.30-second duration, ZIP reads back with all seven slides, unauthorized worker returns 401, no horizontal page overflow or page errors. Signed-in hosted campaign execution is BLOCKED because Cloud/auth remains paused, verified again this turn.
+
+### Repeat local acceptance (not deployment)
+Download `src/assets/factory-proof/image.png.asset.json` through `lovable-assets get` into a temporary PNG, then run:
+```sh
+PYTHONDONTWRITEBYTECODE=1 CRAFT_CONNECTED_MEDIA=1 CRAFT_TEST_IMAGE=/tmp/source.png nix shell nixpkgs#espeak-ng -c bunx vitest run
+PYTHONDONTWRITEBYTECODE=1 nix shell nixpkgs#espeak-ng -c python3 -m unittest discover -s worker -p 'test_*.py' -v
+```
+The local fixture transport is imported only by tests; never use it as application storage or register fixture providers in production.
+
 ## Verified independently in this build
 - Content Bank XLSX imports/exports `BANK KONTEN` (four exact original columns) and `PRODUCTION SCRIPT` (sixteen defined columns).
 - Thirty canonical templates stay immutable. Edited production scripts become new personal drafts, not discarded template matches.

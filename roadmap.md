@@ -1,14 +1,16 @@
 # Roadmap
 
 ## Current execution — connected three-lane production
-- [ ] Resume: prove one campaign item through the actual queue executor and native consumer, with explicit local provider/storage fixtures
-- [ ] Resume: repair script/scene handoff, carousel completeness, library/queue readback and measured media validation
-- [ ] Connect campaign/script outputs to poster, carousel (5/7/10), and video lanes without repeated input
-- [ ] Produce real typography-ready images, MP3, word-timed ASS and motion MP4 in the external worker
-- [ ] Persist media and publishing packages into library and distribution queue, with platform-specific gates
-- [ ] Extend existing Instagram path; prepare independent TikTok/Facebook/YouTube adapters without connecting TikTok Connector
-- [ ] Feed available publication metrics back into campaign recommendations
-- [ ] Run three connected integration scenarios and document actual artifacts separately from mocked/live evidence
+- [x] Prove one campaign item through the actual queue executor and native consumer, with explicit local provider/storage fixtures
+- [x] Repair script/scene handoff, carousel completeness, library/queue readback and measured media validation
+- [x] Connect campaign/script outputs to poster, carousel (5/7/10), and video lanes without repeated input; local fixture acceptance, not live inference
+- [x] Produce real poster PNG/JPG, seven separate slides, MP3, word-timed ASS and motion MP4 via the native consumer
+- [x] Persist and read back all nineteen assets and twelve platform packages in local test storage/SQL; expose real queue records in Studio
+- [ ] Activate official Instagram/TikTok/Facebook/YouTube publishing adapters — BLOCKED: authorized accounts, verified API scopes, scheduler and explicit posting approval; TikTok Connector remains deferred
+- [x] Test existing publication-snapshot learning handoff, latest-snapshot deduplication and next-command recommendations with explicitly synthetic metrics
+- [x] Run three connected local scenarios: all three lanes with seven slides/video, poster-only, and ten-slide carousel-only; 71 JS/SQL and 8 native tests passed
+- [ ] Live analytics ingestion — BLOCKED: official publication IDs and account API access
+- [ ] Hosted three-lane acceptance — BLOCKED: existing Cloud paused, recovery/migration gates, external worker hosting and secret; local fixtures do not substitute for this
 
 
 ## Authorized Autonomous Content Factory build

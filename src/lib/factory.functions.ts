@@ -23,7 +23,11 @@ export const loadFactory = createServerFn({ method: "GET" })
         .select("*")
         .eq("user_id", context.userId)
         .order("created_at", { ascending: false }),
-      db.from("craft_distribution").select("*").eq("user_id", context.userId).order("created_at", { ascending: false }),
+      db
+        .from("craft_distribution")
+        .select("*")
+        .eq("user_id", context.userId)
+        .order("created_at", { ascending: false }),
     ]);
     if (bank.error || campaigns.error || tasks.error || media.error || distribution.error)
       throw new Error(

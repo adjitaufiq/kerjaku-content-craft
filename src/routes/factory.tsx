@@ -20,6 +20,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ContentBankStudio } from "@/components/ContentBankStudio";
 import { FactoryProductionProof } from "@/components/FactoryProductionProof";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +72,12 @@ function FactoryPage() {
   const [audience, setAudience] = useState("Pemilik bisnis Indonesia");
   const [platforms, setPlatforms] = useState(["tiktok", "instagram"]);
   const [duration, setDuration] = useState(45);
+  const [slides, setSlides] = useState(7);
+  const [formats, setFormats] = useState<BankContent["production"]["format"][]>([
+    "Foto",
+    "Carousel",
+    "Video",
+  ]);
   const [busy, setBusy] = useState(false);
   const [sources, setSources] = useState<BankContent[]>([]);
   const fetchFactory = useServerFn(loadFactory);
@@ -139,7 +153,8 @@ function FactoryPage() {
         audience,
         platforms,
         duration,
-        slides: 5,
+        slides,
+        formats,
         mode: "economy",
         publishingMode: "manual",
         seedContents: sources,
@@ -158,6 +173,7 @@ function FactoryPage() {
     research: "Riset",
     script: "Script",
     image: "Gambar",
+    design: "Poster & Carousel",
     voice: "Voice-over",
     render: "Video",
     quality: "QC",
@@ -313,6 +329,45 @@ function FactoryPage() {
                   />
                 </div>
               </div>
+              <div className="flex flex-wrap items-end gap-6">
+                <div className="flex flex-wrap gap-4">
+                  {(["Foto", "Carousel", "Video"] as const).map((format) => (
+                    <label key={format} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={formats.includes(format)}
+                        onCheckedChange={(checked) =>
+                          setFormats(
+                            checked ? [...formats, format] : formats.filter((f) => f !== format),
+                          )
+                        }
+                      />
+                      {format === "Foto"
+                        ? "Poster PNG/JPG"
+                        : format === "Video"
+                          ? "Video MP4 + VO"
+                          : "Carousel"}
+                    </label>
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="slides">Slide carousel</Label>
+                  <Select
+                    value={String(slides)}
+                    onValueChange={(value) => setSlides(Number(value))}
+                  >
+                    <SelectTrigger id="slides" className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[5, 7, 10].map((n) => (
+                        <SelectItem key={n} value={String(n)}>
+                          {n} slide
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap gap-4">
                   {["instagram", "tiktok", "facebook", "youtube"].map((p) => (
@@ -331,7 +386,7 @@ function FactoryPage() {
                   ))}
                 </div>
                 <Button
-                  disabled={busy || !command.trim() || !platforms.length}
+                  disabled={busy || !command.trim() || !platforms.length || !formats.length}
                   onClick={() => void startCampaign()}
                 >
                   <Play className="size-4" />
@@ -368,7 +423,7 @@ function FactoryPage() {
                   <Badge variant="outline">{c.state}</Badge>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {FACTORY_STAGES.map((s) => (
+                  {FACTORY_STAGES.filter((s) => s !== "analytics").map((s) => (
                     <span key={s} className="border-b border-border px-2 py-2 text-xs">
                       {stageLabels[s]}{" "}
                       <strong className="ml-1 text-primary">
@@ -439,6 +494,30 @@ function FactoryPage() {
           </TabsContent>
           <TabsContent value="calendar" className="mt-6 space-y-6">
             <h2 className="font-display text-xl font-semibold">Calendar & Distribusi</h2>
+            {cloud.data?.distribution.map((item) => (
+              <article key={item.id} className="space-y-2 border-b border-border py-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="font-semibold">{item.package.title}</h3>
+                  <Badge variant="outline">{item.state}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {item.platform} · {item.format} · {item.package.assets.length} aset
+                </p>
+                <p className="whitespace-pre-wrap text-sm">{item.package.caption}</p>
+                <p className="text-xs text-muted-foreground">{item.package.hashtags}</p>
+                {item.reason && <p className="text-xs text-destructive">{item.reason}</p>}
+                {item.post_url && (
+                  <a
+                    className="text-sm text-primary"
+                    href={item.post_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Buka publikasi
+                  </a>
+                )}
+              </article>
+            ))}
             <div className="divide-y divide-border border-y border-border">
               {["Instagram", "TikTok", "Facebook", "YouTube"].map((p) => (
                 <div key={p} className="flex flex-wrap items-center justify-between gap-3 py-4">

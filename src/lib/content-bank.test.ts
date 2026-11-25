@@ -17,6 +17,7 @@ describe("Content Bank rules", () => {
   it("preserves all four legacy fields in the two-sheet roundtrip", () => {
     const original = systemTemplates();
     const bytes = exportContentWorkbook(original);
+    expect(bytes).toBeInstanceOf(Uint8Array);
     const wb = XLSX.read(bytes, { type: "array" });
     expect(wb.SheetNames).toEqual(["BANK KONTEN", "PRODUCTION SCRIPT"]);
     const bank = wb.Sheets["BANK KONTEN"];

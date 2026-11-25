@@ -90,7 +90,7 @@ export function exportContentWorkbook(rows: BankContent[]): Uint8Array {
   scripts["!autofilter"] = { ref: `A1:P${Math.max(1, rows.length + 1)}` };
   XLSX.utils.book_append_sheet(wb, bank, "BANK KONTEN");
   XLSX.utils.book_append_sheet(wb, scripts, "PRODUCTION SCRIPT");
-  return XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  return new Uint8Array(XLSX.write(wb, { bookType: "xlsx", type: "array" }));
 }
 export function importContentWorkbook(buffer: ArrayBuffer | Uint8Array): BankContent[] {
   const wb = XLSX.read(buffer, { type: "array", cellFormula: true });

@@ -7,15 +7,40 @@ export function nextFactoryStage(stage: string, format = "Video", formats = [for
   if (index < 0) throw new Error("Unknown factory stage");
   return FACTORY_STAGES[index + 1] ?? "complete";
 }
-export function qualityCheckBundle(assets: FactoryAsset[], voiceOver: string, formats: string[], slides: number) {
+export function qualityCheckBundle(
+  assets: FactoryAsset[],
+  voiceOver: string,
+  formats: string[],
+  slides: number,
+) {
   const issues: string[] = [];
-  const has = (name: string, kind: FactoryAsset["kind"], mime: string) => assets.some((a) => a.path.endsWith(`/${name}`) && a.kind === kind && a.mime === mime && a.bytes > 0 && /^[a-f0-9]{64}$/.test(a.checksum));
-  if (formats.includes("Foto") && (!has("poster.png", "image", "image/png") || !has("poster.jpg", "image", "image/jpeg"))) issues.push("Poster PNG/JPG belum lengkap");
-  if (formats.includes("Carousel")) for (let i = 1; i <= slides; i++) if (!has(`carousel-${String(i).padStart(2, "0")}.png`, "image", "image/png")) issues.push(`Slide carousel ${i} belum lengkap`);
+  const has = (name: string, kind: FactoryAsset["kind"], mime: string) =>
+    assets.some(
+      (a) =>
+        a.path.endsWith(`/${name}`) &&
+        a.kind === kind &&
+        a.mime === mime &&
+        a.bytes > 0 &&
+        /^[a-f0-9]{64}$/.test(a.checksum),
+    );
+  if (
+    formats.includes("Foto") &&
+    (!has("poster.png", "image", "image/png") || !has("poster.jpg", "image", "image/jpeg"))
+  )
+    issues.push("Poster PNG/JPG belum lengkap");
+  if (formats.includes("Carousel"))
+    for (let i = 1; i <= slides; i++)
+      if (!has(`carousel-${String(i).padStart(2, "0")}.png`, "image", "image/png"))
+        issues.push(`Slide carousel ${i} belum lengkap`);
   if (formats.includes("Video")) {
     issues.push(...qualityCheck(assets, voiceOver, "Video").issues);
-    if (!has("subtitles.ass", "subtitle", "text/x-ssa") || !has("alignment.json", "metadata", "application/json")) issues.push("Subtitle word-level ASS belum lengkap");
-    if (!has("voice.mp3", "voice", "audio/mpeg") || !has("video.mp4", "video", "video/mp4")) issues.push("MP3/MP4 belum lengkap");
+    if (
+      !has("subtitles.ass", "subtitle", "text/x-ssa") ||
+      !has("alignment.json", "metadata", "application/json")
+    )
+      issues.push("Subtitle word-level ASS belum lengkap");
+    if (!has("voice.mp3", "voice", "audio/mpeg") || !has("video.mp4", "video", "video/mp4"))
+      issues.push("MP3/MP4 belum lengkap");
   }
   return { passed: issues.length === 0, issues };
 }
@@ -33,8 +58,8 @@ export function qualityCheck(
     if (!assets.some((a) => a.kind === kind && a.bytes > 0 && /^[a-f0-9]{64}$/.test(a.checksum)))
       issues.push(`Aset ${kind} belum terverifikasi`);
   if (
-    assets.filter((a) => a.kind === "image" && a.bytes > 0 && /^[a-f0-9]{64}$/.test(a.checksum)).length <
-    imageCount
+    assets.filter((a) => a.kind === "image" && a.bytes > 0 && /^[a-f0-9]{64}$/.test(a.checksum))
+      .length < imageCount
   )
     issues.push("Jumlah gambar belum lengkap");
   const voice = assets.find((a) => a.kind === "voice");
