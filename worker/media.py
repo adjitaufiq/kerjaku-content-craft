@@ -97,11 +97,12 @@ def compose(images, voice, subtitles, output, width=1080, height=1920, bgm=None)
         args += ["-stream_loop", "-1", "-i", str(bgm)]
     filters = []
     for index in range(len(images)):
-        filters.append(f"[{index}:v]scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30,trim=duration={slide_duration},setpts=PTS-STARTPTS[v{index}]")
+        caption_band = round(height * 0.14)
+        filters.append(f"[{index}:v]scale={width}:{height-caption_band}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih-{caption_band})/2,setsar=1,fps=30,trim=duration={slide_duration},setpts=PTS-STARTPTS[v{index}]")
     filters.append("".join(f"[v{i}]" for i in range(len(images))) + f"concat=n={len(images)}:v=1:a=0[slides]")
     # Path supplied by our temporary directory, not user input; escape for the subtitles filter.
     escaped = str(Path(subtitles).resolve()).replace("\\", "/").replace(":", "\\:").replace("'", "\\'")
-    filters.append(f"[slides]subtitles='{escaped}':force_style='FontName=DejaVu Sans,FontSize=18,Outline=2,MarginV=45,Alignment=2'[video]")
+    filters.append(f"[slides]subtitles='{escaped}':force_style='PlayResX={width},PlayResY={height},FontName=DejaVu Sans,FontSize={round(height*0.025)},Outline=2,MarginV={round(height*0.04)},MarginL={round(width*0.06)},MarginR={round(width*0.06)},Alignment=2'[video]")
     if bgm:
         filters += [f"[{len(images)+1}:a]volume=0.10[bgm]", f"[{len(images)}:a][bgm]amix=inputs=2:duration=first[audio]"]
     args += ["-filter_complex", ";".join(filters), "-map", "[video]", "-map", "[audio]" if bgm else f"{len(images)}:a", "-t", str(duration), "-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", "-c:a", "aac", "-movflags", "+faststart", str(output)]

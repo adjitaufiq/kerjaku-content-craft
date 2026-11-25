@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import image from "@/assets/factory-proof/image.png.asset.json";
 import voice from "@/assets/factory-proof/voice.mp3.asset.json";
-import video from "@/assets/factory-proof/video.mp4.asset.json";
+import video from "@/assets/factory-proof/video-subtitles.mp4.asset.json";
 
 export function FactoryProductionProof() {
   return (

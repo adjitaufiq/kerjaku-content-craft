@@ -78,3 +78,23 @@ export type FactoryBankRow = {
   created_at: string;
   updated_at: string;
 };
+export const workerInput = z.object({
+  action: z.enum(["claim", "complete", "fail"]),
+  worker: z.string().min(8).max(100),
+  taskId: z.string().uuid().optional(),
+  error: z.string().max(1000).optional(),
+  assets: z
+    .array(
+      z.object({
+        kind: z.enum(["voice", "video", "subtitle"]),
+        path: z.string(),
+        mime: z.string(),
+        bytes: z.number().int().positive(),
+        checksum: z.string().regex(/^[a-f0-9]{64}$/),
+        duration: z.number().positive().nullable(),
+      }),
+    )
+    .max(5)
+    .optional(),
+});
+export type WorkerInput = z.infer<typeof workerInput>;

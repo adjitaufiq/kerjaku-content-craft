@@ -40,6 +40,8 @@ export async function generateCampaignScript(
   worker: string,
 ): Promise<BankContent> {
   const seed = input.seedContents[ordinal - 1];
+  if (seed?.production.category === "Trending")
+    throw new Error("Bukti tren platform belum tersedia.");
   if (
     seed?.production.script.trim() &&
     seed.production.voiceOver.trim() &&
@@ -79,7 +81,7 @@ export async function generateCampaignScript(
       category: s.category,
       audience: input.audience,
       platform: input.platforms.join(", "),
-      format: "Video",
+      format: seed?.production.format ?? "Video",
       hook: s.hook,
       script: s.script,
       scenes: s.scenes,

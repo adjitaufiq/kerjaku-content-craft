@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import { readFile } from "node:fs/promises";
 import { campaignSchema } from "./factory-types";
+import { forkContent, systemTemplates, reviseContent } from "./content-bank";
 import { nextFactoryStage, qualityCheck, mayReplayFactoryTask } from "./factory-policy";
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
@@ -10,7 +11,9 @@ async function fixture() {
   const db = new PGlite();
   databases.push(db);
   await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS; CREATE SCHEMA auth; GRANT USAGE ON SCHEMA auth,public TO anon,authenticated,service_role;
-    CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
+    CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+    CREATE TABLE public.content_bank(user_id uuid,content_number integer);
+    CREATE TABLE public.content_logs(user_id uuid,content_number integer);`);
   await db.exec(
     await readFile(
       new URL("../../docs/factory/001_connected_workflow.sql", import.meta.url),
@@ -133,6 +136,28 @@ describe("Connected factory — local SQL, not production verification", () => {
     expect(mayReplayFactoryTask("blocked", "unknown")).toBe(false);
     expect(nextFactoryStage("render")).toBe("quality");
   });
+  it("requires five real carousel images but does not require voice/video for still images", () => {
+    const image = {
+      kind: "image" as const,
+      path: "asset",
+      bucket: "private",
+      mime: "image/png",
+      bytes: 100,
+      checksum: "a".repeat(64),
+      duration: null,
+    };
+    expect(qualityCheck([image], "", "Foto", 1).passed).toBe(true);
+    expect(qualityCheck([image], "", "Carousel", 5).passed).toBe(false);
+    expect(
+      qualityCheck(
+        Array.from({ length: 5 }, (_, i) => ({ ...image, path: `slide-${i}` })),
+        "",
+        "Carousel",
+        5,
+      ).passed,
+    ).toBe(true);
+    expect(nextFactoryStage("image", "Carousel")).toBe("quality");
+  });
   it("accepts the 10-content request and 5/7/10 carousel lengths", () => {
     for (const slides of [5, 7, 10])
       expect(
@@ -173,5 +198,23 @@ describe("Connected factory — local SQL, not production verification", () => {
     expect((await db.query("SELECT * FROM craft_bank")).rows).toHaveLength(1);
     await user(db, B);
     expect((await db.query("SELECT * FROM craft_bank")).rows).toHaveLength(0);
+  });
+  it("saves multiple offline versions and unchanged content idempotently while rejecting a stale branch", async () => {
+    const db = await fixture();
+    await user(db, A);
+    const template = systemTemplates()[0];
+    if (!template) throw new Error("No template");
+    const first = forkContent(template, 31, B);
+    await db.query("SELECT craft_save_bank($1)", [[first]]);
+    const second = reviseContent(first, { title: "Versi kedua" });
+    const third = reviseContent(second, { title: "Versi ketiga" });
+    await db.query("SELECT craft_save_bank($1)", [[third]]);
+    await db.query("SELECT craft_save_bank($1)", [[third]]);
+    expect(
+      (await db.query<{ revision: number }>("SELECT revision FROM craft_bank")).rows[0]?.revision,
+    ).toBe(3);
+    await expect(
+      db.query("SELECT craft_save_bank($1)", [[reviseContent(second, { title: "Cabang lama" })]]),
+    ).rejects.toThrow("Revision conflict");
   });
 });

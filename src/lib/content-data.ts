@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import seed from "@/data/bank-konten.json";
 import { ownedAssetPath, parseAssetReference } from "./asset-reference";
+import { factoryClient } from "./factory-db";
+import { contentSchema } from "./content-bank";
 
 export type BankRow = {
   no: number;
@@ -32,13 +34,30 @@ export async function fetchBank(): Promise<BankRow[]> {
     .select("content_number, title, prompt, caption")
     .order("content_number", { ascending: true });
   if (error) throw error;
-  if (!data?.length) return seedBank;
-  return data.map((r) => ({
-    no: r.content_number,
-    title: r.title,
-    prompt: r.prompt,
-    caption: r.caption,
-  }));
+  const legacy = data?.length
+    ? data.map((r) => ({
+        no: r.content_number,
+        title: r.title,
+        prompt: r.prompt,
+        caption: r.caption,
+      }))
+    : seedBank;
+  const { data: auth } = await supabase.auth.getSession();
+  if (!auth.session) return legacy;
+  const { data: production, error: productionError } = await factoryClient(supabase)
+    .from("craft_bank")
+    .select("document")
+    .eq("user_id", auth.session.user.id);
+  // Prepared schema must not break the existing publisher before its gated migration is applied.
+  if (productionError?.code === "42P01" || productionError?.code === "PGRST205") return legacy;
+  if (productionError)
+    throw new Error("Content Bank produksi belum dapat dibaca; data lama tidak diubah.");
+  const additions = (production ?? []).map((r) => contentSchema.parse(r.document));
+  if (additions.some((r) => legacy.some((l) => l.no === r.no)))
+    throw new Error(
+      "Nomor konten lama dan produksi bertabrakan; pemilihan ditahan agar tidak menerbitkan konten yang salah.",
+    );
+  return [...legacy, ...additions].sort((a, b) => a.no - b.no);
 }
 
 export async function saveBank(rows: BankRow[]) {
@@ -60,17 +79,29 @@ export async function fetchLogs(): Promise<ContentLog[]> {
     .select("*")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return Promise.all((data ?? []).map(async (row) => {
-    const urls = await Promise.all(imagesOf(row).map(async (reference) => {
-      try {
-        const path = parseAssetReference(reference, import.meta.env['VITE_SUPABASE_URL'], "instagram-media");
-        const { data: signed, error: signError } = await supabase.storage.from("instagram-media").createSignedUrl(path, 3600);
-        if (signError || !signed) return "";
-        return signed.signedUrl;
-      } catch { return ""; }
-    }));
-    return { ...row, image_url: urls[0] ?? null, image_urls: urls.filter(Boolean) } as ContentLog;
-  }));
+  return Promise.all(
+    (data ?? []).map(async (row) => {
+      const urls = await Promise.all(
+        imagesOf(row).map(async (reference) => {
+          try {
+            const path = parseAssetReference(
+              reference,
+              import.meta.env["VITE_SUPABASE_URL"],
+              "instagram-media",
+            );
+            const { data: signed, error: signError } = await supabase.storage
+              .from("instagram-media")
+              .createSignedUrl(path, 3600);
+            if (signError || !signed) return "";
+            return signed.signedUrl;
+          } catch {
+            return "";
+          }
+        }),
+      );
+      return { ...row, image_url: urls[0] ?? null, image_urls: urls.filter(Boolean) } as ContentLog;
+    }),
+  );
 }
 
 /** Latest log per content number. */
@@ -106,7 +137,11 @@ export async function uploadImage(file: File, contentNumber: number) {
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "png";
   const { data: auth, error: authError } = await supabase.auth.getUser();
   if (authError || !auth.user) throw new Error("Silakan masuk terlebih dahulu.");
-  const path = ownedAssetPath(auth.user.id, `content-${contentNumber}`, `${crypto.randomUUID()}.${ext}`);
+  const path = ownedAssetPath(
+    auth.user.id,
+    `content-${contentNumber}`,
+    `${crypto.randomUUID()}.${ext}`,
+  );
   const { error } = await supabase.storage
     .from("instagram-media")
     .upload(path, file, { upsert: true, contentType: file.type || "image/png" });

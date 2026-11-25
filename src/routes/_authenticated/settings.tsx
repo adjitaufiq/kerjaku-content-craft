@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getIntegrationStatus, updateMetaCredential } from "@/lib/meta-credentials.functions";
 import { importContentWorkbook } from "@/lib/content-bank-excel";
+import { prepareBankImport } from "@/lib/content-bank";
 import { saveFactoryBank } from "@/lib/factory.functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -85,16 +86,7 @@ function SettingsPage() {
     setImporting(true);
     try {
       const imported = importContentWorkbook(await file.arrayBuffer());
-      const rows = imported
-        .filter((r) => r.classification !== "SYSTEM_TEMPLATE")
-        .map((r) => ({
-          ...r,
-          id: crypto.randomUUID(),
-          classification: "PERSONAL_CONTENT" as const,
-          status: "draft" as const,
-          revision: 1,
-          history: [],
-        }));
+      const rows = prepareBankImport(imported, []);
       if (!rows.length) {
         toast.success("30 template sistem tetap utuh; tidak ada konten pribadi untuk diimpor.");
         return;

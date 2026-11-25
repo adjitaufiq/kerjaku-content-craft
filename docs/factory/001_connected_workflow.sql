@@ -82,7 +82,7 @@ CREATE OR REPLACE FUNCTION public.craft_complete_task(task_id uuid,worker text,r
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
 DECLARE expected text;
 BEGIN
-  SELECT CASE stage WHEN 'research' THEN 'script' WHEN 'script' THEN 'image' WHEN 'image' THEN 'voice' WHEN 'voice' THEN 'render' WHEN 'render' THEN 'quality' WHEN 'quality' THEN 'distribution' WHEN 'distribution' THEN 'analytics' WHEN 'analytics' THEN 'complete' END
+  SELECT CASE stage WHEN 'research' THEN 'script' WHEN 'script' THEN 'image' WHEN 'image' THEN CASE WHEN output->'content'->'production'->>'format' IN ('Foto','Carousel') THEN 'quality' ELSE 'voice' END WHEN 'voice' THEN 'render' WHEN 'render' THEN 'quality' WHEN 'quality' THEN 'distribution' WHEN 'distribution' THEN 'analytics' WHEN 'analytics' THEN 'complete' END
     INTO expected FROM public.craft_tasks WHERE id=task_id AND state='running' AND lease_owner=worker AND lease_until>now() FOR UPDATE;
   IF expected IS NULL OR next_stage<>expected THEN RETURN false; END IF;
   UPDATE public.craft_tasks SET output=result,stage=next_stage,state=CASE WHEN next_stage='complete' THEN 'succeeded' ELSE 'queued' END,lease_owner=NULL,lease_until=NULL,updated_at=now() WHERE id=task_id;
@@ -93,16 +93,21 @@ GRANT EXECUTE ON FUNCTION public.craft_complete_task(uuid,text,jsonb,text) TO se
 
 CREATE OR REPLACE FUNCTION public.craft_save_bank(documents jsonb) RETURNS integer
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
-DECLARE d jsonb; current_revision integer; current_status text; n integer:=0;
+DECLARE d jsonb; current_revision integer; current_status text; current_document jsonb; n integer:=0;
 BEGIN
   IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Unauthorized'; END IF;
   IF jsonb_typeof(documents)<>'array' THEN RAISE EXCEPTION 'Invalid bank'; END IF;
   FOR d IN SELECT value FROM jsonb_array_elements(documents) LOOP
     IF d->>'classification'<>'PERSONAL_CONTENT' THEN RAISE EXCEPTION 'System templates cannot be overwritten'; END IF;
     IF d->>'status' NOT IN ('draft','approved') THEN RAISE EXCEPTION 'Publishing states are not user editable'; END IF;
-    SELECT revision,document->>'status' INTO current_revision,current_status FROM public.craft_bank WHERE id=(d->>'id')::uuid AND user_id=auth.uid() FOR UPDATE;
+    SELECT revision,document->>'status',document INTO current_revision,current_status,current_document FROM public.craft_bank WHERE id=(d->>'id')::uuid AND user_id=auth.uid() FOR UPDATE;
+    IF current_document IS NULL AND EXISTS(SELECT 1 FROM public.content_bank WHERE user_id=auth.uid() AND content_number=(d->>'no')::integer) THEN RAISE EXCEPTION 'Legacy content number conflict'; END IF;
+    IF current_document=d THEN n:=n+1; CONTINUE; END IF;
     IF current_status IN ('scheduled','published') THEN RAISE EXCEPTION 'Settled content cannot be overwritten'; END IF;
-    IF current_revision IS NOT NULL AND (d->>'revision')::integer<>current_revision+1 THEN RAISE EXCEPTION 'Revision conflict'; END IF;
+    IF current_revision IS NOT NULL AND ((d->>'revision')::integer<=current_revision OR NOT EXISTS(
+      SELECT 1 FROM jsonb_array_elements(coalesce(d->'history','[]')) h
+      WHERE (h->>'revision')::integer=current_revision AND (h->>'snapshot')::jsonb=(current_document || '{"history":[]}'::jsonb)
+    )) THEN RAISE EXCEPTION 'Revision conflict'; END IF;
     IF EXISTS(SELECT 1 FROM public.craft_bank WHERE id=(d->>'id')::uuid AND user_id=auth.uid() AND content_number<>(d->>'no')::integer) THEN RAISE EXCEPTION 'Content number cannot change on an existing ID'; END IF;
     INSERT INTO public.craft_bank(id,user_id,content_number,document,revision) VALUES((d->>'id')::uuid,auth.uid(),(d->>'no')::integer,d,(d->>'revision')::integer)
     ON CONFLICT(id) DO UPDATE SET document=EXCLUDED.document,revision=EXCLUDED.revision,updated_at=now() WHERE craft_bank.user_id=auth.uid();
@@ -123,7 +128,7 @@ BEGIN
   SELECT b.document INTO stored FROM public.craft_bank b WHERE source_task_id=task_id;
   IF stored IS NOT NULL THEN RETURN stored; END IF;
   PERFORM pg_advisory_xact_lock(hashtext(owner::text));
-  SELECT greatest(30,coalesce(max(content_number),30))+1 INTO number FROM public.craft_bank WHERE user_id=owner;
+  SELECT greatest(30,coalesce((SELECT max(content_number) FROM public.craft_bank WHERE user_id=owner),30),coalesce((SELECT max(content_number) FROM public.content_bank WHERE user_id=owner),30),coalesce((SELECT max(content_number) FROM public.content_logs WHERE user_id=owner),30))+1 INTO number;
   stored:=jsonb_set(document,'{no}',to_jsonb(number));
   IF stored->>'classification'<>'PERSONAL_CONTENT' OR stored->>'status'<>'draft' THEN RAISE EXCEPTION 'Invalid generated content'; END IF;
   INSERT INTO public.craft_bank(id,user_id,content_number,document,source_task_id) VALUES((stored->>'id')::uuid,owner,number,stored,task_id);

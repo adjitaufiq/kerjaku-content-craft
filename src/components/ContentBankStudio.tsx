@@ -28,7 +28,7 @@ import {
   CONTENT_CATEGORIES,
   WORKFLOW_STATUSES,
   contentSchema,
-  contentFingerprint,
+  prepareBankImport,
   filterContents,
   forkContent,
   reviseContent,
@@ -95,29 +95,12 @@ export function ContentBankStudio({
   async function importFile(file: File) {
     try {
       const imported = importContentWorkbook(await file.arrayBuffer());
-      const personal = imported.filter((r) => r.classification !== "SYSTEM_TEMPLATE");
-      const fingerprints = new Set(drafts.map(contentFingerprint));
-      const fresh = personal.filter((r) => !fingerprints.has(contentFingerprint(r)));
-      const usedNumbers = new Set(drafts.map((r) => r.no));
-      if (fresh.some((r) => usedNumbers.has(r.no)))
-        throw new Error(
-          "Nomor konten sudah digunakan; impor dibatalkan tanpa menimpa data. Ubah nomor pada Excel terlebih dahulu.",
-        );
+      const fresh = prepareBankImport(imported, drafts);
       // Imported ID/status cannot update an existing or published row implicitly.
-      onChange([
-        ...drafts,
-        ...fresh.map((r) => ({
-          ...r,
-          id: crypto.randomUUID(),
-          status: "draft" as const,
-          classification: "PERSONAL_CONTENT" as const,
-          revision: 1,
-          history: [],
-        })),
-      ]);
+      onChange([...drafts, ...fresh]);
       setScope("drafts");
       toast.success(
-        `${fresh.length} draf diimpor; ${imported.length - fresh.length} template/duplikat tidak ditimpa.`,
+        `${fresh.length} draf diimpor; ${imported.length - fresh.length} template sistem tidak ditimpa.`,
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Impor gagal.");

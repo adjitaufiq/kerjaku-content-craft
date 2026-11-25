@@ -53,6 +53,14 @@ export const createFactoryCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => campaignSchema.parse(data))
   .handler(async ({ data, context }) => {
+    if (data.mode !== "economy")
+      throw new Error(
+        "Suara Hybrid/Cinematic belum tersedia; gunakan Economy sampai penyedia suara natural diaktifkan.",
+      );
+    if (data.seedContents.some((r) => r.production.category === "Trending"))
+      throw new Error(
+        "Bukti tren platform belum terverifikasi; naskah Trending ditahan, bukan dilabeli otomatis.",
+      );
     const { data: id, error } = await factoryClient(context.supabase).rpc("craft_create_campaign", {
       command_text: data.command,
       campaign_config: data,

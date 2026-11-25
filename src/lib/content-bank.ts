@@ -133,7 +133,7 @@ export function reviseContent(
 ): BankContent {
   if (current.classification !== "PERSONAL_CONTENT")
     throw new Error("Template sistem dan data bersama/tahan tidak dapat ditimpa.");
-  if (current.status === "published")
+  if (current.status === "published" || current.status === "scheduled")
     throw new Error("Konten sudah terbit; buat salinan baru untuk revisi.");
   return contentSchema.parse({
     ...current,
@@ -176,14 +176,30 @@ export function filterContents(
         .includes(query),
   );
 }
+/** Explicit imports create new personal work, not ownership of an existing row. */
+export function prepareBankImport(imported: BankContent[], existing: BankContent[]): BankContent[] {
+  const personal = imported.filter((r) => r.classification !== "SYSTEM_TEMPLATE");
+  const numbers = new Set(existing.map((r) => r.no));
+  if (personal.some((r) => numbers.has(r.no)))
+    throw new Error(
+      "Nomor konten sudah digunakan; impor dibatalkan tanpa menimpa data. Ubah nomor pada Excel terlebih dahulu.",
+    );
+  return personal.map((r) => ({
+    ...r,
+    id: crypto.randomUUID(),
+    status: "draft",
+    classification: "PERSONAL_CONTENT",
+  }));
+}
 export function validateTrendEvidence(
   category: string,
-  sources: { url: string; observedAt: string; evidence: string }[],
+  sources: { url: string; observedAt: string; evidence: string; sourceKind?: string }[],
 ): boolean {
   return (
     category !== "Trending" ||
     sources.some(
       (s) =>
+        s.sourceKind === "platform_trend" &&
         /^https:\/\//.test(s.url) &&
         s.evidence.length > 0 &&
         Number.isFinite(Date.parse(s.observedAt)),

@@ -1,15 +1,18 @@
 # Roadmap
 
 ## Authorized Autonomous Content Factory build
-- [ ] Content Bank: two-sheet XLSX, protected templates, editing, filters, duplicates, versions and workflow
-- [ ] Campaign command and durable orchestration
-- [ ] Research with sources and connected script generation
-- [ ] Image/carousel production and library delivery
-- [ ] MP3 voice production and alignment
-- [ ] External media worker: MP4 composition, subtitles, BGM and footage
-- [ ] Distribution adapters, calendar, approval and reconciliation
-- [ ] Analytics integration
-- [ ] One real campaign and one published video — BLOCKED: paused database, platform authorization and running media worker
+- [x] Content Bank local workflow: two-sheet XLSX, 30 protected templates, edit/filter/tag, duplicates, revision history and bulk dispatcher
+- [x] Campaign command, owner-bound durable tasks and lease-checked orchestration source; isolated SQL tests
+- [x] Research source ingestion and script generation source wired to the capability router; actual research fetch verified
+- [x] Image generation source, checksummed storage/library delivery and photo/carousel quality gates
+- [x] External Economy worker: actual Indonesian MP3, measured SRT/VTT and H264/AAC MP4 tested locally
+- [x] Production Studio connects bank, campaign, media library and distribution status; local media proof plays on mobile/desktop
+- [ ] Live persistence, router/image generation and 10-item campaign — BLOCKED: existing Cloud paused; recovery/backup/ownership migration gates
+- [ ] Native queue worker operation — BLOCKED: external hosting and worker secret not configured; no deployment authorized
+- [ ] Natural Hybrid/Cinematic narration — BLOCKED: managed voice vendor not enabled; Economy voice clearly labeled
+- [ ] Official multi-platform distribution, calendar activation and publication reconciliation — BLOCKED: account authorization, platform permissions and verified scheduler; no public posting authorized
+- [ ] Connected analytics learning — BLOCKED: verified platform publication IDs and account API access
+- [ ] One command to one real published video — BLOCKED: live prerequisites above; not claimed achieved
 
 ## Phase 0 — Security & fundamental hardening
 - [ ] Live database preflight, ownership manifest, backup/restore evidence, migrations, live RLS/storage tests — BLOCKED: database paused

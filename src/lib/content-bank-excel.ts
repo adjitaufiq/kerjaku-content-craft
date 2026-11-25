@@ -142,7 +142,7 @@ export function importContentWorkbook(buffer: ArrayBuffer | Uint8Array): BankCon
       typeof meta === "object" && meta !== null ? (meta as Record<string, unknown>) : {};
     const base = { no, title: text(r[1]), prompt: text(r[2]), caption: text(r[3]) };
     const exact = isExactTemplate(base);
-    return contentSchema.parse({
+    const content = contentSchema.parse({
       ...record,
       ...base,
       ...(headers.length > 4
@@ -177,6 +177,20 @@ export function importContentWorkbook(buffer: ArrayBuffer | Uint8Array): BankCon
           }
         : {},
     });
+    // An edited production sheet is new work even when the original photo prompt still matches.
+    if (
+      content.classification === "SYSTEM_TEMPLATE" &&
+      p &&
+      (p.slice(3, 5).some((v) => text(v) !== "") ||
+        text(p[5]) !== "Video" ||
+        p.slice(6, 14).some((v) => text(v) !== "") ||
+        Number(p[14]) !== 0 ||
+        text(p[2]) !== "Educational" ||
+        content.tags.length ||
+        content.history.length)
+    )
+      return { ...content, id: crypto.randomUUID(), classification: "PERSONAL_CONTENT" };
+    return content;
   });
   validateNumbers(result);
   if (

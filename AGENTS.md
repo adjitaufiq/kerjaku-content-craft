@@ -22,3 +22,4 @@
 - Keep offline factory drafts identity-scoped and production writes authenticated; paused Cloud permits local editing/export, never fabricated campaign execution.
 - Store factory campaign tasks and media in owner-scoped tables with lease-validated stage transitions and checksummed native-worker readback; provider-unknown outcomes are held, not re-executed.
 - Keep factory schema preparation under docs/factory until existing Cloud recovery and migration gates pass; isolated PostgreSQL tests are not production migration evidence.
+- Read new factory bank documents alongside the existing Publisher bank without legacy writes; number collisions fail closed so a selected number cannot silently reference different content.

@@ -7,6 +7,7 @@ import {
   systemTemplates,
   forkContent,
   reviseContent,
+  prepareBankImport,
   validateStatusTransition,
   validateTrendEvidence,
 } from "./content-bank";
@@ -121,5 +122,46 @@ describe("Content Bank rules", () => {
     ]);
     expect(validateTrendEvidence("Trending", [])).toBe(false);
     expect(validateTrendEvidence("Viral Opportunity", [])).toBe(true);
+    expect(
+      validateTrendEvidence("Trending", [
+        {
+          url: "https://news.ycombinator.com/item?id=1",
+          observedAt: "2026-11-25T00:00:00Z",
+          evidence: "100 comments",
+        },
+      ]),
+    ).toBe(false);
+  });
+  it("keeps different production scripts and full revision history during explicit imports", () => {
+    const template = systemTemplates()[0];
+    if (!template) throw new Error("No template");
+    const first = forkContent(template, 31);
+    const revised = reviseContent(first, {
+      production: { ...first.production, script: "Naskah berbeda" },
+    });
+    const imported = prepareBankImport([revised], [forkContent(template, 32)]);
+    expect(imported).toHaveLength(1);
+    expect(imported[0]?.history).toEqual(revised.history);
+    expect(imported[0]?.production.script).toBe("Naskah berbeda");
+    expect(imported[0]?.id).not.toBe(revised.id);
+  });
+  it("rejects import number conflicts without silently discarding an edited script", () => {
+    const template = systemTemplates()[0];
+    if (!template) throw new Error("No template");
+    const first = forkContent(template, 31);
+    expect(() =>
+      prepareBankImport([reviseContent(first, { title: "Versi lain" })], [first]),
+    ).toThrow();
+  });
+  it("does not discard production scripts edited on an otherwise exact system template", () => {
+    const bytes = exportContentWorkbook(systemTemplates());
+    const wb = XLSX.read(bytes, { type: "array" });
+    const sheet = wb.Sheets["PRODUCTION SCRIPT"];
+    if (!sheet) throw new Error("Missing script sheet");
+    sheet["H2"] = { t: "s", v: "Naskah buatan pengguna" };
+    const result = importContentWorkbook(XLSX.write(wb, { type: "array", bookType: "xlsx" }));
+    expect(result[0]?.classification).toBe("PERSONAL_CONTENT");
+    expect(result[0]?.production.script).toBe("Naskah buatan pengguna");
+    expect(prepareBankImport(result, [])).toHaveLength(1);
   });
 });

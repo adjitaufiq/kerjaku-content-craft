@@ -31,7 +31,7 @@ export async function generateCampaignImages(
           model: "openai/gpt-image-2.5-sunburst",
           output_format: "png",
           size: "1024x1536",
-          prompt: `${content.prompt}\nCarousel KERJAKU, slide ${index + 1}/${slides}. Variasi visual mengikuti scene: ${content.production.scenes}. Kontinuitas visual sama antar-slide. Teks jelas Bahasa Indonesia, bukan placeholder. Untuk slide ini tekankan ${index === 0 ? content.production.hook : index === slides - 1 ? content.production.cta : content.production.visualDirection}.`,
+          prompt: `${content.prompt}\n${slides === 1 ? "Foto KERJAKU selesai" : `Carousel KERJAKU, slide ${index + 1}/${slides}`}. Variasi visual mengikuti scene: ${content.production.scenes}. Kontinuitas visual sama antar-slide. Teks jelas Bahasa Indonesia, bukan placeholder. Untuk slide ini tekankan ${index === 0 ? content.production.hook : index === slides - 1 ? content.production.cta : content.production.visualDirection}.`,
         },
         { runId },
       );

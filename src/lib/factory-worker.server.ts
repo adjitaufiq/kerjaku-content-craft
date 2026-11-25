@@ -1,5 +1,4 @@
 import { GatewayError } from "@lovable.dev/ai-gateway";
-import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { factoryClient } from "./factory-db";
@@ -9,6 +8,7 @@ import {
   type FactoryAsset,
   type FactoryTask,
   type TaskOutput,
+  type WorkerInput,
 } from "./factory-types";
 import { contentSchema } from "./content-bank";
 import { nextFactoryStage, qualityCheck } from "./factory-policy";
@@ -16,25 +16,6 @@ import { researchCampaign } from "./factory-research.server";
 import { generateCampaignScript } from "./factory-script.server";
 import { generateCampaignImages } from "./factory-image.server";
 
-export const workerInput = z.object({
-  action: z.enum(["claim", "complete", "fail"]),
-  worker: z.string().min(8).max(100),
-  taskId: z.string().uuid().optional(),
-  error: z.string().max(1000).optional(),
-  assets: z
-    .array(
-      z.object({
-        kind: z.enum(["voice", "video", "subtitle"]),
-        path: z.string(),
-        mime: z.string(),
-        bytes: z.number().int().positive(),
-        checksum: z.string().regex(/^[a-f0-9]{64}$/),
-        duration: z.number().positive().nullable(),
-      }),
-    )
-    .max(5)
-    .optional(),
-});
 const NATIVE_FILES: Record<
   string,
   { filename: string; kind: FactoryAsset["kind"]; mime: string }[]
@@ -48,7 +29,7 @@ const NATIVE_FILES: Record<
 };
 export async function executeFactoryWorker(
   admin: SupabaseClient<Database>,
-  input: z.infer<typeof workerInput>,
+  input: WorkerInput,
   publicStorageOrigin: string,
 ) {
   const db = factoryClient(admin);
@@ -171,7 +152,12 @@ export async function executeFactoryWorker(
         ...output,
         assets: [
           ...(output.assets ?? []),
-          ...(await generateCampaignImages(admin, task, output.content, config.slides)),
+          ...(await generateCampaignImages(
+            admin,
+            task,
+            output.content,
+            output.content.production.format === "Foto" ? 1 : config.slides,
+          )),
         ],
       };
     } else if (task.stage === "voice" || task.stage === "render") {
@@ -207,7 +193,12 @@ export async function executeFactoryWorker(
         idle: false,
       };
     } else if (task.stage === "quality") {
-      const qc = qualityCheck(output.assets ?? [], output.content?.production.voiceOver ?? "");
+      const qc = qualityCheck(
+        output.assets ?? [],
+        output.content?.production.voiceOver ?? "",
+        output.content?.production.format ?? "Video",
+        output.content?.production.format === "Foto" ? 1 : config.slides,
+      );
       if (!qc.passed) throw new Error(qc.issues.join("; "));
       result = { ...output, qc };
     } else if (task.stage === "distribution") {
@@ -220,7 +211,7 @@ export async function executeFactoryWorker(
       task_id: task.id,
       worker: input.worker,
       result,
-      next_stage: nextFactoryStage(task.stage),
+      next_stage: nextFactoryStage(task.stage, result.content?.production.format),
     });
     if (completeError || !complete) throw new Error("LEASE_LOST");
     return { completed: true, taskId: task.id, stage: task.stage };

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { timingSafeEqual } from "node:crypto";
-import { workerInput, executeFactoryWorker } from "@/lib/factory-worker.server";
+import { workerInput } from "@/lib/factory-types";
 
 export const Route = createFileRoute("/api/public/factory/worker")({
   server: {
@@ -20,6 +20,7 @@ export const Route = createFileRoute("/api/public/factory/worker")({
         try {
           // Worker credential verified before privileged access; task/owner/lease checked again per operation.
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { executeFactoryWorker } = await import("@/lib/factory-worker.server");
           const result = await executeFactoryWorker(supabaseAdmin, parsed.data, storageOrigin);
           return Response.json(result);
         } catch (e) {
