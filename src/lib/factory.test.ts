@@ -156,7 +156,7 @@ describe("Connected factory — local SQL, not production verification", () => {
         5,
       ).passed,
     ).toBe(true);
-    expect(nextFactoryStage("image", "Carousel")).toBe("quality");
+    expect(nextFactoryStage("image", "Carousel")).toBe("design");
   });
   it("accepts the 10-content request and 5/7/10 carousel lengths", () => {
     for (const slides of [5, 7, 10])

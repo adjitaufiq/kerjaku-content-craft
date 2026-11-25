@@ -45,7 +45,8 @@ export async function executeFactoryWorker(
           lease_until: null,
         })
         .eq("id", task.id)
-        .eq("lease_owner", input.worker);
+        .eq("lease_owner", input.worker)
+        .gt("lease_until", new Date().toISOString());
       return { completed: false, blocked: true };
     }
     const { data: campaign } = await db.from("craft_campaigns").select("config").eq("id", task.campaign_id).eq("user_id", task.user_id).single();
@@ -219,7 +220,7 @@ export async function executeFactoryWorker(
       task_id: task.id,
       worker: input.worker,
       result,
-      next_stage: task.stage === "distribution" ? "complete" : nextFactoryStage(task.stage, result.content?.production.format, productionFormats(config, task.ordinal)),
+      next_stage: nextFactoryStage(task.stage, result.content?.production.format, productionFormats(config, task.ordinal)),
     });
     if (completeError || !complete) throw new Error("LEASE_LOST");
     return { completed: true, taskId: task.id, stage: task.stage };
@@ -240,7 +241,8 @@ export async function executeFactoryWorker(
         lease_until: null,
       })
       .eq("id", task.id)
-      .eq("lease_owner", input.worker);
+      .eq("lease_owner", input.worker)
+      .gt("lease_until", new Date().toISOString());
     if (saveError) throw new Error("Job result unknown; do not replay");
     if (
       error instanceof GatewayError &&

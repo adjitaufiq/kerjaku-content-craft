@@ -1,6 +1,8 @@
 # Roadmap
 
 ## Current execution — connected three-lane production
+- [ ] Resume: prove one campaign item through the actual queue executor and native consumer, with explicit local provider/storage fixtures
+- [ ] Resume: repair script/scene handoff, carousel completeness, library/queue readback and measured media validation
 - [ ] Connect campaign/script outputs to poster, carousel (5/7/10), and video lanes without repeated input
 - [ ] Produce real typography-ready images, MP3, word-timed ASS and motion MP4 in the external worker
 - [ ] Persist media and publishing packages into library and distribution queue, with platform-specific gates

@@ -32,10 +32,13 @@ def render_storyboard(content, images, voice, ass, alignment, output, bgm=None):
     words = json.loads(Path(alignment).read_text())["words"]
     duration = float(probe(voice)["format"]["duration"])
     scenes = scene_list(content)
+    expected = " ".join(scene["narration"].strip() for scene in scenes)
+    if content["production"]["voiceOver"].strip() != expected:
+        raise ValueError("Storyboard narration differs from voice-over; do not render misaligned scenes")
     boundaries, consumed = [0.0], 0
     # Text offsets emitted by the synthesizer align scene changes to their actual first spoken word.
     for scene in scenes[:-1]:
-        consumed += len(scene["narration"]) + 1
+        consumed += len(scene["narration"].strip()) + 1
         next_word = next((w for w in words if w["offset"] >= consumed), None)
         if next_word:
             boundaries.append(next_word["start"])

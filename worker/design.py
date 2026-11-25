@@ -75,29 +75,30 @@ def design_bundle(content, images, output, formats, slides=7):
         card.save(output / "poster.jpg", quality=94)
         files += [output / "poster.png", output / "poster.jpg"]
     if "Carousel" in formats:
-        for index in range(slides):
-            if index == 0:
-                heading, body = p["hook"] or content["title"], scenes[0]["narration"]
-            elif index == slides - 1:
-                heading, body = "Mulai dari satu proses.", p["cta"]
-            else:
-                middle = scenes[1:-1] or scenes
-                # Split source narration into sequential portions; never invent educational claims.
-                sentences = []
-                import re
-                for scene in middle:
-                    for text in re.split(r"(?<=[.!?])\s+", scene["narration"]):
-                        if text.strip():
-                            sentences.append((scene["heading"], text))
-                if len(sentences) < slides - 2:
-                    sentences = [(scene["heading"], chunk) for scene in middle for chunk in scene["narration"].split(",") if chunk.strip()]
-                if not sentences:
-                    raise ValueError("Carousel educational content missing")
-                start = (index - 1) * len(sentences) // (slides - 2)
-                end = max(start + 1, index * len(sentences) // (slides - 2))
-                heading = sentences[min(start, len(sentences) - 1)][0]
-                body = " ".join(text for _, text in sentences[start:end])
+        for index, (heading, body) in enumerate(carousel_plan(content, slides)):
             path = output / f"carousel-{index + 1:02}.png"
             render_card(images[index % len(images)], heading, body, p["cta"] if index == slides - 1 else "KERJAKU · AI AUTOMATION" if "AI" in content["title"] else "KERJAKU", path, index + 1, slides)
             files.append(path)
     return files
+
+
+def carousel_plan(content, slides):
+    """Each source word is assigned once, in order; never duplicate a slide to hit a count."""
+    if slides not in (5, 7, 10):
+        raise ValueError("Unsupported carousel length")
+    import re
+    scenes, p = scene_list(content), content["production"]
+    middle = scenes[1:-1]
+    units = [(scene["heading"], text.strip()) for scene in middle
+             for text in re.split(r"(?<=[.!?])\s+", scene["narration"]) if text.strip()]
+    if len(units) < slides - 2:
+        units = [(scene["heading"], word) for scene in middle for word in scene["narration"].split()]
+    count = slides - 2
+    if len(units) < count:
+        raise ValueError("Carousel material insufficient; hold instead of repeating slides")
+    result = [(p["hook"] or content["title"], scenes[0]["narration"])]
+    for index in range(count):
+        start, end = index * len(units) // count, (index + 1) * len(units) // count
+        result.append((units[start][0], " ".join(text for _, text in units[start:end])))
+    result.append((scenes[-1]["heading"], scenes[-1]["narration"]))
+    return result

@@ -9,7 +9,7 @@ export const loadFactory = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const db = factoryClient(context.supabase);
-    const [bank, campaigns, tasks, media] = await Promise.all([
+    const [bank, campaigns, tasks, media, distribution] = await Promise.all([
       db.from("craft_bank").select("*").eq("user_id", context.userId).order("content_number"),
       db
         .from("craft_campaigns")
@@ -23,8 +23,9 @@ export const loadFactory = createServerFn({ method: "GET" })
         .select("*")
         .eq("user_id", context.userId)
         .order("created_at", { ascending: false }),
+      db.from("craft_distribution").select("*").eq("user_id", context.userId).order("created_at", { ascending: false }),
     ]);
-    if (bank.error || campaigns.error || tasks.error || media.error)
+    if (bank.error || campaigns.error || tasks.error || media.error || distribution.error)
       throw new Error(
         "Penyimpanan produksi belum aktif; data lama tidak diubah. Aktifkan Lovable Cloud sebelum menyimpan campaign.",
       );
@@ -37,6 +38,7 @@ export const loadFactory = createServerFn({ method: "GET" })
           .map(({ output: _output, ...task }) => task),
       })),
       media: media.data ?? [],
+      distribution: distribution.data ?? [],
     };
   });
 export const saveFactoryBank = createServerFn({ method: "POST" })

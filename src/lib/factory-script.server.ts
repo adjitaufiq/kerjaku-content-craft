@@ -2,6 +2,7 @@ import { forkContent, type BankContent } from "./content-bank";
 import { routeTaskStructured } from "./ai-router.server";
 import type { CampaignInput, ResearchSource } from "./factory-types";
 import { campaignScriptRequest, campaignScriptDocument, type GeneratedScript } from "./factory-script-request";
+import { prepareProductionContent } from "./factory-plan";
 export async function generateCampaignScript(
   input: CampaignInput,
   sources: ResearchSource[],
@@ -18,7 +19,7 @@ export async function generateCampaignScript(
     seed.production.voiceOver.trim() &&
     seed.production.scenes.trim()
   )
-    return forkContent(seed, 100000 + ordinal);
+    return prepareProductionContent(forkContent(seed, 100000 + ordinal));
   const generated = await routeTaskStructured<GeneratedScript>(
     campaignScriptRequest(input, sources, ordinal, feedback),
     taskId,

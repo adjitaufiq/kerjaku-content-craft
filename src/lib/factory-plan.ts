@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { BankContent } from "./content-bank";
+import { contentSchema, type BankContent } from "./content-bank";
 import type { CampaignInput } from "./factory-types";
 
 export const sceneSchema = z.object({
@@ -8,6 +8,17 @@ export const sceneSchema = z.object({
   visual: z.string().min(1).max(1200),
 });
 export type FactoryScene = z.infer<typeof sceneSchema>;
+/** One narration contract for script, storyboard, TTS and renderer; originals remain untouched. */
+export function prepareProductionContent(content: BankContent): BankContent {
+  if (!content.title.trim() || !content.caption.trim() || !content.production.script.trim())
+    throw new Error("Judul, caption dan naskah produksi wajib terisi.");
+  const scenes = readScenes(content);
+  const voiceOver = scenes.map((scene) => scene.narration.trim()).join(" ");
+  return contentSchema.parse({
+    ...content,
+    production: { ...content.production, scenes: JSON.stringify(scenes), voiceOver },
+  });
+}
 export function productionFormats(config: CampaignInput, ordinal: number) {
   const seed = config.seedContents[ordinal - 1];
   return seed ? [seed.production.format] : config.formats;

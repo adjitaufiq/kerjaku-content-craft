@@ -9,9 +9,45 @@ import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 import requests
-from media import synthesize, compose, metadata
+from media import synthesize, metadata, probe
 from design import design_bundle
 from production import render_storyboard, original_bgm
+from PIL import Image
+
+
+def validate_native_file(file, upload, content, voice_duration=None):
+    """Validate decoded native outputs before uploading; server separately reads checksums back."""
+    if not file.is_file() or file.stat().st_size == 0:
+        raise ValueError("Native output missing")
+    if upload["kind"] == "image":
+        with Image.open(file) as image:
+            image.load()
+            if image.size != (1080, 1350):
+                raise ValueError("Poster/carousel dimensions invalid")
+        return None
+    if upload["kind"] in ("voice", "video"):
+        info = probe(file)
+        streams = {stream["codec_type"]: stream for stream in info["streams"]}
+        duration = float(info["format"]["duration"])
+        if upload["kind"] == "voice" and streams.get("audio", {}).get("codec_name") != "mp3":
+            raise ValueError("Voice output is not MP3")
+        if upload["kind"] == "video":
+            video = streams.get("video", {})
+            if (video.get("codec_name"), video.get("width"), video.get("height"), video.get("r_frame_rate")) != ("h264", 1080, 1920, "30/1") or streams.get("audio", {}).get("codec_name") != "aac":
+                raise ValueError("Video output violates production format")
+            if voice_duration is None or abs(duration - voice_duration) > 1:
+                raise ValueError("Video and voice duration mismatch")
+        return duration
+    if file.name == "alignment.json":
+        alignment = json.loads(file.read_text())
+        words = alignment["words"]
+        if not words or any(word["end"] <= word["start"] for word in words):
+            raise ValueError("Word alignment invalid")
+        if " ".join(content["production"]["voiceOver"].split()) != " ".join(scene["narration"] for scene in json.loads(content["production"]["scenes"])):
+            raise ValueError("Narration contract mismatch")
+    if file.suffix in (".ass", ".srt", ".vtt") and not file.read_text().strip():
+        raise ValueError("Subtitle empty")
+    return None
 
 
 def safe_download(url, path, allowed_origin):
@@ -44,6 +80,8 @@ def run_native(task, storage_origin):
             for index, asset in enumerate(task["inputs"]):
                 file = folder / f"input-{index}{Path(asset['path']).suffix}"
                 safe_download(asset["url"], file, storage_origin)
+                if file.stat().st_size != asset["bytes"] or metadata(file, asset["kind"], asset["mime"], asset["path"])["checksum"] != asset["checksum"]:
+                    raise ValueError("Input media checksum mismatch")
                 if asset["kind"] == "image" and Path(asset["path"]).name.startswith("scene-"):
                     images.append(file)
                 elif asset["kind"] == "voice":
@@ -57,20 +95,24 @@ def run_native(task, storage_origin):
             elif not voice or not subtitle or not alignment:
                 raise ValueError("Voice and subtitle not available")
             else:
-                original_bgm(folder / "bgm.wav", float(__import__("media").probe(voice)["format"]["duration"]))
+                duration = float(probe(voice)["format"]["duration"])
+                original_bgm(folder / "bgm.wav", duration)
                 info = render_storyboard(task["content"], images, voice, subtitle, alignment, folder / "video.mp4", folder / "bgm.wav")
                 duration = float(info["format"]["duration"])
         else:
             raise ValueError("Unsupported native task")
         assets = []
         for upload in task["uploads"]:
-            if urlparse(upload["url"]).netloc != urlparse(storage_origin).netloc:
+            if urlparse(upload["url"]).scheme != "https" or urlparse(upload["url"]).netloc != urlparse(storage_origin).netloc:
                 raise ValueError("Upload origin mismatch")
+            if Path(upload["filename"]).name != upload["filename"]:
+                raise ValueError("Unsafe upload filename")
             file = folder / upload["filename"]
+            measured = validate_native_file(file, upload, task["content"], duration)
             with open(file, "rb") as body:
                 response = requests.put(upload["url"], data=body, headers={"Content-Type": upload["mime"]}, timeout=180, allow_redirects=False)
             response.raise_for_status()
-            assets.append(metadata(file, upload["kind"], upload["mime"], upload["path"], duration if upload["kind"] in ("voice", "video") else None))
+            assets.append(metadata(file, upload["kind"], upload["mime"], upload["path"], measured))
         return assets
 
 
