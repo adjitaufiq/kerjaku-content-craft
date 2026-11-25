@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Instagram } from "lucide-react";
@@ -70,6 +70,9 @@ function AuthPage() {
         </p>
         <Button className="mt-6 w-full" disabled={busy} onClick={() => void signIn()}>
           {busy ? "Menghubungkan…" : "Masuk dengan Google"}
+        </Button>
+        <Button className="mt-3 w-full" variant="outline" asChild>
+          <Link to="/factory">Buka Production Studio</Link>
         </Button>
       </div>
     </main>

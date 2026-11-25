@@ -18,3 +18,7 @@
 - Keep reviewed legacy ownership in server-only manifests and new asset paths owner-prefixed; private bucket delivery uses freshly generated per-asset signatures.
 - Keep Phase 0 SQL under `docs/phase0/migrations` while live preflight is blocked; apply unchanged through the migration tool only after backup and ownership evidence pass.
 - Run native rendering and local audio tools in an external worker, not in the edge application runtime; media provider interfaces define the boundary.
+- Keep the factory bank's Excel parser and domain model browser-safe, preserving legacy cells in workbook metadata; canonical templates remain immutable so importing never overwrites their source.
+- Keep offline factory drafts identity-scoped and production writes authenticated; paused Cloud permits local editing/export, never fabricated campaign execution.
+- Store factory campaign tasks and media in owner-scoped tables with lease-validated stage transitions and checksummed native-worker readback; provider-unknown outcomes are held, not re-executed.
+- Keep factory schema preparation under docs/factory until existing Cloud recovery and migration gates pass; isolated PostgreSQL tests are not production migration evidence.

@@ -2,15 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  Instagram,
-  LayoutGrid,
-  LogOut,
-  Settings2,
-  Video,
-  Wand2,
-  Factory,
-} from "lucide-react";
+import { Instagram, LayoutGrid, LogOut, Settings2, Video, Wand2, Factory } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,7 +96,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
             ) : null}
           </nav>
-
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>

@@ -15,7 +15,6 @@ import { getIntegrationStatus, updateMetaCredential } from "@/lib/meta-credentia
 import { importContentWorkbook } from "@/lib/content-bank-excel";
 import { saveFactoryBank } from "@/lib/factory.functions";
 
-
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
@@ -82,16 +81,24 @@ function SettingsPage() {
     }
   }
 
-
-
-
-
   async function handleFile(file: File) {
     setImporting(true);
     try {
       const imported = importContentWorkbook(await file.arrayBuffer());
-      const rows = imported.filter((r) => r.classification !== "SYSTEM_TEMPLATE").map((r) => ({ ...r, id: crypto.randomUUID(), classification: "PERSONAL_CONTENT" as const, status: "draft" as const, revision: 1, history: [] }));
-      if (!rows.length) { toast.success("30 template sistem tetap utuh; tidak ada konten pribadi untuk diimpor."); return; }
+      const rows = imported
+        .filter((r) => r.classification !== "SYSTEM_TEMPLATE")
+        .map((r) => ({
+          ...r,
+          id: crypto.randomUUID(),
+          classification: "PERSONAL_CONTENT" as const,
+          status: "draft" as const,
+          revision: 1,
+          history: [],
+        }));
+      if (!rows.length) {
+        toast.success("30 template sistem tetap utuh; tidak ada konten pribadi untuk diimpor.");
+        return;
+      }
       await saveImportedBank({ data: rows });
       await queryClient.invalidateQueries({ queryKey: ["bank"] });
       await queryClient.invalidateQueries({ queryKey: ["factory"] });
@@ -108,10 +115,9 @@ function SettingsPage() {
     <AppShell>
       <h1 className="text-3xl font-bold">Settings & Config</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Token Meta disimpan terenkripsi di backend (service-role only) dan tidak pernah dikirim
-        utuh ke browser.
+        Token Meta disimpan terenkripsi di backend (service-role only) dan tidak pernah dikirim utuh
+        ke browser.
       </p>
-
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <section className="surface-panel p-6">
@@ -124,7 +130,10 @@ function SettingsPage() {
             <Row label="Status" value={statusLabel(status?.state)} />
             <Row label="Tipe token" value={status?.tokenType ?? "long_lived_user_token"} />
             <Row label="Dibuat / disimpan" value={formatDate(status?.tokenCreatedAt ?? null)} />
-            <Row label="Terakhir diperbarui" value={formatDate(status?.tokenLastUpdatedAt ?? null)} />
+            <Row
+              label="Terakhir diperbarui"
+              value={formatDate(status?.tokenLastUpdatedAt ?? null)}
+            />
             <Row label="Kedaluwarsa" value={formatDate(status?.tokenExpiresAt ?? null)} />
             <Row
               label="Sumber masa berlaku"
@@ -140,7 +149,10 @@ function SettingsPage() {
             />
             <Row
               label="Instagram Account ID"
-              value={status?.igAccountId ?? (status?.igAccountConfigured ? "Terkonfigurasi" : "Belum diisi")}
+              value={
+                status?.igAccountId ??
+                (status?.igAccountConfigured ? "Terkonfigurasi" : "Belum diisi")
+              }
             />
             <Row label="Token (masked)" value={status?.tokenMask ?? "—"} />
             <Row
@@ -196,10 +208,8 @@ function SettingsPage() {
                 Hanya administrator yang dapat memperbarui token Meta.
               </p>
             )}
-
           </div>
         </section>
-
 
         <section className="surface-panel p-6">
           <div className="flex items-center gap-2 text-accent">

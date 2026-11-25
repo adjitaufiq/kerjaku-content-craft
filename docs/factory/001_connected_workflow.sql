@@ -8,7 +8,7 @@ CREATE TABLE public.craft_bank (
   UNIQUE(user_id,content_number), UNIQUE(id,user_id),
   CHECK(document->>'classification' = 'PERSONAL_CONTENT'), CHECK(document->>'id' = id::text)
 );
-GRANT SELECT,INSERT,UPDATE,DELETE ON public.craft_bank TO authenticated;
+GRANT SELECT ON public.craft_bank TO authenticated;
 GRANT ALL ON public.craft_bank TO service_role;
 ALTER TABLE public.craft_bank ENABLE ROW LEVEL SECURITY;
 CREATE POLICY own_bank ON public.craft_bank FOR ALL TO authenticated USING(user_id=auth.uid()) WITH CHECK(user_id=auth.uid());
@@ -33,6 +33,9 @@ GRANT SELECT ON public.craft_tasks TO authenticated;
 GRANT ALL ON public.craft_tasks TO service_role;
 ALTER TABLE public.craft_tasks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY own_task ON public.craft_tasks FOR SELECT TO authenticated USING(user_id=auth.uid());
+
+ALTER TABLE public.craft_bank ADD COLUMN source_task_id uuid UNIQUE;
+ALTER TABLE public.craft_bank ADD CONSTRAINT bank_source_owner FOREIGN KEY(source_task_id,user_id) REFERENCES public.craft_tasks(id,user_id);
 
 CREATE TABLE public.craft_media (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, task_id uuid NOT NULL, campaign_id uuid NOT NULL,
@@ -90,15 +93,17 @@ GRANT EXECUTE ON FUNCTION public.craft_complete_task(uuid,text,jsonb,text) TO se
 
 CREATE OR REPLACE FUNCTION public.craft_save_bank(documents jsonb) RETURNS integer
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
-DECLARE d jsonb; current_revision integer; n integer:=0;
+DECLARE d jsonb; current_revision integer; current_status text; n integer:=0;
 BEGIN
   IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Unauthorized'; END IF;
   IF jsonb_typeof(documents)<>'array' THEN RAISE EXCEPTION 'Invalid bank'; END IF;
   FOR d IN SELECT value FROM jsonb_array_elements(documents) LOOP
     IF d->>'classification'<>'PERSONAL_CONTENT' THEN RAISE EXCEPTION 'System templates cannot be overwritten'; END IF;
     IF d->>'status' NOT IN ('draft','approved') THEN RAISE EXCEPTION 'Publishing states are not user editable'; END IF;
-    SELECT revision INTO current_revision FROM public.craft_bank WHERE id=(d->>'id')::uuid AND user_id=auth.uid() FOR UPDATE;
+    SELECT revision,document->>'status' INTO current_revision,current_status FROM public.craft_bank WHERE id=(d->>'id')::uuid AND user_id=auth.uid() FOR UPDATE;
+    IF current_status IN ('scheduled','published') THEN RAISE EXCEPTION 'Settled content cannot be overwritten'; END IF;
     IF current_revision IS NOT NULL AND (d->>'revision')::integer<>current_revision+1 THEN RAISE EXCEPTION 'Revision conflict'; END IF;
+    IF EXISTS(SELECT 1 FROM public.craft_bank WHERE id=(d->>'id')::uuid AND user_id=auth.uid() AND content_number<>(d->>'no')::integer) THEN RAISE EXCEPTION 'Content number cannot change on an existing ID'; END IF;
     INSERT INTO public.craft_bank(id,user_id,content_number,document,revision) VALUES((d->>'id')::uuid,auth.uid(),(d->>'no')::integer,d,(d->>'revision')::integer)
     ON CONFLICT(id) DO UPDATE SET document=EXCLUDED.document,revision=EXCLUDED.revision,updated_at=now() WHERE craft_bank.user_id=auth.uid();
     IF NOT FOUND THEN RAISE EXCEPTION 'Access denied'; END IF;
@@ -108,4 +113,22 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.craft_save_bank(jsonb) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.craft_save_bank(jsonb) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.craft_store_generated(task_id uuid,worker text,document jsonb) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+DECLARE owner uuid; number integer; stored jsonb;
+BEGIN
+  SELECT user_id INTO owner FROM public.craft_tasks WHERE id=task_id AND stage='script' AND state='running' AND lease_owner=worker AND lease_until>now() FOR UPDATE;
+  IF owner IS NULL THEN RAISE EXCEPTION 'LEASE_LOST'; END IF;
+  SELECT b.document INTO stored FROM public.craft_bank b WHERE source_task_id=task_id;
+  IF stored IS NOT NULL THEN RETURN stored; END IF;
+  PERFORM pg_advisory_xact_lock(hashtext(owner::text));
+  SELECT greatest(30,coalesce(max(content_number),30))+1 INTO number FROM public.craft_bank WHERE user_id=owner;
+  stored:=jsonb_set(document,'{no}',to_jsonb(number));
+  IF stored->>'classification'<>'PERSONAL_CONTENT' OR stored->>'status'<>'draft' THEN RAISE EXCEPTION 'Invalid generated content'; END IF;
+  INSERT INTO public.craft_bank(id,user_id,content_number,document,source_task_id) VALUES((stored->>'id')::uuid,owner,number,stored,task_id);
+  RETURN stored;
+END $$;
+REVOKE ALL ON FUNCTION public.craft_store_generated(uuid,text,jsonb) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.craft_store_generated(uuid,text,jsonb) TO service_role;
 COMMIT;

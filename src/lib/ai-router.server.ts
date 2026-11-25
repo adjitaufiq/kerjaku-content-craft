@@ -34,15 +34,28 @@ export async function routeStructured<T>(
 }
 
 /** Worker callers must additionally prove a currently leased, owner-bound production job. */
-export async function routeTaskStructured<T>(input: StructuredInput, taskId: string, workerId: string) {
+export async function routeTaskStructured<T>(
+  input: StructuredInput,
+  taskId: string,
+  workerId: string,
+) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: task, error } = await factoryClient(supabaseAdmin).from("craft_tasks").select("user_id,lease_until")
-    .eq("id", taskId).eq("state", "running").eq("lease_owner", workerId).single();
-  if (error || !task?.lease_until || Date.parse(task.lease_until) <= Date.now()) throw new Error("LEASE_LOST");
+  const { data: task, error } = await factoryClient(supabaseAdmin)
+    .from("craft_tasks")
+    .select("user_id,lease_until")
+    .eq("id", taskId)
+    .eq("state", "running")
+    .eq("lease_owner", workerId)
+    .single();
+  if (error || !task?.lease_until || Date.parse(task.lease_until) <= Date.now())
+    throw new Error("LEASE_LOST");
   return routeStructuredAuthorized<T>(input, task.user_id);
 }
 
-async function routeStructuredAuthorized<T>(input: StructuredInput, ownerId: string): Promise<{ result: T; model: string }> {
+async function routeStructuredAuthorized<T>(
+  input: StructuredInput,
+  ownerId: string,
+): Promise<{ result: T; model: string }> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const db = phase0Client(supabaseAdmin);
   const { data: health, error: healthError } = await db
