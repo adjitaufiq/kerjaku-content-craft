@@ -4,7 +4,7 @@ import { BANK_HEADERS, SCRIPT_HEADERS, contentSchema, isExactTemplate, type Bank
 function text(value: unknown): string { return value == null ? "" : String(value); }
 function table(sheet: XLSX.WorkSheet): unknown[][] { return XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "", blankrows: false, raw: true }); }
 function requireHeaders(actual: unknown[], expected: readonly string[], name: string) {
-  if (expected.some((h, i) => actual[i] !== h) || actual.length > expected.length) throw new Error(`${name}: urutan kolom wajib ${expected.join(", ")}. Tidak ada kolom yang dibuang diam-diam.`);
+  if (expected.some((h, i) => actual[i] !== h) || (name !== "BANK KONTEN" && actual.length > expected.length)) throw new Error(`${name}: urutan kolom wajib ${expected.join(", ")}. Tidak ada kolom yang dibuang diam-diam.`);
 }
 function validateNumbers(rows: BankContent[]) {
   if (new Set(rows.map((r) => r.no)).size !== rows.length) throw new Error("Nomor konten ganda: pisahkan nomor sebelum menautkan dua sheet.");
@@ -16,7 +16,7 @@ export function exportContentWorkbook(rows: BankContent[]): Uint8Array {
   const bank = XLSX.utils.aoa_to_sheet([Array.from(BANK_HEADERS), ...rows.map((r) => [r.no, r.title, r.prompt, r.caption])]);
   const scripts = XLSX.utils.aoa_to_sheet([Array.from(SCRIPT_HEADERS), ...rows.map((r) => { const p = r.production;
     return [r.id, r.no, p.category, p.audience, p.platform, p.format, p.hook, p.script, p.scenes, p.visualDirection, p.voiceOver, p.cta, p.hashtags, p.thumbnailText, p.duration, r.status]; })]);
-  rows.forEach((r, i) => { const cell = scripts[`A${i + 2}`]; if (cell) cell.c = [{ a: "KERJAKU", t: JSON.stringify({ version: 1, classification: r.classification, tags: r.tags, subcategory: r.subcategory, revision: r.revision, history: r.history }) }]; });
+  rows.forEach((r, i) => { const cell = scripts[`A${i + 2}`]; if (cell) cell.c = [{ a: "KERJAKU", t: JSON.stringify({ version: 1, classification: r.classification, tags: r.tags, subcategory: r.subcategory, legacyCells: r.legacyCells, revision: r.revision, history: r.history }) }]; });
   bank["!cols"] = [{ wch: 8 }, { wch: 45 }, { wch: 85 }, { wch: 70 }];
   scripts["!cols"] = SCRIPT_HEADERS.map((_, i) => ({ wch: i === 0 ? 38 : i >= 6 && i <= 10 ? 65 : 24 }));
   bank["!autofilter"] = { ref: `A1:D${Math.max(1, rows.length + 1)}` };
@@ -44,12 +44,13 @@ export function importContentWorkbook(buffer: ArrayBuffer | Uint8Array): BankCon
   const result = rows.map((r): BankContent => {
     const no = Number(r[0]); const entry = byNo.get(no); const p = entry?.values;
     let meta: unknown = {};
-    const comment = entry && scriptSheet ? scriptSheet[`A${entry.index + 2}`]?.c?.find((c) => c.a === "KERJAKU")?.t : undefined;
+    const comment = entry && scriptSheet ? scriptSheet[`A${entry.index + 2}`]?.c?.find((c: XLSX.Comment) => c.a === "KERJAKU")?.t : undefined;
     if (comment) { try { meta = JSON.parse(comment); } catch { throw new Error("Metadata konten rusak; impor dibatalkan."); } }
     const record = typeof meta === "object" && meta !== null ? meta as Record<string, unknown> : {};
     const base = { no, title: text(r[1]), prompt: text(r[2]), caption: text(r[3]) };
     const exact = isExactTemplate(base);
     return contentSchema.parse({ ...record, ...base,
+      ...(headers.length > 4 ? { legacyCells: headers.slice(4).map((h, i) => ({ column: i + 4, header: text(h), value: r[i + 4] ?? "" })) } : {}),
       id: p ? text(p[0]) : exact ? `system-template-${no}` : crypto.randomUUID(),
       // A workbook comment is never authority to grant workspace ownership or system write access.
       classification: exact && (!p || text(p[0]) === `system-template-${no}`) ? "SYSTEM_TEMPLATE" : "PERSONAL_CONTENT",

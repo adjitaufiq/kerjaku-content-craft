@@ -9,6 +9,7 @@ import {
   Settings2,
   Video,
   Wand2,
+  Factory,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { getAccessContext } from "@/lib/roles.functions";
 import { useScheduleRunner } from "@/lib/use-schedule-runner";
 
 const nav = [
+  { to: "/factory", label: "Factory", icon: Factory },
   { to: "/", label: "Grid", icon: LayoutGrid },
   { to: "/editor", label: "Editor", icon: Wand2 },
   { to: "/sources", label: "Cliper", icon: Video },

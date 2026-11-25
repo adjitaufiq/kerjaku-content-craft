@@ -12,7 +12,8 @@ import { SystemHealthPanel } from "@/components/SystemHealthPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getIntegrationStatus, updateMetaCredential } from "@/lib/meta-credentials.functions";
-import { saveBank, type BankRow } from "@/lib/content-data";
+import { importContentWorkbook } from "@/lib/content-bank-excel";
+import { saveFactoryBank } from "@/lib/factory.functions";
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -44,6 +45,7 @@ function formatDate(value: string | null) {
 function SettingsPage() {
   const fetchIntegration = useServerFn(getIntegrationStatus);
   const saveCredential = useServerFn(updateMetaCredential);
+  const saveImportedBank = useServerFn(saveFactoryBank);
   const integration = useQuery({
     queryKey: ["meta-integration"],
     queryFn: () => fetchIntegration({}),
@@ -87,34 +89,12 @@ function SettingsPage() {
   async function handleFile(file: File) {
     setImporting(true);
     try {
-      const XLSX = await import("xlsx");
-      const buffer = await file.arrayBuffer();
-      const wb = XLSX.read(buffer, { type: "array" });
-      const sheetName = wb.SheetNames[0]!;
-      const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[sheetName]!, {
-        defval: "",
-      });
-
-      const rows: BankRow[] = [];
-      for (const raw of json) {
-        const entries = Object.entries(raw);
-        const pick = (needle: string) =>
-          String(
-            entries.find(([k]) => k.toLowerCase().includes(needle))?.[1] ?? "",
-          ).trim();
-        const no = Number(pick("no"));
-        if (!Number.isFinite(no) || no <= 0) continue;
-        rows.push({
-          no,
-          title: pick("judul"),
-          prompt: pick("prompt"),
-          caption: pick("caption"),
-        });
-      }
-
-      if (!rows.length) throw new Error("Tidak ada baris valid ditemukan di file Excel.");
-      await saveBank(rows);
+      const imported = importContentWorkbook(await file.arrayBuffer());
+      const rows = imported.filter((r) => r.classification !== "SYSTEM_TEMPLATE").map((r) => ({ ...r, id: crypto.randomUUID(), classification: "PERSONAL_CONTENT" as const, status: "draft" as const, revision: 1, history: [] }));
+      if (!rows.length) { toast.success("30 template sistem tetap utuh; tidak ada konten pribadi untuk diimpor."); return; }
+      await saveImportedBank({ data: rows });
       await queryClient.invalidateQueries({ queryKey: ["bank"] });
+      await queryClient.invalidateQueries({ queryKey: ["factory"] });
       toast.success(`${rows.length} konten berhasil diimpor.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Gagal membaca file Excel.");

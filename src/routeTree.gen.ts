@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as FactoryRouteImport } from './routes/factory'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedBrandRouteImport } from './routes/_authenticated/brand'
 import { Route as AuthenticatedDownloaderRouteImport } from './routes/_authenticated/downloader'
@@ -24,6 +25,7 @@ import { Route as AuthenticatedSourceDetailRouteImport } from './routes/_authent
 import { Route as AuthenticatedSourcesRouteImport } from './routes/_authenticated/sources'
 import { Route as AuthenticatedStoryboardRouteImport } from './routes/_authenticated/storyboard'
 import { Route as AuthenticatedViralRouteImport } from './routes/_authenticated/viral'
+import { Route as ApiPublicFactoryWorkerRouteImport } from './routes/api/public/factory/worker'
 import { Route as ApiPublicHooksPublishDueRouteImport } from './routes/api/public/hooks/publish-due'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -33,6 +35,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FactoryRoute = FactoryRouteImport.update({
+  id: '/factory',
+  path: '/factory',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
@@ -102,6 +109,11 @@ const AuthenticatedViralRoute = AuthenticatedViralRouteImport.update({
   path: '/viral',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicFactoryWorkerRoute = ApiPublicFactoryWorkerRouteImport.update({
+  id: '/api/public/factory/worker',
+  path: '/api/public/factory/worker',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksPublishDueRoute =
   ApiPublicHooksPublishDueRouteImport.update({
     id: '/api/public/hooks/publish-due',
@@ -112,6 +124,7 @@ const ApiPublicHooksPublishDueRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/factory': typeof FactoryRoute
   '/brand': typeof AuthenticatedBrandRoute
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
@@ -124,10 +137,12 @@ export interface FileRoutesByFullPath {
   '/sources': typeof AuthenticatedSourcesRoute
   '/storyboard': typeof AuthenticatedStoryboardRoute
   '/viral': typeof AuthenticatedViralRoute
+  '/api/public/factory/worker': typeof ApiPublicFactoryWorkerRoute
   '/api/public/hooks/publish-due': typeof ApiPublicHooksPublishDueRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/factory': typeof FactoryRoute
   '/brand': typeof AuthenticatedBrandRoute
   '/downloader': typeof AuthenticatedDownloaderRoute
   '/editor': typeof AuthenticatedEditorRoute
@@ -141,12 +156,14 @@ export interface FileRoutesByTo {
   '/storyboard': typeof AuthenticatedStoryboardRoute
   '/viral': typeof AuthenticatedViralRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/factory/worker': typeof ApiPublicFactoryWorkerRoute
   '/api/public/hooks/publish-due': typeof ApiPublicHooksPublishDueRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/factory': typeof FactoryRoute
   '/_authenticated/brand': typeof AuthenticatedBrandRoute
   '/_authenticated/downloader': typeof AuthenticatedDownloaderRoute
   '/_authenticated/editor': typeof AuthenticatedEditorRoute
@@ -160,6 +177,7 @@ export interface FileRoutesById {
   '/_authenticated/storyboard': typeof AuthenticatedStoryboardRoute
   '/_authenticated/viral': typeof AuthenticatedViralRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/factory/worker': typeof ApiPublicFactoryWorkerRoute
   '/api/public/hooks/publish-due': typeof ApiPublicHooksPublishDueRoute
 }
 export interface FileRouteTypes {
@@ -167,6 +185,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/factory'
     | '/brand'
     | '/downloader'
     | '/editor'
@@ -179,10 +198,12 @@ export interface FileRouteTypes {
     | '/sources'
     | '/storyboard'
     | '/viral'
+    | '/api/public/factory/worker'
     | '/api/public/hooks/publish-due'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
+    | '/factory'
     | '/brand'
     | '/downloader'
     | '/editor'
@@ -196,11 +217,13 @@ export interface FileRouteTypes {
     | '/storyboard'
     | '/viral'
     | '/'
+    | '/api/public/factory/worker'
     | '/api/public/hooks/publish-due'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/factory'
     | '/_authenticated/brand'
     | '/_authenticated/downloader'
     | '/_authenticated/editor'
@@ -214,12 +237,15 @@ export interface FileRouteTypes {
     | '/_authenticated/storyboard'
     | '/_authenticated/viral'
     | '/_authenticated/'
+    | '/api/public/factory/worker'
     | '/api/public/hooks/publish-due'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  FactoryRoute: typeof FactoryRoute
+  ApiPublicFactoryWorkerRoute: typeof ApiPublicFactoryWorkerRoute
   ApiPublicHooksPublishDueRoute: typeof ApiPublicHooksPublishDueRoute
 }
 
@@ -237,6 +263,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/factory': {
+      id: '/factory'
+      path: '/factory'
+      fullPath: '/factory'
+      preLoaderRoute: typeof FactoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/': {
@@ -330,6 +363,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedViralRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/factory/worker': {
+      id: '/api/public/factory/worker'
+      path: '/api/public/factory/worker'
+      fullPath: '/api/public/factory/worker'
+      preLoaderRoute: typeof ApiPublicFactoryWorkerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/publish-due': {
       id: '/api/public/hooks/publish-due'
       path: '/api/public/hooks/publish-due'
@@ -378,6 +418,8 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  FactoryRoute: FactoryRoute,
+  ApiPublicFactoryWorkerRoute: ApiPublicFactoryWorkerRoute,
   ApiPublicHooksPublishDueRoute: ApiPublicHooksPublishDueRoute,
 }
 export const routeTree = rootRouteImport

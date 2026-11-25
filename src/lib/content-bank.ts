@@ -22,6 +22,7 @@ export const contentSchema = z.object({
   classification: z.enum(["SYSTEM_TEMPLATE", "PERSONAL_CONTENT", "SHARED_WORKSPACE", "UNRESOLVED_HELD"]),
   production: productionSchema, status: z.enum(WORKFLOW_STATUSES).default("draft"),
   tags: z.array(z.string()).default([]), subcategory: z.string().default(""),
+  legacyCells: z.array(z.object({ column: z.number().int(), header: z.string(), value: z.union([z.string(), z.number(), z.boolean(), z.null()]) })).default([]),
   revision: z.number().int().positive().default(1),
   history: z.array(z.object({ revision: z.number(), at: z.string(), snapshot: z.string() })).default([]),
 });
@@ -38,7 +39,7 @@ export function contentFingerprint(row: Pick<BankContent, "title" | "prompt" | "
   // Canonical JSON is delimiter-safe and preserves user text exactly.
   return JSON.stringify([row.title, row.prompt, row.caption]);
 }
-export function forkContent(source: BankContent, no: number, id = crypto.randomUUID()): BankContent {
+export function forkContent(source: BankContent, no: number, id: string = crypto.randomUUID()): BankContent {
   return contentSchema.parse({ ...source, no, id, classification: "PERSONAL_CONTENT", status: "draft", revision: 1, history: [] });
 }
 export function reviseContent(current: BankContent, patch: Partial<BankContent>, at = new Date().toISOString()): BankContent {
