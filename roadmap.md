@@ -1,14 +1,15 @@
 # Roadmap
 
 ## Phase 0 — Security & fundamental hardening
-- [ ] Database preflight, ownership inventory, backup/recovery evidence (live blocked while database paused)
-- [ ] Prepare fail-closed ownership migration and secure asset delivery
-- [ ] Harden server authorization and publishing credentials
-- [ ] Durable scheduler leases, reconciliation, retry, concurrency tests; activation gated by live heartbeat
-- [ ] Capability AI router and refactor existing engines
-- [ ] Media provider contracts and dedicated worker design
-- [ ] Actual system health panel
-- [ ] Validation and Phase 0 report A–K; no deployment or Phase 1
+- [ ] Live database preflight, ownership manifest, backup/restore evidence, migrations, live RLS/storage tests — BLOCKED: database paused
+- [x] Prepare fail-closed ownership migration and secure asset delivery
+- [x] Harden server authorization and publishing credentials
+- [x] Durable scheduler code and local concurrency/retry tests
+- [ ] Scheduler cutover — BLOCKED: database paused, schedule inspection, approved deployment
+- [x] Capability AI router and refactor existing engines
+- [x] Media provider contracts and dedicated worker design
+- [x] Actual system health panel
+- [x] Phase 0 report A–K; no deployment or Phase 1
 
 - [x] Database schema Viral DNA, ATM versions, and Brand Knowledge
 - [x] Server AI engines for Viral DNA and ATM modes
