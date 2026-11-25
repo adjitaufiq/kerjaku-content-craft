@@ -1,5 +1,16 @@
 # Roadmap
 
+## Authorized Autonomous Content Factory build
+- [ ] Content Bank: two-sheet XLSX, protected templates, editing, filters, duplicates, versions and workflow
+- [ ] Campaign command and durable orchestration
+- [ ] Research with sources and connected script generation
+- [ ] Image/carousel production and library delivery
+- [ ] MP3 voice production and alignment
+- [ ] External media worker: MP4 composition, subtitles, BGM and footage
+- [ ] Distribution adapters, calendar, approval and reconciliation
+- [ ] Analytics integration
+- [ ] One real campaign and one published video — BLOCKED: paused database, platform authorization and running media worker
+
 ## Phase 0 — Security & fundamental hardening
 - [ ] Live database preflight, ownership manifest, backup/restore evidence, migrations, live RLS/storage tests — BLOCKED: database paused
 - [x] Prepare fail-closed ownership migration and secure asset delivery
