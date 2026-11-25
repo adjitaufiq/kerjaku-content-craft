@@ -1,9 +1,21 @@
 import { FACTORY_STAGES, type FactoryAsset } from "./factory-types";
-export function nextFactoryStage(stage: string, format = "Video"): string {
-  if (stage === "image" && format !== "Video") return "quality";
+export function nextFactoryStage(stage: string, format = "Video", formats = [format]): string {
+  if (stage === "image") return formats.some((f) => f !== "Video") ? "design" : "voice";
+  if (stage === "design") return formats.includes("Video") ? "voice" : "quality";
   const index = FACTORY_STAGES.findIndex((s) => s === stage);
   if (index < 0) throw new Error("Unknown factory stage");
   return FACTORY_STAGES[index + 1] ?? "complete";
+}
+export function qualityCheckBundle(assets: FactoryAsset[], voiceOver: string, formats: string[], slides: number) {
+  const issues: string[] = [];
+  const has = (name: string) => assets.some((a) => a.path.endsWith(`/${name}`) && a.bytes > 0 && /^[a-f0-9]{64}$/.test(a.checksum));
+  if (formats.includes("Foto") && (!has("poster.png") || !has("poster.jpg"))) issues.push("Poster PNG/JPG belum lengkap");
+  if (formats.includes("Carousel")) for (let i = 1; i <= slides; i++) if (!has(`carousel-${String(i).padStart(2, "0")}.png`)) issues.push(`Slide carousel ${i} belum lengkap`);
+  if (formats.includes("Video")) {
+    issues.push(...qualityCheck(assets, voiceOver, "Video").issues);
+    if (!has("subtitles.ass") || !has("alignment.json")) issues.push("Subtitle word-level ASS belum lengkap");
+  }
+  return { passed: issues.length === 0, issues };
 }
 export function qualityCheck(
   assets: FactoryAsset[],

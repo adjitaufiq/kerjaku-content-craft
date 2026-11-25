@@ -6,6 +6,7 @@ export const FACTORY_STAGES = [
   "research",
   "script",
   "image",
+  "design",
   "voice",
   "render",
   "quality",
@@ -21,6 +22,8 @@ export const campaignSchema = z.object({
   publishingMode: z.enum(["manual", "scheduled", "automatic"]).default("manual"),
   duration: z.number().int().min(10).max(3600).default(45),
   slides: z.union([z.literal(5), z.literal(7), z.literal(10)]).default(5),
+  formats: z.array(z.enum(["Foto", "Carousel", "Video"])).min(1).max(3).default(["Foto", "Carousel", "Video"]),
+  voice: z.object({ persona: z.enum(["male", "female"]).default("female"), speed: z.number().int().min(80).max(260).default(165) }).default({}),
   seedContents: z.array(contentSchema).default([]),
 });
 export type CampaignInput = z.infer<typeof campaignSchema>;
@@ -32,7 +35,7 @@ export type ResearchSource = {
   evidence: string;
 };
 export type FactoryAsset = {
-  kind: "image" | "voice" | "video" | "subtitle";
+  kind: "image" | "voice" | "video" | "subtitle" | "metadata";
   bucket: string;
   path: string;
   mime: string;
@@ -68,6 +71,20 @@ export type TaskOutput = {
   sources?: ResearchSource[];
   assets?: FactoryAsset[];
   qc?: { passed: boolean; issues: string[] };
+  distribution?: DistributionPackage[];
+};
+export type DistributionPackage = {
+  id: string;
+  campaignId: string;
+  contentId: string;
+  platform: "instagram" | "tiktok" | "facebook" | "youtube";
+  format: "Foto" | "Carousel" | "Video";
+  title: string;
+  caption: string;
+  hashtags: string;
+  assets: FactoryAsset[];
+  state: "awaiting_authorization" | "unsupported_format" | "ready";
+  reason: string;
 };
 export type FactoryBankRow = {
   id: string;
@@ -86,7 +103,7 @@ export const workerInput = z.object({
   assets: z
     .array(
       z.object({
-        kind: z.enum(["voice", "video", "subtitle"]),
+        kind: z.enum(["image", "voice", "video", "subtitle", "metadata"]),
         path: z.string(),
         mime: z.string(),
         bytes: z.number().int().positive(),
@@ -94,7 +111,7 @@ export const workerInput = z.object({
         duration: z.number().positive().nullable(),
       }),
     )
-    .max(5)
+    .max(12)
     .optional(),
 });
 export type WorkerInput = z.infer<typeof workerInput>;

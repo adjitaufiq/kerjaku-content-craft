@@ -5,6 +5,7 @@ import { phase0Client } from "./phase0-db";
 import { factoryClient } from "./factory-db";
 import type { BankContent } from "./content-bank";
 import type { FactoryAsset, FactoryTask } from "./factory-types";
+import { campaignImageRequest } from "./factory-image-request";
 
 export async function generateCampaignImages(
   admin: SupabaseClient<Database>,
@@ -27,12 +28,7 @@ export async function generateCampaignImages(
     if (recordError) throw new Error("Usage tracking unavailable; image request not sent.");
     try {
       const result = await generateImage(
-        {
-          model: "openai/gpt-image-2.5-sunburst",
-          output_format: "png",
-          size: "1024x1536",
-          prompt: `${content.prompt}\n${slides === 1 ? "Foto KERJAKU selesai" : `Carousel KERJAKU, slide ${index + 1}/${slides}`}. Variasi visual mengikuti scene: ${content.production.scenes}. Kontinuitas visual sama antar-slide. Teks jelas Bahasa Indonesia, bukan placeholder. Untuk slide ini tekankan ${index === 0 ? content.production.hook : index === slides - 1 ? content.production.cta : content.production.visualDirection}.`,
-        },
+        campaignImageRequest(content, index),
         { runId },
       );
       const encoded = result.data?.[0]?.b64_json;
@@ -41,7 +37,7 @@ export async function generateCampaignImages(
       const checksum = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)))
         .map((n) => n.toString(16).padStart(2, "0"))
         .join("");
-      const path = `${task.user_id}/factory/${task.campaign_id}/${task.id}/slide-${index + 1}.png`;
+      const path = `${task.user_id}/factory/${task.campaign_id}/${task.id}/scene-${index + 1}.png`;
       const { error } = await admin.storage
         .from("instagram-media")
         .upload(path, bytes, { upsert: true, contentType: "image/png" });

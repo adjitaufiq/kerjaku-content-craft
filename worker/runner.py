@@ -10,6 +10,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 import requests
 from media import synthesize, compose, metadata
+from design import design_bundle
+from production import render_storyboard, original_bgm
 
 
 def safe_download(url, path, allowed_origin):
@@ -32,24 +34,32 @@ def run_native(task, storage_origin):
         folder = Path(folder)
         duration = None
         if task["stage"] == "voice":
-            duration = synthesize(task["content"]["production"]["voiceOver"], folder)["duration"]
-        elif task["stage"] == "render":
+            settings = task["config"]["voice"]
+            duration = synthesize(task["content"]["production"]["voiceOver"], folder, persona=settings["persona"], speed=settings["speed"])["duration"]
+        elif task["stage"] in ("design", "render"):
             images = []
             voice = None
             subtitle = None
+            alignment = None
             for index, asset in enumerate(task["inputs"]):
                 file = folder / f"input-{index}{Path(asset['path']).suffix}"
                 safe_download(asset["url"], file, storage_origin)
-                if asset["kind"] == "image":
+                if asset["kind"] == "image" and Path(asset["path"]).name.startswith("scene-"):
                     images.append(file)
                 elif asset["kind"] == "voice":
                     voice = file
-                elif asset["path"].endswith(".srt"):
+                elif asset["path"].endswith(".ass"):
                     subtitle = file
-            if not voice or not subtitle:
+                elif asset["path"].endswith("alignment.json"):
+                    alignment = file
+            if task["stage"] == "design":
+                design_bundle(task["content"], images, folder, task["formats"], task["config"]["slides"])
+            elif not voice or not subtitle or not alignment:
                 raise ValueError("Voice and subtitle not available")
-            info = compose(images, voice, subtitle, folder / "video.mp4")
-            duration = float(info["format"]["duration"])
+            else:
+                original_bgm(folder / "bgm.wav", float(__import__("media").probe(voice)["format"]["duration"]))
+                info = render_storyboard(task["content"], images, voice, subtitle, alignment, folder / "video.mp4", folder / "bgm.wav")
+                duration = float(info["format"]["duration"])
         else:
             raise ValueError("Unsupported native task")
         assets = []

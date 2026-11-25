@@ -3,7 +3,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg espeak-n
 WORKDIR /worker
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY media.py runner.py ./
+COPY media.py runner.py word_alignment.py design.py production.py ./
 RUN useradd --create-home worker
 USER worker
 CMD ["python", "-u", "runner.py"]

@@ -11,22 +11,13 @@ import {
   type WorkerInput,
 } from "./factory-types";
 import { contentSchema } from "./content-bank";
-import { nextFactoryStage, qualityCheck } from "./factory-policy";
+import { nextFactoryStage, qualityCheckBundle } from "./factory-policy";
+import { nativeFiles, productionFormats, readScenes } from "./factory-plan";
+import { buildDistributionPackages, campaignFeedback } from "./factory-distribution";
 import { researchCampaign } from "./factory-research.server";
 import { generateCampaignScript } from "./factory-script.server";
 import { generateCampaignImages } from "./factory-image.server";
 
-const NATIVE_FILES: Record<
-  string,
-  { filename: string; kind: FactoryAsset["kind"]; mime: string }[]
-> = {
-  voice: [
-    { filename: "voice.mp3", kind: "voice", mime: "audio/mpeg" },
-    { filename: "subtitles.srt", kind: "subtitle", mime: "application/x-subrip" },
-    { filename: "subtitles.vtt", kind: "subtitle", mime: "text/vtt" },
-  ],
-  render: [{ filename: "video.mp4", kind: "video", mime: "video/mp4" }],
-};
 export async function executeFactoryWorker(
   admin: SupabaseClient<Database>,
   input: WorkerInput,
@@ -57,8 +48,11 @@ export async function executeFactoryWorker(
         .eq("lease_owner", input.worker);
       return { completed: false, blocked: true };
     }
-    const expected = NATIVE_FILES[task.stage];
-    if (!expected || input.assets?.length !== expected.length)
+    const { data: campaign } = await db.from("craft_campaigns").select("config").eq("id", task.campaign_id).eq("user_id", task.user_id).single();
+    if (!campaign) throw new Error("Campaign unavailable");
+    const config = campaignSchema.parse(campaign.config);
+    const expected = nativeFiles(task.stage, config, task.ordinal);
+    if (!expected.length || input.assets?.length !== expected.length)
       throw new Error("Invalid output count");
     const assets: FactoryAsset[] = [];
     for (const file of expected) {
@@ -93,7 +87,7 @@ export async function executeFactoryWorker(
       task_id: task.id,
       worker: input.worker,
       result: { ...output, assets: [...(output.assets ?? []), ...assets] },
-      next_stage: nextFactoryStage(task.stage),
+      next_stage: nextFactoryStage(task.stage, output.content?.production.format, productionFormats(config, task.ordinal)),
     });
     if (completionError || !ok) throw new Error("LEASE_LOST");
     return { completed: true };
@@ -138,6 +132,7 @@ export async function executeFactoryWorker(
         task.ordinal,
         task.id,
         input.worker,
+        await readFactoryFeedback(admin, task.user_id),
       );
       const { data: stored, error: saveError } = await db.rpc("craft_store_generated", {
         task_id: task.id,
@@ -156,14 +151,14 @@ export async function executeFactoryWorker(
             admin,
             task,
             output.content,
-            output.content.production.format === "Foto" ? 1 : config.slides,
+            Math.min(3, readScenes(output.content).length),
           )),
         ],
       };
-    } else if (task.stage === "voice" || task.stage === "render") {
+    } else if (["design", "voice", "render"].includes(task.stage)) {
       if (!output.content) throw new Error("Production script missing");
       const uploads = [];
-      for (const file of NATIVE_FILES[task.stage] ?? []) {
+      for (const file of nativeFiles(task.stage, config, task.ordinal)) {
         const path = `${task.user_id}/factory/${task.campaign_id}/${task.id}/${file.filename}`;
         const { data: signed, error: signError } = await admin.storage
           .from("instagram-media")
@@ -189,29 +184,42 @@ export async function executeFactoryWorker(
         });
       }
       return {
-        task: { id: task.id, stage: task.stage, content: output.content, inputs, uploads },
+        task: { id: task.id, stage: task.stage, content: output.content, config, formats: productionFormats(config, task.ordinal), inputs, uploads },
         idle: false,
       };
     } else if (task.stage === "quality") {
-      const qc = qualityCheck(
+      const qc = qualityCheckBundle(
         output.assets ?? [],
         output.content?.production.voiceOver ?? "",
-        output.content?.production.format ?? "Video",
-        output.content?.production.format === "Foto" ? 1 : config.slides,
+        productionFormats(config, task.ordinal),
+        config.slides,
       );
       if (!qc.passed) throw new Error(qc.issues.join("; "));
       result = { ...output, qc };
+      const path = `${task.user_id}/factory/${task.campaign_id}/${task.id}/publication-package.json`;
+      const bytes = new TextEncoder().encode(JSON.stringify(result));
+      const checksum = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))).map((n) => n.toString(16).padStart(2, "0")).join("");
+      const { error: uploadError } = await admin.storage.from("instagram-media").upload(path, bytes, { upsert: true, contentType: "application/json" });
+      if (uploadError) throw new Error("Publication package not stored");
+      const asset: FactoryAsset = { kind: "metadata", bucket: "instagram-media", path, mime: "application/json", bytes: bytes.length, checksum, duration: null };
+      const { error: libraryError } = await db.from("craft_media").upsert({ ...asset, user_id: task.user_id, task_id: task.id, campaign_id: task.campaign_id }, { onConflict: "bucket,path" });
+      if (libraryError) throw new Error("Publication package library unavailable");
+      result.assets = [...(result.assets ?? []), asset];
     } else if (task.stage === "distribution") {
-      // No platform account/policy is assumed. Finished media remains in the library for export.
-      throw new Error(
-        "Media siap; publikasi menunggu akun platform, kebijakan autopublish dan scheduler terverifikasi.",
-      );
-    } else throw new Error("Analytics awaits a verified publication ID");
+      if (!output.content || !output.qc?.passed) throw new Error("QC required before distribution");
+      const packages = buildDistributionPackages(config, output.content, output.assets ?? [], task.campaign_id, task.ordinal);
+      const { error: queueError } = await db.rpc("craft_enqueue_distribution", { task_id: task.id, worker: input.worker, packages });
+      if (queueError) throw new Error("Distribution queue not stored");
+      result = { ...output, distribution: packages };
+    } else {
+      // Analytics is handled after an official publication ID exists, not polled as production work.
+      throw new Error("Analytics requires verified publication metrics");
+    }
     const { data: complete, error: completeError } = await db.rpc("craft_complete_task", {
       task_id: task.id,
       worker: input.worker,
       result,
-      next_stage: nextFactoryStage(task.stage, result.content?.production.format),
+      next_stage: task.stage === "distribution" ? "complete" : nextFactoryStage(task.stage, result.content?.production.format, productionFormats(config, task.ordinal)),
     });
     if (completeError || !complete) throw new Error("LEASE_LOST");
     return { completed: true, taskId: task.id, stage: task.stage };
@@ -251,4 +259,11 @@ export async function executeFactoryWorker(
     }
     return { completed: false, blocked: true, error: message };
   }
+}
+
+async function readFactoryFeedback(admin: SupabaseClient<Database>, owner: string) {
+  const db = factoryClient(admin);
+  const [metrics, bank] = await Promise.all([db.from("craft_metric_snapshots").select("*").eq("user_id", owner).order("measured_at", { ascending: false }).limit(100), db.from("craft_bank").select("document").eq("user_id", owner)]);
+  if (metrics.error || bank.error) throw new Error("Learning data unavailable");
+  return campaignFeedback((metrics.data ?? []).map((m) => ({ postId: m.platform_post_id, contentId: m.content_id, platform: m.platform, measuredAt: m.measured_at, views: m.views, likes: m.likes, comments: m.comments, shares: m.shares })), (bank.data ?? []).map((b) => contentSchema.parse(b.document)));
 }

@@ -1,0 +1,80 @@
+"""Shared native production stages used by both the durable consumer and local command."""
+import json
+import math
+import shutil
+import struct
+import wave
+from pathlib import Path
+from design import design_bundle, scene_list
+from media import synthesize, compose, probe, metadata
+
+
+def original_bgm(output, duration):
+    """Original synthesized ambient bed; no licensed/third-party recording."""
+    rate = 22050
+    with wave.open(str(output), "wb") as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(rate)
+        chunk = bytearray()
+        for i in range(int(duration * rate)):
+            t = i / rate
+            envelope = min(1, t / 2, (duration - t) / 2)
+            signal = sum(math.sin(2 * math.pi * f * t) for f in (130.81, 164.81, 196.0)) / 3
+            chunk += struct.pack("<h", int(4500 * signal * max(0, envelope)))
+            if len(chunk) >= 65536:
+                wav.writeframes(chunk)
+                chunk.clear()
+        wav.writeframes(chunk)
+
+
+def render_storyboard(content, images, voice, ass, alignment, output, bgm=None):
+    words = json.loads(Path(alignment).read_text())["words"]
+    duration = float(probe(voice)["format"]["duration"])
+    scenes = scene_list(content)
+    boundaries, consumed = [0.0], 0
+    # Text offsets emitted by the synthesizer align scene changes to their actual first spoken word.
+    for scene in scenes[:-1]:
+        consumed += len(scene["narration"]) + 1
+        next_word = next((w for w in words if w["offset"] >= consumed), None)
+        if next_word:
+            boundaries.append(next_word["start"])
+    boundaries.append(duration)
+    boundaries = sorted(set(boundaries))
+    durations = [b - a for a, b in zip(boundaries, boundaries[1:]) if b - a > .02]
+    selected = [images[i % len(images)] for i in range(len(durations))]
+    return compose(selected, voice, ass, output, bgm=bgm, scene_durations=durations)
+
+
+def run_production(content, images, folder, formats, slides=7, voice_settings=None):
+    folder = Path(folder)
+    folder.mkdir(parents=True, exist_ok=True)
+    files = design_bundle(content, images, folder, formats, slides)
+    if "Video" in formats:
+        settings = voice_settings or {}
+        audio = synthesize(content["production"]["voiceOver"], folder, persona=settings.get("persona", "female"), speed=settings.get("speed", 165))
+        original_bgm(folder / "bgm.wav", audio["duration"])
+        render_storyboard(content, images, folder / "voice.mp3", folder / "subtitles.ass", folder / "alignment.json", folder / "video.mp4", folder / "bgm.wav")
+        files += [folder / name for name in ("voice.mp3", "subtitles.srt", "subtitles.vtt", "subtitles.ass", "alignment.json", "video.mp4", "bgm.wav")]
+    assets = []
+    for file in files:
+        suffix = file.suffix
+        kind = "image" if suffix in (".png", ".jpg") else "voice" if suffix == ".mp3" else "video" if suffix == ".mp4" else "subtitle" if suffix in (".ass", ".srt", ".vtt") else "metadata"
+        mime = {".png": "image/png", ".jpg": "image/jpeg", ".mp3": "audio/mpeg", ".mp4": "video/mp4", ".srt": "application/x-subrip", ".ass": "text/x-ssa", ".vtt": "text/vtt", ".wav": "audio/wav", ".json": "application/json"}[suffix]
+        duration = float(probe(file)["format"]["duration"]) if kind in ("voice", "video") else None
+        assets.append({**metadata(file, kind, mime, str(file), duration), "bucket": "local-filesystem"})
+    return assets
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("packet")
+    args = parser.parse_args()
+    packet = json.loads(Path(args.packet).read_text())
+    assets = run_production(packet["content"], packet["images"], packet["output"], packet["config"]["formats"], packet["config"]["slides"], packet["config"]["voice"])
+    Path(packet["output"], "native-assets.json").write_text(json.dumps(assets, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()

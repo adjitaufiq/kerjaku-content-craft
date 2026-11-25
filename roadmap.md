@@ -1,5 +1,14 @@
 # Roadmap
 
+## Current execution — connected three-lane production
+- [ ] Connect campaign/script outputs to poster, carousel (5/7/10), and video lanes without repeated input
+- [ ] Produce real typography-ready images, MP3, word-timed ASS and motion MP4 in the external worker
+- [ ] Persist media and publishing packages into library and distribution queue, with platform-specific gates
+- [ ] Extend existing Instagram path; prepare independent TikTok/Facebook/YouTube adapters without connecting TikTok Connector
+- [ ] Feed available publication metrics back into campaign recommendations
+- [ ] Run three connected integration scenarios and document actual artifacts separately from mocked/live evidence
+
+
 ## Authorized Autonomous Content Factory build
 - [x] Content Bank local workflow: two-sheet XLSX, 30 protected templates, edit/filter/tag, duplicates, revision history and bulk dispatcher
 - [x] Campaign command, owner-bound durable tasks and lease-checked orchestration source; isolated SQL tests
