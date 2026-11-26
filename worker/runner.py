@@ -71,7 +71,7 @@ def run_native(task, storage_origin):
         duration = None
         if task["stage"] == "voice":
             settings = task["config"]["voice"]
-            duration = synthesize(task["content"]["production"]["voiceOver"], folder, persona=settings["persona"], speed=settings["speed"])["duration"]
+            duration = synthesize(task["content"]["production"]["voiceOver"], folder, persona=settings["persona"], speed=settings["speed"], voice=task["content"]["production"].get("automation", {}).get("voice"))["duration"]
         elif task["stage"] in ("design", "render"):
             images = []
             voice = None
@@ -96,7 +96,7 @@ def run_native(task, storage_origin):
                 raise ValueError("Voice and subtitle not available")
             else:
                 duration = float(probe(voice)["format"]["duration"])
-                original_bgm(folder / "bgm.wav", duration)
+                original_bgm(folder / "bgm.wav", duration, task["content"]["production"].get("automation", {}).get("bgm", "lofi"))
                 info = render_storyboard(task["content"], images, voice, subtitle, alignment, folder / "video.mp4", folder / "bgm.wav")
                 duration = float(info["format"]["duration"])
         else:

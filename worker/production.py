@@ -1,31 +1,18 @@
 """Shared native production stages used by both the durable consumer and local command."""
 import json
-import math
 import shutil
-import struct
-import wave
 from pathlib import Path
 from design import design_bundle, scene_list
 from media import synthesize, compose, probe, metadata
 
 
-def original_bgm(output, duration):
-    """Original synthesized ambient bed; no licensed/third-party recording."""
-    rate = 22050
-    with wave.open(str(output), "wb") as wav:
-        wav.setnchannels(1)
-        wav.setsampwidth(2)
-        wav.setframerate(rate)
-        chunk = bytearray()
-        for i in range(int(duration * rate)):
-            t = i / rate
-            envelope = min(1, t / 2, (duration - t) / 2)
-            signal = sum(math.sin(2 * math.pi * f * t) for f in (130.81, 164.81, 196.0)) / 3
-            chunk += struct.pack("<h", int(4500 * signal * max(0, envelope)))
-            if len(chunk) >= 65536:
-                wav.writeframes(chunk)
-                chunk.clear()
-        wav.writeframes(chunk)
+def original_bgm(output, duration, style="lofi"):
+    """Select an original instrumental asset. Missing music blocks, never synthesize a tone."""
+    source = Path(__file__).parent / "assets" / "bgm" / (style + ".mp3")
+    if style not in ("lofi", "tech", "emotional") or not source.is_file():
+        raise RuntimeError("Instrumental BGM unavailable")
+    from media import command
+    command(["ffmpeg", "-y", "-v", "error", "-stream_loop", "-1", "-i", str(source), "-t", str(duration), "-af", "afade=t=in:d=0.5,afade=t=out:st=" + str(max(0, duration - .8)) + ":d=0.8", str(output)])
 
 
 def render_storyboard(content, images, voice, ass, alignment, output, bgm=None):
@@ -45,8 +32,9 @@ def render_storyboard(content, images, voice, ass, alignment, output, bgm=None):
     boundaries.append(duration)
     boundaries = sorted(set(boundaries))
     durations = [b - a for a, b in zip(boundaries, boundaries[1:]) if b - a > .02]
-    selected = [images[i % len(images)] for i in range(len(durations))]
-    return compose(selected, voice, ass, output, bgm=bgm, scene_durations=durations)
+    if len(images) != len(scenes) or len(durations) != len(scenes):
+        raise ValueError("Every scene requires its own visual and measured narration boundary")
+    return compose(images, voice, ass, output, bgm=bgm, scene_durations=durations, motions=[s.get("camera_motion", "slow push in") for s in scenes])
 
 
 def run_production(content, images, folder, formats, slides=7, voice_settings=None):
@@ -55,8 +43,8 @@ def run_production(content, images, folder, formats, slides=7, voice_settings=No
     files = design_bundle(content, images, folder, formats, slides)
     if "Video" in formats:
         settings = voice_settings or {}
-        audio = synthesize(content["production"]["voiceOver"], folder, persona=settings.get("persona", "female"), speed=settings.get("speed", 165))
-        original_bgm(folder / "bgm.wav", audio["duration"])
+        audio = synthesize(content["production"]["voiceOver"], folder, persona=settings.get("persona", "female"), speed=settings.get("speed", 165), voice=content["production"].get("automation", {}).get("voice"))
+        original_bgm(folder / "bgm.wav", audio["duration"], content["production"].get("automation", {}).get("bgm", "lofi"))
         render_storyboard(content, images, folder / "voice.mp3", folder / "subtitles.ass", folder / "alignment.json", folder / "video.mp4", folder / "bgm.wav")
         files += [folder / name for name in ("voice.mp3", "subtitles.srt", "subtitles.vtt", "subtitles.ass", "alignment.json", "video.mp4", "bgm.wav")]
     assets = []

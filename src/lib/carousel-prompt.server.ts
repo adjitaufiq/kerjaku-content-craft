@@ -1,4 +1,4 @@
-import { routeStructured } from "./ai-router.server";
+import { routeStructured, routeTaskStructured } from "./ai-router.server";
 import type { CarouselPromptPackage } from "@/lib/carousel-prompt.types";
 import { NEGATIVE_PROMPT_SUFFIX } from "@/lib/carousel-prompt.types";
 
@@ -75,8 +75,9 @@ async function streamStructured<T>(input: {
   prompt: string;
   name: string;
   schema: Record<string, unknown>;
-}): Promise<{ result: T; model: string }> {
-  return routeStructured<T>({ ...input, capability: "CAROUSEL" });
+}, execution?: { taskId: string; worker: string }): Promise<{ result: T; model: string }> {
+  const request = { ...input, capability: "CAROUSEL" as const };
+  return execution ? routeTaskStructured<T>(request, execution.taskId, execution.worker) : routeStructured<T>(request);
 }
 
 export async function generateCarouselPromptPackage(input: {
@@ -97,7 +98,7 @@ export async function generateCarouselPromptPackage(input: {
   sourceReport: unknown;
   brand: unknown;
   repairNotes?: string[];
-}): Promise<{ result: GeneratedPackage; model: string }> {
+}, execution?: { taskId: string; worker: string }): Promise<{ result: GeneratedPackage; model: string }> {
   const textRule =
     input.textLevel === "singkat"
       ? "Teks pada slide sangat ringkas: headline maksimal 8 kata, supporting_text maksimal 1 kalimat pendek."
@@ -143,7 +144,7 @@ export async function generateCarouselPromptPackage(input: {
         : []),
       "Hasilkan paket prompt carousel lengkap sesuai schema.",
     ].join("\n\n"),
-  });
+  }, execution);
 
   return { result, model };
 }

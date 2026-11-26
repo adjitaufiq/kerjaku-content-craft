@@ -39,7 +39,7 @@ import {
 import { importContentWorkbook, exportContentWorkbook } from "@/lib/content-bank-excel";
 
 function downloadWorkbook(rows: BankContent[]) {
-  const bytes = exportContentWorkbook(rows);
+  const bytes = exportContentWorkbook(rows, { stressTest: rows.some((r) => r.classification === "PERSONAL_CONTENT") });
   const url = URL.createObjectURL(
     new Blob([new Uint8Array(bytes)], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

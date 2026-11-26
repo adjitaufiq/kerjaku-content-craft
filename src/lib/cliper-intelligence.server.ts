@@ -1,4 +1,4 @@
-import { routeStructured } from "./ai-router.server";
+import { routeStructured, routeTaskStructured } from "./ai-router.server";
 export type DnaEvidence = {
   source_type: "transcript" | "on_screen_text" | "visual";
   timestamp: string;
@@ -222,8 +222,9 @@ async function streamStructured<T>(input: {
   prompt: string;
   name: string;
   schema: Record<string, unknown>;
-}): Promise<{ result: T; model: string }> {
-  return routeStructured<T>({ ...input, capability: input.name === "kerjaku_atm" ? "CONTENT_REMIX" : input.name.includes("hook") ? "CONTENT_STRATEGY" : "VIRAL_ANALYSIS" });
+}, execution?: { taskId: string; worker: string }): Promise<{ result: T; model: string }> {
+  const request = { ...input, capability: input.name.includes("atm") ? "CONTENT_REMIX" as const : input.name.includes("hook") ? "CONTENT_STRATEGY" as const : "VIRAL_ANALYSIS" as const };
+  return execution ? routeTaskStructured<T>(request, execution.taskId, execution.worker) : routeStructured<T>(request);
 }
 
 export type DnaSourceMaterial = {
@@ -236,6 +237,7 @@ export type DnaSourceMaterial = {
 
 export async function analyzeViralDna(
   material: DnaSourceMaterial,
+  execution?: { taskId: string; worker: string },
 ): Promise<{ result: ViralDnaResult; model: string }> {
   const { result, model } = await streamStructured<ViralDnaResult>({
     name: "viral_dna_analysis",
@@ -262,7 +264,7 @@ export async function analyzeViralDna(
       `Analisis visual per scene: ${JSON.stringify(material.visual_analysis)}`,
       `Source Content Report: ${JSON.stringify(material.source_report)}`,
     ].join("\n\n"),
-  });
+  }, execution);
   return { result, model };
 }
 
@@ -278,7 +280,7 @@ export async function generateAtmVersion(input: {
     transcript?: unknown;
     on_screen_text?: unknown;
   };
-}): Promise<{ result: AtmResult; model: string }> {
+}, execution?: { taskId: string; worker: string }): Promise<{ result: AtmResult; model: string }> {
   const modeRule = input.mode === "conservative"
     ? "Pertahankan formula, urutan persuasi, dan mekanisme retensi utama. Ubah konteks, contoh, angle, dan bahasa agar asli serta sesuai brand."
     : "Ambil prinsip psikologis dan mekanisme viralnya, lalu ubah angle dan storytelling direction secara lebih jauh. Jangan mempertahankan urutan atau ekspresi sumber bila tidak perlu.";
@@ -310,7 +312,7 @@ export async function generateAtmVersion(input: {
         : "Konteks sumber tambahan tidak tersedia.",
       "Buat pemetaan formula sumber ke arahan adaptasi orisinal KERJAKU dan jelaskan alasan strateginya.",
     ].join("\n\n"),
-  });
+  }, execution);
   return { result, model };
 }
 
@@ -321,7 +323,7 @@ export async function generateHookMatrix(input: {
   dna: ViralDnaResult;
   atm: AtmResult;
   brand: BrandKnowledgeInput;
-}): Promise<{ result: HookMatrixResult; model: string }> {
+}, execution?: { taskId: string; worker: string }): Promise<{ result: HookMatrixResult; model: string }> {
   const { result, model } = await streamStructured<HookMatrixResult>({
     name: "kerjaku_hook_matrix",
     schema: HOOK_MATRIX_SCHEMA,
@@ -334,6 +336,6 @@ export async function generateHookMatrix(input: {
       `Brand Knowledge: ${JSON.stringify(input.brand)}`,
       "Susun 5 kandidat hook dengan alasan, trigger psikologis, curiosity gap, power words, dan catatan risiko brand.",
     ].join("\n\n"),
-  });
+  }, execution);
   return { result, model };
 }

@@ -1,4 +1,4 @@
-import { routeStructured } from "./ai-router.server";
+import { routeStructured, routeTaskStructured } from "./ai-router.server";
 import type { CarouselPromptPackage, CarouselPromptSlide } from "@/lib/carousel-prompt.types";
 import { VIDEO_NEGATIVE_PROMPT, type PhotoToVideoPackage } from "@/lib/photo-to-video.types";
 
@@ -66,8 +66,9 @@ async function streamStructured<T>(input: {
   prompt: string;
   name: string;
   schema: Record<string, unknown>;
-}): Promise<{ result: T; model: string }> {
-  return routeStructured<T>({ ...input, capability: "STORYBOARD" });
+}, execution?: { taskId: string; worker: string }): Promise<{ result: T; model: string }> {
+  const request = { ...input, capability: "STORYBOARD" as const };
+  return execution ? routeTaskStructured<T>(request, execution.taskId, execution.worker) : routeStructured<T>(request);
 }
 
 export async function generatePhotoToVideoPackage(input: {
@@ -76,7 +77,7 @@ export async function generatePhotoToVideoPackage(input: {
   slides: CarouselPromptSlide[];
   concept: unknown;
   canvaNotes?: Record<number, string>;
-}): Promise<{ result: GeneratedVideoPackage; model: string }> {
+}, execution?: { taskId: string; worker: string }): Promise<{ result: GeneratedVideoPackage; model: string }> {
   const { result, model } = await streamStructured<GeneratedVideoPackage>({
     name: "kerjaku_photo_to_video_package",
     schema: PACKAGE_SCHEMA,
@@ -161,7 +162,7 @@ export async function generatePhotoToVideoPackage(input: {
       )}`,
       "Hasilkan paket photo-to-video lengkap sesuai schema.",
     ].join("\n\n"),
-  });
+  }, execution);
 
   return { result, model };
 }

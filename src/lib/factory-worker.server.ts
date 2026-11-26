@@ -161,7 +161,7 @@ export async function executeFactoryWorker(
             admin,
             task,
             output.content,
-            Math.min(3, readScenes(output.content).length),
+            readScenes(output.content).length,
           )),
         ],
       };

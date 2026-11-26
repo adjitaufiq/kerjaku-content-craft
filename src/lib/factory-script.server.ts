@@ -6,6 +6,7 @@ import {
   campaignScriptDocument,
   type GeneratedScript,
 } from "./factory-script-request";
+import { runFactoryStoryboards } from "./factory-storyboards.server";
 import { prepareProductionContent } from "./factory-plan";
 export async function generateCampaignScript(
   input: CampaignInput,
@@ -29,5 +30,5 @@ export async function generateCampaignScript(
     taskId,
     worker,
   );
-  return campaignScriptDocument(input, generated.result, ordinal, crypto.randomUUID());
+  return runFactoryStoryboards(campaignScriptDocument(input, generated.result, ordinal, crypto.randomUUID()), input, sources, ordinal, { taskId, worker });
 }

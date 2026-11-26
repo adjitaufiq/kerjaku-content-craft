@@ -5,7 +5,15 @@ import type { CampaignInput } from "./factory-types";
 export const sceneSchema = z.object({
   heading: z.string().min(1).max(120),
   narration: z.string().min(1).max(1200),
-  visual: z.string().min(1).max(1200),
+  visual: z.string().min(1).max(6000),
+  narrative_function: z.string().optional(),
+  layout_direction: z.string().optional(),
+  camera_motion: z.string().optional(),
+  primary_subject_motion: z.string().optional(),
+  environment_motion: z.string().optional(),
+  duration_seconds: z.number().positive().optional(),
+  image_prompt: z.string().optional(),
+  photo_to_video_prompt: z.string().optional(),
 });
 export type FactoryScene = z.infer<typeof sceneSchema>;
 /** One narration contract for script, storyboard, TTS and renderer; originals remain untouched. */

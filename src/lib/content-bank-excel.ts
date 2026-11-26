@@ -7,6 +7,7 @@ import {
   type BankContent,
 } from "./content-bank";
 
+export const STRESS_HEADERS = ["Pilar / Formula", "Produk / Brand", "Character / Asset Lock", "Voice Over Style", "Subtitle Style", "BGM Style", "Stress Test Status"] as const;
 function text(value: unknown): string {
   return value == null ? "" : String(value);
 }
@@ -21,7 +22,7 @@ function table(sheet: XLSX.WorkSheet): unknown[][] {
 function requireHeaders(actual: unknown[], expected: readonly string[], name: string) {
   if (
     expected.some((h, i) => actual[i] !== h) ||
-    (name !== "BANK KONTEN" && actual.length > expected.length)
+    (name !== "BANK KONTEN" && actual.length > expected.length && (actual.length !== expected.length + STRESS_HEADERS.length || STRESS_HEADERS.some((h, i) => actual[expected.length + i] !== h)))
   )
     throw new Error(
       `${name}: urutan kolom wajib ${expected.join(", ")}. Tidak ada kolom yang dibuang diam-diam.`,
@@ -33,7 +34,7 @@ function validateNumbers(rows: BankContent[]) {
   if (new Set(rows.map((r) => r.id)).size !== rows.length)
     throw new Error("Content ID ganda dalam workbook.");
 }
-export function exportContentWorkbook(rows: BankContent[]): Uint8Array {
+export function exportContentWorkbook(rows: BankContent[], options: { stressTest?: boolean } = {}): Uint8Array {
   validateNumbers(rows);
   const wb = XLSX.utils.book_new();
   const bank = XLSX.utils.aoa_to_sheet([
@@ -41,7 +42,7 @@ export function exportContentWorkbook(rows: BankContent[]): Uint8Array {
     ...rows.map((r) => [r.no, r.title, r.prompt, r.caption]),
   ]);
   const scripts = XLSX.utils.aoa_to_sheet([
-    Array.from(SCRIPT_HEADERS),
+    [...SCRIPT_HEADERS, ...(options.stressTest ? STRESS_HEADERS : [])],
     ...rows.map((r) => {
       const p = r.production;
       return [
@@ -61,6 +62,7 @@ export function exportContentWorkbook(rows: BankContent[]): Uint8Array {
         p.thumbnailText,
         p.duration,
         r.status,
+        ...(options.stressTest ? [p.automation?.formula || "", p.automation?.brand || "", p.automation?.characterLock || "", p.automation?.voice || "id-ID-GadisNeural", "kinetic", p.automation?.bgm || "lofi", p.automation?.stressStatus || "queued"] : []),
       ];
     }),
   ]);
@@ -78,6 +80,9 @@ export function exportContentWorkbook(rows: BankContent[]): Uint8Array {
             legacyCells: r.legacyCells,
             revision: r.revision,
             history: r.history,
+            automation: r.production.automation,
+            carouselPackage: r.production.carouselPackage,
+            videoPackage: r.production.videoPackage,
           }),
         },
       ];
@@ -87,7 +92,7 @@ export function exportContentWorkbook(rows: BankContent[]): Uint8Array {
     wch: i === 0 ? 38 : i >= 6 && i <= 10 ? 65 : 24,
   }));
   bank["!autofilter"] = { ref: `A1:D${Math.max(1, rows.length + 1)}` };
-  scripts["!autofilter"] = { ref: `A1:P${Math.max(1, rows.length + 1)}` };
+  scripts["!autofilter"] = { ref: `A1:${options.stressTest ? "W" : "P"}${Math.max(1, rows.length + 1)}` };
   XLSX.utils.book_append_sheet(wb, bank, "BANK KONTEN");
   XLSX.utils.book_append_sheet(wb, scripts, "PRODUCTION SCRIPT");
   return new Uint8Array(XLSX.write(wb, { bookType: "xlsx", type: "array" }));
@@ -174,6 +179,9 @@ export function importContentWorkbook(buffer: ArrayBuffer | Uint8Array): BankCon
             hashtags: text(p[12]),
             thumbnailText: text(p[13]),
             duration: Number(p[14]),
+            ...(p.length > 16 ? { automation: { formula: text(p[16]), brand: text(p[17]), characterLock: text(p[18]), voice: text(p[19]) || "id-ID-GadisNeural", subtitle: text(p[20]) || "kinetic", bgm: text(p[21]) || "lofi", stressStatus: text(p[22]) || "queued" } } : record["automation"] ? { automation: record["automation"] } : {}),
+            ...(record["carouselPackage"] ? { carouselPackage: record["carouselPackage"] } : {}),
+            ...(record["videoPackage"] ? { videoPackage: record["videoPackage"] } : {}),
           }
         : {},
     });
@@ -187,7 +195,7 @@ export function importContentWorkbook(buffer: ArrayBuffer | Uint8Array): BankCon
         Number(p[14]) !== 0 ||
         text(p[2]) !== "Educational" ||
         content.tags.length ||
-        content.history.length)
+        content.history.length || content.production.automation || content.production.carouselPackage || content.production.videoPackage)
     )
       return { ...content, id: crypto.randomUUID(), classification: "PERSONAL_CONTENT" };
     return content;

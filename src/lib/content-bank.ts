@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { CarouselPromptPackage } from "./carousel-prompt.types";
+import type { PhotoToVideoPackage } from "./photo-to-video.types";
 import seed from "@/data/bank-konten.json";
 
 export const CONTENT_CATEGORIES = [
@@ -52,6 +54,17 @@ export const productionSchema = z.object({
   hashtags: z.string().default(""),
   thumbnailText: z.string().default(""),
   duration: z.number().finite().nonnegative().default(0),
+  automation: z.object({
+    formula: z.string().default(""),
+    brand: z.string().default(""),
+    characterLock: z.string().default(""),
+    voice: z.enum(["id-ID-ArdiNeural", "id-ID-GadisNeural"]).default("id-ID-GadisNeural"),
+    subtitle: z.literal("kinetic").default("kinetic"),
+    bgm: z.enum(["lofi", "tech", "emotional"]).default("lofi"),
+    stressStatus: z.enum(["queued", "rendered", "published", "tested_high", "tested_low"]).default("queued"),
+  }).optional(),
+  carouselPackage: z.custom<CarouselPromptPackage>((v) => Boolean(v && typeof v === "object" && "slides" in v && Array.isArray(v.slides))).optional(),
+  videoPackage: z.custom<PhotoToVideoPackage>((v) => Boolean(v && typeof v === "object" && "scenes" in v && Array.isArray(v.scenes))).optional(),
 });
 export const contentSchema = z.object({
   id: z.string().min(1),

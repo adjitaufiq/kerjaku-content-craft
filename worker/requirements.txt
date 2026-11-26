@@ -1,2 +1,2 @@
 requests==2.32.4
-Pillow==11.3.0
+Pillow==11.3.0edge-tts==7.2.7

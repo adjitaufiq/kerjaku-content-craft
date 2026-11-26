@@ -24,6 +24,7 @@ export const campaignSchema = z.object({
   slides: z.union([z.literal(5), z.literal(7), z.literal(10)]).default(5),
   formats: z.array(z.enum(["Foto", "Carousel", "Video"])).min(1).max(3).default(["Foto", "Carousel", "Video"]),
   voice: z.object({ persona: z.enum(["male", "female"]).default("female"), speed: z.number().int().min(80).max(260).default(165) }).default({}),
+  referenceSourceId: z.string().uuid().optional(),
   seedContents: z.array(contentSchema).default([]),
 });
 export type CampaignInput = z.infer<typeof campaignSchema>;

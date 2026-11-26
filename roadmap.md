@@ -56,3 +56,12 @@
 - [x] Polish Prompt Carousel: story arc, transformation payoff, visual continuity, CTA, copy actions, dan runtime acceptance
 - [x] Photo-to-Video Prompt Generator dari visual carousel (scene per slide, durasi 4/6/8/10, motion, negative prompt, copy, validator)
 - [x] SOP Photo-to-Video: camera, subject, environment, VO sync, ending frame, continuity, dan prompt final siap tempel
+
+## Current request — reuse existing engines and improve media
+- [ ] Connect existing carousel and photo-to-video engines headlessly with lease-checked inference
+- [ ] Preserve structured scene motion, locks, and one visual per scene
+- [ ] Add compatible opt-in stress-test Excel extensions without changing canonical sheets
+- [ ] Replace default eSpeak with Indonesian neural TTS and real word boundaries
+- [ ] Replace synthetic tone with instrumental BGM assets and retain ducking
+- [ ] Add role-driven cover, content/comparison, and CTA carousel layouts
+- [ ] Test actual native outputs and connected campaign flow; report hosted blockers honestly
