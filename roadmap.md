@@ -1,9 +1,9 @@
 # Roadmap
 
 ## Current request — simple result-first Factory
-- [ ] Replace the long Factory process view with compact results, campaign command, bank and distribution views; leave Cliper unchanged
-- [ ] Connect owner-scoped finished media, captions, QC, distribution and measured analytics to result cards; hide technical operations in a separate dialog
-- [ ] Verify real signed-in draft/command/error flow and responsive UI; run regression tests
+- [x] Replace the long Factory process view with compact results, campaign command, bank and distribution views; leave Cliper unchanged
+- [x] Connect owner-scoped finished media, captions, QC, distribution and measured analytics to result cards; hide technical operations in a separate dialog (source complete; hosted readback blocked)
+- [x] Verify real signed-in draft/command/error flow and responsive UI; 39 regression tests passed, 3 connected media tests not rerun
 - [ ] Hosted campaign production — BLOCKED: backup/ownership/migration gates, VPS worker and neural speech access; no public posting approval
 
 ## Current execution — connected three-lane production

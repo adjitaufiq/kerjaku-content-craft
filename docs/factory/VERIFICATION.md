@@ -1,5 +1,13 @@
 # Connected factory implementation — evidence and limits
 
+## Result-first Factory — 26 November 2026
+- Factory opens on results, with search/status filters and twelve-item pagination. Campaign input is a compact dialog; advanced settings and technical operations are separate. Cliper UI is unchanged. Old fixture media are not presented as real campaign results.
+- Authenticated reads project task-scoped final poster, carousel and MP4 assets, captions, hashtags, QC state and distribution packages into result DTOs. Intermediate scene inputs stay out of the gallery. Signed URLs are fetched per asset; final-file preview, slide navigation, per-file download and caption copy are implemented but **hosted populated-gallery readback remains blocked**, not browser-verified.
+- Metrics feed the existing learning engine only from recorded publication snapshots; no fabricated statistics or posting success. Missing metrics are reported as unavailable.
+- Regression verification: 39 JS/SQL tests passed; three opt-in native connected scenarios were skipped this turn. Changed-file ESLint passed and automatic compilation reported build OK.
+- Browser checked using a temporary test account, not the user's account: real XLSX import → personal draft → export → reload/readback → selected bank item to campaign command. A real ten-concept brief was held because hosted campaign storage is unavailable. Desktop and mobile 411×764 checked; dialogs reviewed after animation, no page errors or horizontal page overflow.
+- Existing backup/ownership/migration gates remain unsatisfied. No schema change, hosted media generation, worker deployment, scheduler activation or public post performed. VPS worker, actual neural speech access, platform authorization and generative character-video provider remain blockers to full production.
+
 ## Resumed integration — 25 November 2026
 - Actual campaign executor now runs Research → Script → Content Bank → image → native typography → voice → render → QC → distribution with one carried content ID, caption and metadata. Cloned legacy storyboards normalize narration before TTS; originals are not overwritten.
 - Local acceptance creates the exact ten-item campaign command and executes only ordinal 1; nine items remain queued intentionally. The unchanged application executor, SQL and `runner.run_native` consume each preceding output. Research HTTP, structured AI response, image generation response and HTTPS/storage transport are **explicit test fixtures**, not live provider calls.
