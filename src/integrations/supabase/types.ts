@@ -331,6 +331,7 @@ export type Database = {
           id: string
           prompt: string
           title: string
+          user_id: string | null
         }
         Insert: {
           caption?: string
@@ -339,6 +340,7 @@ export type Database = {
           id?: string
           prompt?: string
           title?: string
+          user_id?: string | null
         }
         Update: {
           caption?: string
@@ -347,6 +349,7 @@ export type Database = {
           id?: string
           prompt?: string
           title?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -375,6 +378,7 @@ export type Database = {
           thumbnail_path: string | null
           thumbnail_url: string | null
           updated_at: string
+          user_id: string | null
           video_path: string | null
           video_url: string | null
           viral_pattern: string | null
@@ -403,6 +407,7 @@ export type Database = {
           thumbnail_path?: string | null
           thumbnail_url?: string | null
           updated_at?: string
+          user_id?: string | null
           video_path?: string | null
           video_url?: string | null
           viral_pattern?: string | null
@@ -431,6 +436,7 @@ export type Database = {
           thumbnail_path?: string | null
           thumbnail_url?: string | null
           updated_at?: string
+          user_id?: string | null
           video_path?: string | null
           video_url?: string | null
           viral_pattern?: string | null
@@ -535,6 +541,7 @@ export type Database = {
           scheduled_at: string | null
           status: string
           title: string
+          user_id: string | null
         }
         Insert: {
           caption?: string
@@ -549,6 +556,7 @@ export type Database = {
           scheduled_at?: string | null
           status?: string
           title?: string
+          user_id?: string | null
         }
         Update: {
           caption?: string
@@ -563,6 +571,7 @@ export type Database = {
           scheduled_at?: string | null
           status?: string
           title?: string
+          user_id?: string | null
         }
         Relationships: []
       }
