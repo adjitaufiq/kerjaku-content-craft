@@ -4,6 +4,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { contentSchema } from "./content-bank";
 import { campaignSchema } from "./factory-types";
 import { factoryClient } from "./factory-db";
+import { buildFactoryResults } from "./factory-results";
+import { campaignFeedback } from "./factory-distribution";
 
 export const loadFactory = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -31,10 +33,44 @@ export const loadFactory = createServerFn({ method: "GET" })
     ]);
     if (bank.error || campaigns.error || tasks.error || media.error || distribution.error)
       throw new Error(
-        "Penyimpanan produksi belum aktif; data lama tidak diubah. Aktifkan Lovable Cloud sebelum menyimpan campaign.",
+        "Penyimpanan campaign belum siap. Draf Excel tetap tersedia; tidak ada data lama yang diubah.",
       );
+    const documents = (bank.data ?? []).map((r) => contentSchema.parse(r.document));
+    const { data: metrics, error: metricsError } = await db
+      .from("craft_metric_snapshots")
+      .select("platform_post_id,content_id,platform,measured_at,views,likes,comments,shares")
+      .eq("user_id", context.userId)
+      .order("measured_at", { ascending: false })
+      .limit(100);
+    const feedback = metricsError
+      ? null
+      : campaignFeedback(
+          (metrics ?? []).map((m) => ({
+            postId: m.platform_post_id,
+            contentId: m.content_id,
+            platform: m.platform,
+            measuredAt: m.measured_at,
+            views: m.views,
+            likes: m.likes,
+            comments: m.comments,
+            shares: m.shares,
+          })),
+          documents,
+        );
     return {
-      bank: (bank.data ?? []).map((r) => contentSchema.parse(r.document)),
+      bank: documents,
+      results: buildFactoryResults(
+        tasks.data ?? [],
+        media.data ?? [],
+        distribution.data ?? [],
+        documents,
+      ),
+      analytics: {
+        available: !metricsError,
+        measuredPosts: new Set((metrics ?? []).filter((m) => m.platform_post_id && m.views !== null).map((m) => `${m.platform}:${m.platform_post_id}`))
+          .size,
+        recommendations: feedback?.recommendations ?? [],
+      },
       campaigns: (campaigns.data ?? []).map((c) => ({
         ...c,
         tasks: (tasks.data ?? [])

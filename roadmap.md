@@ -1,5 +1,11 @@
 # Roadmap
 
+## Current request — simple result-first Factory
+- [ ] Replace the long Factory process view with compact results, campaign command, bank and distribution views; leave Cliper unchanged
+- [ ] Connect owner-scoped finished media, captions, QC, distribution and measured analytics to result cards; hide technical operations in a separate dialog
+- [ ] Verify real signed-in draft/command/error flow and responsive UI; run regression tests
+- [ ] Hosted campaign production — BLOCKED: backup/ownership/migration gates, VPS worker and neural speech access; no public posting approval
+
 ## Current execution — connected three-lane production
 - [x] Prove one campaign item through the actual queue executor and native consumer, with explicit local provider/storage fixtures
 - [x] Repair script/scene handoff, carousel completeness, library/queue readback and measured media validation

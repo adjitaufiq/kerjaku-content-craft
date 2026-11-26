@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Content Factory execution boundaries
+- Project finished Factory media into task-scoped result DTOs; keep intermediate prompts and lease diagnostics out of the default gallery so presentation cannot mistake source assets for ready output.
 - Keep internal RPC in authenticated `*.functions.ts` and media/provider implementations in server-only modules; authorization must precede privileged access.
 - Route language-model jobs through the capability AI router and the typed Gateway SDK; ambiguous inference failures must never be automatically replayed.
 - Keep pending migration types separate from integration-managed generated types until the database migration is applied.
