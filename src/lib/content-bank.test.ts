@@ -11,9 +11,40 @@ import {
   validateStatusTransition,
   validateTrendEvidence,
 } from "./content-bank";
-import { exportContentWorkbook, importContentWorkbook } from "./content-bank-excel";
+import { exportContentWorkbook, importContentWorkbook, STRESS_HEADERS } from "./content-bank-excel";
 
 describe("Content Bank rules", () => {
+  it("roundtrips stress-test execution settings without changing the four original bank columns", () => {
+    const template = systemTemplates()[0];
+    if (!template) throw new Error("No template");
+    const row = forkContent(template, 31);
+    row.production.automation = {
+      formula: "Problem-Solution",
+      brand: "INTIP",
+      characterLock: "Ibu daster batik",
+      voice: "id-ID-GadisNeural",
+      subtitle: "kinetic",
+      bgm: "emotional",
+      stressStatus: "queued",
+    };
+    const bytes = exportContentWorkbook([row], { stressTest: true });
+    const wb = XLSX.read(bytes, { type: "array" });
+    const bank = wb.Sheets["BANK KONTEN"];
+    const scripts = wb.Sheets["PRODUCTION SCRIPT"];
+    if (!bank || !scripts) throw new Error("Missing sheets");
+    expect(XLSX.utils.sheet_to_json(bank, { header: 1 })[0]).toEqual(BANK_HEADERS);
+    expect(XLSX.utils.sheet_to_json(scripts, { header: 1 })[0]).toEqual([
+      ...SCRIPT_HEADERS,
+      ...STRESS_HEADERS,
+    ]);
+    expect(importContentWorkbook(bytes)[0]?.production.automation).toEqual(
+      row.production.automation,
+    );
+    expect(importContentWorkbook(exportContentWorkbook([row]))[0]?.production.automation).toEqual(
+      row.production.automation,
+    );
+  });
+
   it("preserves all four legacy fields in the two-sheet roundtrip", () => {
     const original = systemTemplates();
     const bytes = exportContentWorkbook(original);

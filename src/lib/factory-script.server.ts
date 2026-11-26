@@ -24,11 +24,25 @@ export async function generateCampaignScript(
     seed.production.voiceOver.trim() &&
     seed.production.scenes.trim()
   )
-    return prepareProductionContent(forkContent(seed, 100000 + ordinal));
+    return seed.production.carouselPackage || seed.production.videoPackage
+      ? prepareProductionContent(forkContent(seed, 100000 + ordinal))
+      : runFactoryStoryboards(
+          prepareProductionContent(forkContent(seed, 100000 + ordinal)),
+          input,
+          sources,
+          ordinal,
+          { taskId, worker },
+        );
   const generated = await routeTaskStructured<GeneratedScript>(
     campaignScriptRequest(input, sources, ordinal, feedback),
     taskId,
     worker,
   );
-  return runFactoryStoryboards(campaignScriptDocument(input, generated.result, ordinal, crypto.randomUUID()), input, sources, ordinal, { taskId, worker });
+  return runFactoryStoryboards(
+    campaignScriptDocument(input, generated.result, ordinal, crypto.randomUUID()),
+    input,
+    sources,
+    ordinal,
+    { taskId, worker },
+  );
 }

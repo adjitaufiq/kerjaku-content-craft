@@ -22,8 +22,17 @@ export const campaignSchema = z.object({
   publishingMode: z.enum(["manual", "scheduled", "automatic"]).default("manual"),
   duration: z.number().int().min(10).max(3600).default(45),
   slides: z.union([z.literal(5), z.literal(7), z.literal(10)]).default(5),
-  formats: z.array(z.enum(["Foto", "Carousel", "Video"])).min(1).max(3).default(["Foto", "Carousel", "Video"]),
-  voice: z.object({ persona: z.enum(["male", "female"]).default("female"), speed: z.number().int().min(80).max(260).default(165) }).default({}),
+  formats: z
+    .array(z.enum(["Foto", "Carousel", "Video"]))
+    .min(1)
+    .max(3)
+    .default(["Foto", "Carousel", "Video"]),
+  voice: z
+    .object({
+      persona: z.enum(["male", "female"]).default("female"),
+      speed: z.number().int().min(80).max(260).default(165),
+    })
+    .default({}),
   referenceSourceId: z.string().uuid().optional(),
   seedContents: z.array(contentSchema).default([]),
 });

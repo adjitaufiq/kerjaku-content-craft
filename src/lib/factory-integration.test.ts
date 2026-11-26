@@ -25,7 +25,78 @@ vi.mock("@lovable.dev/ai-gateway", async (original) => ({
   generateImage: vi.fn(async () => ({ data: [{ b64_json: fixtures.image }] })),
 }));
 vi.mock("./ai-router.server", () => ({
-  routeTaskStructured: vi.fn(async () => ({ result: fixtures.script })),
+  routeStructured: vi.fn(async () => {
+    throw new Error("Worker must use lease auth");
+  }),
+  routeTaskStructured: vi.fn(async (request: { name: string; prompt: string }) => {
+    if (request.name === "factory_script") return { result: fixtures.script };
+    if (request.name === "kerjaku_carousel_prompt_package") {
+      const count = Number(/Jumlah slide yang diminta: (\d+)/.exec(request.prompt)?.[1]);
+      const original = fixtures.script;
+      if (!original || !count) throw new Error("Fixture unavailable");
+      return {
+        result: {
+          carousel_title: original.title,
+          selected_hook: original.hook,
+          pattern_interrupt: "compare",
+          psychological_trigger: "practical",
+          curiosity_gap: "how",
+          power_word: "praktis",
+          main_problem: "work",
+          main_solution: "review",
+          payoff: "organized",
+          CTA: original.cta,
+          primary_engagement_objective: "save",
+          character_lock: "editorial business owner",
+          slides: Array.from({ length: count }, (_, i) => {
+            const scene = original.scenes[Math.min(i, original.scenes.length - 1)];
+            if (!scene) throw new Error("Scene missing");
+            return {
+              slide_number: i + 1,
+              narrative_function: i === 0 ? "HOOK" : i === count - 1 ? "CTA" : "INSIGHT",
+              headline: scene.heading,
+              supporting_text: scene.narration,
+              key_message: "",
+              image_prompt: scene.visual,
+              visual_concept: scene.visual,
+              layout_direction: i % 2 ? "comparison" : "list",
+              negative_prompt: "No text",
+              text_safe_area: "upper",
+              continuity_instruction: "same subject",
+            };
+          }),
+        },
+      };
+    }
+    if (request.name === "kerjaku_photo_to_video_package") {
+      const count = Number(/scene.*fixture-count:(\d+)/.exec(request.prompt)?.[1] || 7);
+      return {
+        result: {
+          video_title: "fixture",
+          selected_hook: fixtures.script?.hook,
+          main_problem: "work",
+          main_solution: "review",
+          payoff: "organized",
+          CTA: fixtures.script?.cta,
+          primary_engagement_objective: "save",
+          character_lock: "editorial",
+          product_lock: "none",
+          environment_lock: "office",
+          visual_style: "editorial",
+          scenes: Array.from({ length: count }, (_, i) => ({
+            scene_number: i + 1,
+            source_carousel_slide: i + 1,
+            duration_seconds: 6,
+            camera_motion: i % 2 ? "gentle camera pan" : "slow push in",
+            primary_subject_motion: "still",
+            environment_motion: "still",
+            photo_to_video_prompt: "fixture motion",
+          })),
+        },
+      };
+    }
+    throw new Error("Unexpected engine: " + request.name);
+  }),
 }));
 const run = promisify(execFile);
 const A = "11111111-1111-4111-8111-111111111111";
@@ -287,7 +358,13 @@ describe("One campaign → actual queue executor → native worker → library �
       const carouselCount = scenario.formats.some((format) => format === "Carousel")
         ? scenario.slides
         : 0;
-      expect(library).toHaveLength(3 + stillCount + carouselCount + (video ? 6 : 0) + 1);
+      expect(library).toHaveLength(
+        JSON.parse(content.production.scenes).length +
+          stillCount +
+          carouselCount +
+          (video ? 6 : 0) +
+          1,
+      );
       for (const asset of library) {
         const bytes = await readFile(localStorageFile(storage, `instagram-media/${asset.path}`));
         expect(bytes.length).toBe(Number(asset.bytes));
