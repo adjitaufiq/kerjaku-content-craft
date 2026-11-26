@@ -67,8 +67,11 @@ export const loadFactory = createServerFn({ method: "GET" })
       ),
       analytics: {
         available: !metricsError,
-        measuredPosts: new Set((metrics ?? []).filter((m) => m.platform_post_id && m.views !== null).map((m) => `${m.platform}:${m.platform_post_id}`))
-          .size,
+        measuredPosts: new Set(
+          (metrics ?? [])
+            .filter((m) => m.platform_post_id && m.views !== null)
+            .map((m) => `${m.platform}:${m.platform_post_id}`),
+        ).size,
         recommendations: feedback?.recommendations ?? [],
       },
       campaigns: (campaigns.data ?? []).map((c) => ({
