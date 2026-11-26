@@ -5,6 +5,7 @@ import json
 import re
 from pathlib import Path
 import edge_tts
+from lease import native_lease_check
 
 
 async def _stream(text, output, language, persona, speed, selected_voice=None):
@@ -18,6 +19,7 @@ async def _stream(text, output, language, persona, speed, selected_voice=None):
     words, cursor = [], 0
     with open(output, "wb") as audio:
         async for chunk in stream.stream():
+            native_lease_check.get()()
             if chunk["type"] == "audio":
                 audio.write(chunk["data"])
             elif chunk["type"] == "WordBoundary":
@@ -38,4 +40,6 @@ async def _stream(text, output, language, persona, speed, selected_voice=None):
 
 
 def synthesize_neural(text, output, language, persona, speed, voice=None):
-    return asyncio.run(_stream(text, output, language, persona, speed, voice))
+    async def bounded():
+        return await asyncio.wait_for(_stream(text, output, language, persona, speed, voice), timeout=600)
+    return asyncio.run(bounded())

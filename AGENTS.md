@@ -33,3 +33,5 @@
 - Render one checksummed scene image per storyboard scene and derive cut boundaries from spoken word offsets; do not silently cycle scarce images to fill a video.
 - Default native narration to neural provider word events and fail on unavailable speech; eSpeak is an explicitly selected test adapter only, not a production fallback.
 - Retrieve instrumental BGM from immutable asset pointers with SHA-256 verification and apply ducking; never generate sine-tone placeholder music.
+- Keep worker heartbeat in a scoped native lease guard and renew atomically through a service-only SQL function; lost or cancelled leases stop FFmpeg and uploads instead of replaying work.
+- Operate Factory as a single-operator production workflow without new tenant administration; retain existing authentication and data-access safeguards to avoid exposing legacy content.

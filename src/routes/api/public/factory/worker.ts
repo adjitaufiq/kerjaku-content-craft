@@ -24,6 +24,8 @@ export const Route = createFileRoute("/api/public/factory/worker")({
           const result = await executeFactoryWorker(supabaseAdmin, parsed.data, storageOrigin);
           return Response.json(result);
         } catch (e) {
+          if (e instanceof Error && e.message === "LEASE_LOST")
+            return Response.json({ error: "LEASE_LOST" }, { status: 409 });
           console.error(
             JSON.stringify({
               event: "factory_worker_failure",

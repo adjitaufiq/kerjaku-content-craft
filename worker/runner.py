@@ -13,6 +13,7 @@ from media import synthesize, metadata, probe
 from design import design_bundle
 from production import render_storyboard, original_bgm
 from PIL import Image
+from lease import LeaseHeartbeat, LeaseLost, native_lease_check
 
 
 def validate_native_file(file, upload, content, voice_duration=None):
@@ -51,6 +52,7 @@ def validate_native_file(file, upload, content, voice_duration=None):
 
 
 def safe_download(url, path, allowed_origin):
+    native_lease_check.get()()
     target = urlparse(url)
     if target.scheme != "https" or target.netloc != urlparse(allowed_origin).netloc:
         raise ValueError("Media origin not authorized")
@@ -59,6 +61,7 @@ def safe_download(url, path, allowed_origin):
         size = 0
         with open(path, "wb") as file:
             for chunk in response.iter_content(65536):
+                native_lease_check.get()()
                 size += len(chunk)
                 if size > 100 * 1024 * 1024:
                     raise ValueError("Media download too large")
@@ -66,6 +69,7 @@ def safe_download(url, path, allowed_origin):
 
 
 def run_native(task, storage_origin):
+    native_lease_check.get()()
     with tempfile.TemporaryDirectory(prefix="craft-") as folder:
         folder = Path(folder)
         duration = None
@@ -103,6 +107,7 @@ def run_native(task, storage_origin):
             raise ValueError("Unsupported native task")
         assets = []
         for upload in task["uploads"]:
+            native_lease_check.get()()
             if urlparse(upload["url"]).scheme != "https" or urlparse(upload["url"]).netloc != urlparse(storage_origin).netloc:
                 raise ValueError("Upload origin mismatch")
             if Path(upload["filename"]).name != upload["filename"]:
@@ -114,6 +119,34 @@ def run_native(task, storage_origin):
             response.raise_for_status()
             assets.append(metadata(file, upload["kind"], upload["mime"], upload["path"], measured))
         return assets
+
+
+def process_native_task(task, storage_origin, endpoint, worker_id, headers):
+    if os.environ.get("CRAFT_TTS_PROVIDER", "edge_tts") != "edge_tts":
+        raise ValueError("Hosted worker requires neural speech; test adapters are local-only")
+    def renew():
+        response = requests.post(endpoint, json={"action": "heartbeat", "worker": worker_id,
+                                 "taskId": task["id"]}, headers=headers, timeout=15)
+        response.raise_for_status()
+        return response.json().get("renewed") is True
+
+    with LeaseHeartbeat(renew) as heartbeat:
+        try:
+            assets = run_native(task, storage_origin)
+            heartbeat.check()
+        except LeaseLost:
+            raise
+        except Exception as error:
+            heartbeat.check()
+            # Persist a known local failure once; never retry a failed acknowledgement.
+            requests.post(endpoint, json={"action": "fail", "worker": worker_id,
+                          "taskId": task["id"], "error": type(error).__name__},
+                          headers=headers, timeout=30).raise_for_status()
+            return
+        # Keep heartbeat alive during checksum readback/ack; stop on every exit path.
+        requests.post(endpoint, json={"action": "complete", "worker": worker_id,
+                      "taskId": task["id"], "assets": assets},
+                      headers=headers, timeout=180).raise_for_status()
 
 
 def main():
@@ -134,19 +167,12 @@ def main():
             result = response.json()
             task = result.get("task")
             if task:
-                try:
-                    assets = run_native(task, storage_origin)
-                except Exception as error:
-                    requests.post(endpoint, json={"action": "fail", "worker": worker_id, "taskId": task["id"], "error": type(error).__name__}, headers=headers, timeout=30).raise_for_status()
-                    continue
-                # If acknowledgement is lost, never regenerate; durable lease is quarantined by the app.
-                complete = requests.post(endpoint, json={"action": "complete", "worker": worker_id, "taskId": task["id"], "assets": assets}, headers=headers, timeout=180)
-                complete.raise_for_status()
+                process_native_task(task, storage_origin, endpoint, worker_id, headers)
             if result.get("blocked"):
                 print(json.dumps({"event": "factory_blocked", "action": "inspect persisted task"}), flush=True)
             if result.get("idle"):
                 time.sleep(10)
-        except requests.RequestException:
+        except (requests.RequestException, LeaseLost):
             print(json.dumps({"event": "worker_connection_lost", "action": "do not replay; reconcile lease"}), flush=True)
             time.sleep(30)
 

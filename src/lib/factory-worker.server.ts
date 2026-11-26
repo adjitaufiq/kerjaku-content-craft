@@ -24,6 +24,16 @@ export async function executeFactoryWorker(
   publicStorageOrigin: string,
 ) {
   const db = factoryClient(admin);
+  if (input.action === "heartbeat" || input.action === "renew_lease") {
+    if (!input.taskId) throw new Error("Task required");
+    const { data: leaseUntil, error } = await db.rpc("craft_renew_lease", {
+      task_id: input.taskId,
+      worker: input.worker,
+    });
+    if (error) throw new Error("Lease renewal unavailable");
+    if (!leaseUntil) throw new Error("LEASE_LOST");
+    return { renewed: true, leaseUntil };
+  }
   if (input.action !== "claim") {
     if (!input.taskId) throw new Error("Task required");
     const { data: task, error } = await db
@@ -45,6 +55,7 @@ export async function executeFactoryWorker(
           lease_until: null,
         })
         .eq("id", task.id)
+        .eq("state", "running")
         .eq("lease_owner", input.worker)
         .gt("lease_until", new Date().toISOString());
       return { completed: false, blocked: true };
@@ -196,6 +207,7 @@ export async function executeFactoryWorker(
       return {
         task: {
           id: task.id,
+          leaseUntil: task.lease_until,
           stage: task.stage,
           content: output.content,
           config,
@@ -289,6 +301,7 @@ export async function executeFactoryWorker(
         lease_until: null,
       })
       .eq("id", task.id)
+      .eq("state", "running")
       .eq("lease_owner", input.worker)
       .gt("lease_until", new Date().toISOString());
     if (saveError) throw new Error("Job result unknown; do not replay");

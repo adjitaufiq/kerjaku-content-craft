@@ -37,6 +37,7 @@ export type FactoryDatabase = Omit<Database, "public"> & {
         Returns: string;
       };
       craft_claim_task: { Args: { worker: string }; Returns: FactoryTask[] };
+      craft_renew_lease: { Args: { task_id: string; worker: string }; Returns: string | null };
       craft_claim_distribution: { Args: { worker: string }; Returns: DistributionRow[] };
       craft_enqueue_distribution: { Args: { task_id: string; worker: string; packages: unknown }; Returns: number };
       craft_complete_task: {

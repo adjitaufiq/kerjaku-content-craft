@@ -1,5 +1,12 @@
 # Roadmap
 
+## PHASE 2–3 — security and worker stability (no production changes)
+- [ ] Sanitize configuration tracking and inspect history without exposing credentials
+- [ ] Add atomic owner-only heartbeat and lease renewal; reject expired, cancelled and completed tasks
+- [ ] Stop native work/upload on lease loss, clean up heartbeat and never replay unknown submissions
+- [ ] Test long-running work, neural failure transparency and Windows-safe native execution
+- [ ] Report local verification and pending migration/VPS blockers; no deploy or live migration
+
 ## Current request — simple result-first Factory
 - [x] Replace the long Factory process view with compact results, campaign command, bank and distribution views; leave Cliper unchanged
 - [x] Connect owner-scoped finished media, captions, QC, distribution and measured analytics to result cards; hide technical operations in a separate dialog (source complete; hosted readback blocked)

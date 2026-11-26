@@ -106,7 +106,7 @@ export type FactoryBankRow = {
   updated_at: string;
 };
 export const workerInput = z.object({
-  action: z.enum(["claim", "complete", "fail"]),
+  action: z.enum(["claim", "complete", "fail", "heartbeat", "renew_lease"]),
   worker: z.string().min(8).max(100),
   taskId: z.string().uuid().optional(),
   error: z.string().max(1000).optional(),
@@ -123,5 +123,8 @@ export const workerInput = z.object({
     )
     .max(12)
     .optional(),
+}).superRefine((input, ctx) => {
+  if (input.action !== "claim" && !input.taskId)
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["taskId"], message: "Task required" });
 });
 export type WorkerInput = z.infer<typeof workerInput>;

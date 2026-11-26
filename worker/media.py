@@ -9,13 +9,35 @@ import shutil
 import subprocess
 import wave
 import os
+import time
+from lease import native_lease_check
 from neural_voice import synthesize_neural
 from word_alignment import synthesize_words, kinetic_ass
 
 
 def command(args, timeout=600):
-    result = subprocess.run(args, check=True, capture_output=True, timeout=timeout)
-    return result.stdout
+    native_lease_check.get()()
+    with subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
+        deadline = time.monotonic() + timeout
+        try:
+            while True:
+                native_lease_check.get()()
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise subprocess.TimeoutExpired(args, timeout)
+                try:
+                    stdout, stderr = process.communicate(timeout=min(.25, remaining))
+                    break
+                except subprocess.TimeoutExpired:
+                    continue
+            native_lease_check.get()()
+            if process.returncode:
+                raise subprocess.CalledProcessError(process.returncode, args, stdout, stderr)
+            return stdout
+        except BaseException:
+            process.kill()
+            process.communicate()
+            raise
 
 
 def probe(path):
@@ -50,7 +72,10 @@ def synthesize(text, output, language="id", persona="male", speed=165, voice=Non
     if language not in ("id", "en") or persona not in ("male", "female") or not 80 <= speed <= 260:
         raise ValueError("Unsupported voice settings")
     mp3 = output / "voice.mp3"
-    if os.environ.get("CRAFT_TTS_PROVIDER") == "espeak_test":
+    selected_provider = os.environ.get("CRAFT_TTS_PROVIDER", "edge_tts")
+    if selected_provider not in ("edge_tts", "espeak_test"):
+        raise ValueError("Unsupported TTS provider; explicitly select an available provider")
+    if selected_provider == "espeak_test":
         # Explicit offline regression adapter only; never silently substitute robotic voice.
         combined = output / "combined.wav"
         words, cursor = synthesize_words(text.strip(), combined, language, persona, speed)
@@ -105,7 +130,7 @@ def compose(images, voice, subtitles, output, width=1080, height=1920, bgm=None,
     filters.append(f"[slides]subtitles='{escaped}'{style}[video]")
     if bgm:
         filters += [f"[{len(images)}:a]asplit=2[voice][side]", f"[{len(images)+1}:a]volume=0.16[bgm]", "[bgm][side]sidechaincompress=threshold=0.015:ratio=10:attack=15:release=250[ducked]", "[voice][ducked]amix=inputs=2:duration=first:normalize=0[audio]"]
-    args += ["-filter_complex_threads", "1", "-filter_complex", ";".join(filters), "-map", "[video]", "-map", "[audio]" if bgm else f"{len(images)}:a", "-t", str(duration), "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", "-c:a", "aac", "-movflags", "+faststart", str(output)]
+    args += ["-filter_complex_threads", "1", "-filter_complex", ";".join(filters), "-map", "[video]", "-map", "[audio]" if bgm else f"{len(images)}:a", "-t", str(duration), "-r", "30", "-c:v", "libx264", "-threads", "2", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", "-c:a", "aac", "-movflags", "+faststart", str(output)]
     command(args)
     info = probe(output)
     video = next((s for s in info["streams"] if s["codec_type"] == "video"), None)
