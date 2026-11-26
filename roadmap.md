@@ -10,7 +10,7 @@
 - [x] Test existing publication-snapshot learning handoff, latest-snapshot deduplication and next-command recommendations with explicitly synthetic metrics
 - [x] Run three connected local scenarios: all three lanes with seven slides/video, poster-only, and ten-slide carousel-only; 71 JS/SQL and 8 native tests passed
 - [ ] Live analytics ingestion — BLOCKED: official publication IDs and account API access
-- [ ] Hosted three-lane acceptance — BLOCKED: existing Cloud paused, recovery/migration gates, external worker hosting and secret; local fixtures do not substitute for this
+- [ ] Hosted three-lane acceptance — BLOCKED: existing recovery/migration gates, external worker hosting and secret (Cloud now healthy); local fixtures do not substitute for this
 
 
 ## Authorized Autonomous Content Factory build
@@ -20,7 +20,7 @@
 - [x] Image generation source, checksummed storage/library delivery and photo/carousel quality gates
 - [x] External Economy worker: actual Indonesian MP3, measured SRT/VTT and H264/AAC MP4 tested locally
 - [x] Production Studio connects bank, campaign, media library and distribution status; local media proof plays on mobile/desktop
-- [ ] Live persistence, router/image generation and 10-item campaign — BLOCKED: existing Cloud paused; recovery/backup/ownership migration gates
+- [ ] Live persistence, router/image generation and 10-item campaign — BLOCKED: recovery/backup/ownership migration gates (Cloud now healthy)
 - [ ] Native queue worker operation — BLOCKED: external hosting and worker secret not configured; no deployment authorized
 - [ ] Natural Hybrid/Cinematic narration — BLOCKED: managed voice vendor not enabled; Economy voice clearly labeled
 - [ ] Official multi-platform distribution, calendar activation and publication reconciliation — BLOCKED: account authorization, platform permissions and verified scheduler; no public posting authorized
@@ -58,10 +58,12 @@
 - [x] SOP Photo-to-Video: camera, subject, environment, VO sync, ending frame, continuity, dan prompt final siap tempel
 
 ## Current request — reuse existing engines and improve media
-- [ ] Connect existing carousel and photo-to-video engines headlessly with lease-checked inference
-- [ ] Preserve structured scene motion, locks, and one visual per scene
-- [ ] Add compatible opt-in stress-test Excel extensions without changing canonical sheets
-- [ ] Replace default eSpeak with Indonesian neural TTS and real word boundaries
-- [ ] Replace synthetic tone with instrumental BGM assets and retain ducking
-- [ ] Add role-driven cover, content/comparison, and CTA carousel layouts
-- [ ] Test actual native outputs and connected campaign flow; report hosted blockers honestly
+- [x] Connect existing carousel and photo-to-video engines headlessly with lease-checked inference
+- [x] Preserve structured scene motion, locks, and one visual per scene
+- [x] Add compatible opt-in stress-test Excel extensions without changing canonical sheets
+- [x] Replace default eSpeak with Indonesian neural TTS and real provider word-boundary contract
+- [ ] Verify actual natural narration — BLOCKED: external Edge speech WebSocket rejected with 403 in this environment; no robotic production fallback
+- [x] Replace synthetic tone with instrumental BGM assets and retain ducking
+- [x] Add role-driven cover, content/comparison, and CTA carousel layouts
+- [x] Test actual native outputs and connected campaign flow with clearly labeled fixture research/AI/images/storage and explicit test speech
+- [ ] Hosted end-to-end natural media acceptance — BLOCKED: migration/ownership/backup gates, VPS connection/worker secret and speech endpoint access; Cloud is healthy, not paused

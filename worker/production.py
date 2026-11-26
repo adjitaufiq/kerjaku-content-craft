@@ -8,9 +8,8 @@ from media import synthesize, compose, probe, metadata
 
 def original_bgm(output, duration, style="lofi"):
     """Select an original instrumental asset. Missing music blocks, never synthesize a tone."""
-    source = Path(__file__).parent / "assets" / "bgm" / (style + ".mp3")
-    if style not in ("lofi", "tech", "emotional") or not source.is_file():
-        raise RuntimeError("Instrumental BGM unavailable")
+    from music_assets import instrumental_path
+    source = instrumental_path(style)
     from media import command
     command(["ffmpeg", "-y", "-v", "error", "-stream_loop", "-1", "-i", str(source), "-t", str(duration), "-af", "afade=t=in:d=0.5,afade=t=out:st=" + str(max(0, duration - .8)) + ":d=0.8", str(output)])
 

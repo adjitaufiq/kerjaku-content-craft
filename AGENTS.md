@@ -25,3 +25,9 @@
 - Read new factory bank documents alongside the existing Publisher bank without legacy writes; number collisions fail closed so a selected number cannot silently reference different content.
 - Normalize cloned production scenes into one narration contract before TTS/render so legacy storyboards and new scripts cannot drift from the spoken audio.
 - Keep connected local acceptance in test-only adapters that call the actual queue executor and native consumer; never register a fixture provider or local database as production infrastructure.
+
+- Reuse existing Cliper prompt engines through an explicit task/worker execution context; lease validation must precede inference so native worker credentials cannot substitute for owner authorization.
+- Keep stress-test workbook fields opt-in after the canonical production columns and roundtrip richer storyboard/automation data in metadata; old four-column workbooks must remain compatible.
+- Render one checksummed scene image per storyboard scene and derive cut boundaries from spoken word offsets; do not silently cycle scarce images to fill a video.
+- Default native narration to neural provider word events and fail on unavailable speech; eSpeak is an explicitly selected test adapter only, not a production fallback.
+- Retrieve instrumental BGM from immutable asset pointers with SHA-256 verification and apply ducking; never generate sine-tone placeholder music.

@@ -3,7 +3,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg fonts-de
 WORKDIR /worker
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY media.py runner.py word_alignment.py design.py production.py neural_voice.py ./
+COPY media.py runner.py word_alignment.py design.py production.py neural_voice.py music_assets.py ./
 COPY assets ./assets
 RUN useradd --create-home worker
 USER worker

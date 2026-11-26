@@ -7,6 +7,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 from unittest.mock import patch
 from runner import run_native
+import requests
 
 
 def main():
@@ -42,7 +43,10 @@ def main():
                 while chunk := file.read(chunk_size):
                     yield chunk
 
+    real_get = requests.get
     def get(url, **kwargs):
+        if urlparse(url).netloc != "storage.fixture.invalid":
+            return real_get(url, **kwargs)
         return Response(locate(url))
 
     def put(url, data, **kwargs):

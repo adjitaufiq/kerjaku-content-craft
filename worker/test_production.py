@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from design import carousel_plan
 from runner import validate_native_file
+from production import render_storyboard
+from unittest.mock import patch
 
 
 class ProductionContractsTests(unittest.TestCase):
@@ -35,6 +37,16 @@ class ProductionContractsTests(unittest.TestCase):
         content["production"]["scenes"] = json.dumps(scenes)
         with self.assertRaisesRegex(ValueError, "insufficient"):
             carousel_plan(content, 5)
+
+    def test_render_rejects_reusing_one_image_for_multiple_scenes(self):
+        content = self.content()
+        content["production"]["voiceOver"] = " ".join(s["narration"] for s in json.loads(content["production"]["scenes"]))
+        with tempfile.TemporaryDirectory() as folder:
+            alignment = Path(folder, "alignment.json")
+            alignment.write_text(json.dumps({"words": [{"offset": 0, "start": 0}, {"offset": 25, "start": 2}, {"offset": 150, "start": 4}]}))
+            with patch("production.probe", return_value={"format": {"duration": "6"}}):
+                with self.assertRaisesRegex(ValueError, "Every scene"):
+                    render_storyboard(content, ["one.png"], "voice.mp3", "subtitles.ass", alignment, "video.mp4")
 
     def test_missing_native_output_cannot_enter_library(self):
         with tempfile.TemporaryDirectory() as folder:
